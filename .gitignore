@@ -1,41 +1,53 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# ─── Dependencies ────────────────────────────────────────────
+# package-lock.json IS committed — new devs run `npm ci`, not `npm install`
 node_modules/
 
-# Expo
+# ─── Expo ────────────────────────────────────────────────────
 .expo/
 dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# ─── EAS / native builds ─────────────────────────────────────
+.eas/
 .kotlin/
+/ios
+/android
+*.ipa
+*.apk
+*.aab
+
+# ─── Signing & certificates ──────────────────────────────────
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.pem
 
-# Metro
+# ─── Environment & secrets ───────────────────────────────────
+# Copy .env.example → .env and fill in your keys — never commit .env
+.env
+.env.local
+.env.*.local
+
+# ─── Metro bundler ───────────────────────────────────────────
 .metro-health-check*
 
-# debug
+# ─── Logs ────────────────────────────────────────────────────
 npm-debug.*
 yarn-debug.*
 yarn-error.*
 
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
+# ─── TypeScript ──────────────────────────────────────────────
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# ─── OS ──────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Editor ──────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
