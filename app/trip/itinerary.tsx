@@ -10,6 +10,8 @@ import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { useTripStore } from '../../stores/tripStore';
+import { useWalletStore } from '../../stores/walletStore';
+import { saveOfflinePackFromCurrentTrip } from '../../lib/offline/offlinePackService';
 import type { GeneratedTripDay } from '../../lib/trip/tripGenerator';
 
 function pretty(value: string) {
@@ -38,6 +40,7 @@ export default function ItineraryScreen() {
   const [lockModal, setLockModal] = useState(false);
   const [accountModal, setAccountModal] = useState(false);
   const [lockedSuccess, setLockedSuccess] = useState(false);
+  const wallet = useWalletStore();
 
   useEffect(() => {
     const dayFromRoute = Number(params.day);
@@ -71,6 +74,24 @@ export default function ItineraryScreen() {
 
   async function handleOfflinePack() {
     await saveOfflinePack();
+    await saveOfflinePackFromCurrentTrip(
+      {
+        ...trip,
+        days: trip.dailyPlans.map((day) => ({
+          day: day.day,
+          activities: day.activities.map((activity) => ({
+            placeId: activity.id,
+            placeName: activity.name,
+            description: activity.description,
+            costUsd: activity.price,
+          })),
+        })),
+        regionsCovered: trip.regions,
+        tips: [trip.summary],
+        totalCostUsd: trip.totalCost,
+      } as any,
+      wallet,
+    );
     setOfflineModal(true);
   }
 
@@ -183,7 +204,7 @@ export default function ItineraryScreen() {
         </View>
       </View>
 
-      <OfflineModal visible={offlineModal} onClose={() => setOfflineModal(false)} />
+      <OfflineModal visible={offlineModal} onClose={() => setOfflineModal(false)} onOpenPack={() => { setOfflineModal(false); router.push('/offline-pack' as never); }} />
       <LockModal visible={lockModal} total={trip.totalCost} trip={trip} onClose={() => setLockModal(false)} onContinue={continueDemoLock} onCreateAccount={() => { setLockModal(false); setAccountModal(true); }} />
       <AccountModal visible={accountModal} onClose={() => setAccountModal(false)} onCreate={() => router.push('/auth/phone')} />
       <SuccessModal visible={lockedSuccess} onClose={() => setLockedSuccess(false)} />
@@ -282,7 +303,7 @@ function SmallAction({ label, icon, onPress }: { label: string; icon: ReactNode;
   return <Pressable onPress={onPress} accessibilityRole="button" style={({ pressed }) => ({ height: 38, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.border.divider, flexDirection: 'row', alignItems: 'center', gap: 6, opacity: pressed ? 0.75 : 1 })}>{icon}<Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.brand.primary }}>{label}</Text></Pressable>;
 }
 
-function OfflineModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function OfflineModal({ visible, onClose, onOpenPack }: { visible: boolean; onClose: () => void; onOpenPack: () => void }) {
   const checklist = ['Itinerary saved', 'Stay details saved', 'Transport contacts saved', 'Food and activity notes saved', 'Emergency contacts saved', 'Offline map placeholder saved', 'Phrasebook saved', 'Offline-ready labels prepared'];
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -291,7 +312,7 @@ function OfflineModal({ visible, onClose }: { visible: boolean; onClose: () => v
           <Text style={modalTitle}>Offline pack ready</Text>
           {checklist.map((item) => <Text key={item} style={modalLine}>- {item}</Text>)}
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
-            <Button variant="secondary" label="View offline pack" onPress={onClose} style={{ flex: 1 }} height={46} fontSize={13} />
+            <Button variant="secondary" label="View offline pack" onPress={onOpenPack} style={{ flex: 1 }} height={46} fontSize={13} />
             <Button label="Done" onPress={onClose} style={{ flex: 1 }} height={46} fontSize={13} />
           </View>
         </View>
