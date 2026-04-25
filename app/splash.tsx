@@ -14,6 +14,7 @@ import { useAuthStore, type Language } from '../stores/authStore';
 import { strings } from '../lib/strings';
 import { colors } from '../constants/colors';
 import { shadows } from '../constants/shadows';
+import { Button } from '../components/Button';
 
 interface LangOption {
   code: Language;
@@ -227,31 +228,12 @@ export default function SplashScreen() {
         })}
 
         {/* Continue button */}
-        <Pressable
+        <Button
+          label={strings.splash.continueButton}
           onPress={handleContinue}
           disabled={!selected}
-          accessibilityLabel={strings.splash.continueButton}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            height: 56,
-            borderRadius: 16,
-            backgroundColor: colors.brand.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: 16,
-            opacity: !selected ? 0.4 : pressed ? 0.85 : 1,
-          })}
-        >
-          <Text
-            style={{
-              fontFamily: 'Inter_600SemiBold',
-              fontSize: 16,
-              color: '#fff',
-            }}
-          >
-            {strings.splash.continueButton}
-          </Text>
-        </Pressable>
+          style={{ marginTop: 16 }}
+        />
       </View>
     </View>
   );

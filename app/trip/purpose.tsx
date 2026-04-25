@@ -11,6 +11,8 @@ import {
 import { useTripStore, type Purpose, type Companions } from '../../stores/tripStore';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
 
 const PURPOSES: { key: Purpose; icon: any; label: string; desc: string }[] = [
   { key: 'leisure',       icon: TreePalm,  label: strings.planner.purposeLeisure,    desc: strings.planner.purposeLeisureDesc },
@@ -150,35 +152,15 @@ export default function PurposeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8, paddingRight: 20 }}
         >
-          {COMPANIONS.map((c) => {
-            const isSelected = companions === c.key;
-            return (
-              <Pressable
-                key={c.key}
-                onPress={() => setCompanions(c.key)}
-                accessibilityLabel={c.label}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected }}
-                style={({ pressed }) => ({
-                  height: 36, paddingHorizontal: 16, borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: isSelected ? colors.brand.primary : colors.border.input,
-                  backgroundColor: isSelected ? colors.brand.primary : colors.surface.card,
-                  alignItems: 'center', justifyContent: 'center',
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <Text
-                  style={{
-                    fontFamily: 'Inter_500Medium', fontSize: 13,
-                    color: isSelected ? '#fff' : colors.text.primary,
-                  }}
-                >
-                  {c.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {COMPANIONS.map((c) => (
+            <Chip
+              key={c.key}
+              label={c.label}
+              selected={companions === c.key}
+              onPress={() => setCompanions(c.key)}
+              height={36}
+            />
+          ))}
         </ScrollView>
 
         {/* Kids ages indicator */}
@@ -254,22 +236,11 @@ export default function PurposeScreen() {
           borderTopWidth: 1, borderTopColor: colors.border.divider,
         }}
       >
-        <Pressable
-          onPress={() => router.push('/trip/quiz')}
+        <Button
+          label={strings.auth.continueButton}
           disabled={!canContinue}
-          accessibilityLabel={strings.auth.continueButton}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            height: 56, borderRadius: 16,
-            backgroundColor: colors.brand.primary,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: !canContinue ? 0.4 : pressed ? 0.85 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
-            {strings.auth.continueButton}
-          </Text>
-        </Pressable>
+          onPress={() => router.push('/trip/quiz')}
+        />
       </View>
     </SafeAreaView>
   );

@@ -6,6 +6,7 @@ import { ArrowLeft, Star, CheckCircle, ArrowDownLeft, CreditCard } from 'lucide-
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { Button } from '../../components/Button';
 
 const WEEKLY = [
   { day: 'Mon', amount: 8450 },
@@ -131,27 +132,20 @@ export default function MerchantDashboard() {
           ))}
         </View>
 
-        {/* Withdraw */}
-        <Pressable accessibilityRole="button" style={({ pressed }) => ({ height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: colors.brand.primary, backgroundColor: colors.surface.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: pressed ? 0.7 : 1 })}>
-          <CreditCard size={18} color={colors.brand.primary} strokeWidth={1.5} />
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.brand.primary }}>
-            {strings.merchantExtra.withdrawCta}
-          </Text>
-        </Pressable>
+        <Button
+          variant="secondary"
+          label={strings.merchantExtra.withdrawCta}
+          icon={<CreditCard size={18} color={colors.brand.primary} strokeWidth={1.5} />}
+        />
       </ScrollView>
 
       {/* Accept payment CTA */}
       <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.surface.primary, borderTopWidth: 1, borderTopColor: colors.border.divider }}>
-        <Pressable
+        <Button
+          variant="cta"
+          label={strings.merchantExtra.acceptCta}
           onPress={() => router.push('/merchant/accept')}
-          accessibilityLabel={strings.merchantExtra.acceptCta}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ height: 64, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: '#fff' }}>
-            {strings.merchantExtra.acceptCta}
-          </Text>
-        </Pressable>
+        />
       </View>
     </SafeAreaView>
   );

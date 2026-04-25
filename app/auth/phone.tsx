@@ -17,6 +17,7 @@ import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
 
 function formatPhoneDisplay(raw: string): string {
   const d = raw.replace(/\D/g, '').slice(0, 10);
@@ -240,37 +241,19 @@ export default function PhoneScreen() {
             )}
 
             {/* Continue CTA */}
-            <Pressable
-              onPress={handleContinue}
-              disabled={!canSubmit}
-              accessibilityLabel={strings.auth.continueButton}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                height: 56,
-                borderRadius: 16,
-                backgroundColor: colors.brand.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 28,
-                opacity: !canSubmit ? 0.4 : pressed ? 0.85 : 1,
-                flexDirection: 'row',
-                gap: 8,
-              })}
-            >
+            <View style={{ marginTop: 28 }}>
               {loading ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <View style={{ height: 56, justifyContent: 'center', alignItems: 'center' }}>
+                  <ActivityIndicator color={colors.brand.primary} size="small" />
+                </View>
               ) : (
-                <Text
-                  style={{
-                    fontFamily: 'Inter_600SemiBold',
-                    fontSize: 16,
-                    color: '#fff',
-                  }}
-                >
-                  {strings.auth.continueButton}
-                </Text>
+                <Button
+                  label={strings.auth.continueButton}
+                  disabled={!canSubmit}
+                  onPress={handleContinue}
+                />
               )}
-            </Pressable>
+            </View>
 
             {/* Divider */}
             <View

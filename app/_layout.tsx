@@ -1,3 +1,4 @@
+import '../global.css';
 import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -75,6 +76,7 @@ export default function RootLayout() {
           <Stack.Screen name="wallet" />
           <Stack.Screen name="merchant" />
           <Stack.Screen name="services" />
+          <Stack.Screen name="rating" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
