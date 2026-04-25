@@ -215,7 +215,7 @@ function DayPackage({ day, onChangeStay, onChangeTransport, onChangeFood, onRege
         <Text style={stylesTitle}>{day.stay.name}</Text>
         <Text style={stylesSub}>{day.stay.type} - {day.stay.city}, {day.stay.region}</Text>
         <Text style={stylesPrice}>{formatUSD(day.stay.pricePerNight)} / night - {day.stay.rating} rating</Text>
-        <TagRow tags={[...day.stay.tags.slice(0, 3), day.stay.wifi ? 'Wi-Fi' : 'offline pay']} />
+        <TagRow tags={[...day.stay.tags.slice(0, 3), day.stay.wifi ? 'Wi-Fi' : 'offline pay', day.stay.status === 'booked_mock' ? 'booked mock' : day.stay.status === 'changed' ? 'changed' : 'suggested']} />
       </PackageCard>
 
       <PackageCard title="Transport" action="Change transport" onPress={onChangeTransport}>

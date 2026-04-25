@@ -33,6 +33,7 @@ import { useTripStore } from '../../stores/tripStore';
 import {
   DGIS_BUSINESS_RUBRICS,
   getDgisBusinessSection,
+  type DgisSearchResult,
 } from '../../lib/api/dgis';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
@@ -144,13 +145,13 @@ export default function HomeScreen() {
         });
 
         const seen = new Set<string>();
-        const cards = [
+        const sections: { section: DgisSearchResult; bgTint: string }[] = [
           { section: hotels, bgTint: "#1E4D6B" },
           { section: food, bgTint: "#C65D3A" },
-          { section: nature, bgTint: "#4A6B40" },
           { section: activities, bgTint: "#6A5A4B" },
           { section: transport, bgTint: "#4A7289" },
-        ].flatMap(({ section, bgTint }) => {
+        ];
+        const cards = sections.flatMap(({ section, bgTint }) => {
           const place = section.items.find((item) => item.hasPhotos && !seen.has(item.id)) 
                      ?? section.items.find((item) => !seen.has(item.id));
           if (!place) return [];

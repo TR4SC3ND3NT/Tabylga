@@ -513,6 +513,7 @@ export default function MapScreen() {
       <View style={{
         position: 'absolute', top: (insets.top || 0) + 8, left: 16, right: 16,
         flexDirection: 'row', gap: 10,
+        zIndex: 40, elevation: 40,
       }}>
         <View style={{
           flex: 1, height: 52, borderRadius: 14,
@@ -550,7 +551,7 @@ export default function MapScreen() {
         </Pressable>
       </View>
 
-      <View style={{ position: 'absolute', top: (insets.top || 0) + 72, left: 0, right: 0 }}>
+      <View style={{ position: 'absolute', top: (insets.top || 0) + 72, left: 0, right: 0, zIndex: 39, elevation: 39 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
           {filters.map((filter) => {
             const active = activeFilter === filter.key;
@@ -578,15 +579,16 @@ export default function MapScreen() {
         </ScrollView>
       </View>
 
-      <View style={{ position: 'absolute', right: 16, bottom: (insets.bottom || 0) + 306, gap: 10 }}>
+      <View style={{ position: 'absolute', right: 16, bottom: (insets.bottom || 0) + 306, gap: 10, zIndex: 45, elevation: 45 }}>
         <Pressable
           onPress={showMyLocation}
           accessibilityLabel={strings.map.useMyLocation}
           accessibilityRole="button"
-        style={({ pressed }) => ({
+          hitSlop={10}
+          style={({ pressed }) => ({
             width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surface.card,
             alignItems: 'center', justifyContent: 'center',
-            shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 4,
+            shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 46, zIndex: 46,
             opacity: pressed ? 0.8 : 1,
           })}
         >
@@ -612,10 +614,11 @@ export default function MapScreen() {
       <MapOverlayWrapper
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? Math.max(insets.top, 20) : 0}
-        style={{ position: 'absolute', bottom: selectedSheetBottom, left: 16, right: 16 }}
+        pointerEvents={Platform.OS === 'web' ? 'auto' : 'box-none'}
+        style={{ position: 'absolute', bottom: selectedSheetBottom, left: 16, right: 16, zIndex: 50, elevation: 50 }}
       >
         {selectedPlace ? (
-          <View style={{ maxHeight: selectedSheetCollapsed ? undefined : selectedSheetMaxHeight, borderRadius: 20, backgroundColor: colors.surface.card, padding: selectedSheetCollapsed ? 12 : 14, shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 6 }}>
+          <View style={{ maxHeight: selectedSheetCollapsed ? undefined : selectedSheetMaxHeight, borderRadius: 20, backgroundColor: colors.surface.card, padding: selectedSheetCollapsed ? 12 : 14, shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 51, zIndex: 51 }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
                 <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: PIN_COLORS[selectedPlace.category] ?? colors.brand.primary, alignItems: 'center', justifyContent: 'center' }}>
                   <MapPin size={24} color="#fff" strokeWidth={1.5} />
@@ -646,7 +649,8 @@ export default function MapScreen() {
                   onPress={() => setSelectedSheetCollapsed((value) => !value)}
                   accessibilityLabel={selectedSheetCollapsed ? 'Expand place details' : 'Collapse place details'}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.surface.primary, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.75 : 1 })}
+                  hitSlop={12}
+                  style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface.primary, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.75 : 1, zIndex: 60, elevation: 60 })}
                 >
                   {selectedSheetCollapsed ? (
                     <ChevronUp size={18} color={colors.brand.primary} strokeWidth={2} />
@@ -658,7 +662,8 @@ export default function MapScreen() {
                   onPress={leaveSelectedPlace}
                   accessibilityLabel="Leave place"
                   accessibilityRole="button"
-                  style={({ pressed }) => ({ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.brand.primaryLight, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.75 : 1 })}
+                  hitSlop={12}
+                  style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, backgroundColor: colors.brand.primaryLight, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.75 : 1, zIndex: 60, elevation: 60 })}
                 >
                   <X size={17} color={colors.brand.primary} strokeWidth={2} />
                 </Pressable>

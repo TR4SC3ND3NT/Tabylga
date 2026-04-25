@@ -22,7 +22,15 @@ export function MapCanvas({
       {React.createElement('iframe' as any, {
         src,
         title: 'Tabylga map',
-        style: { position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', border: 0 },
+        style: {
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          width: '100%',
+          height: '100%',
+          border: 0,
+          pointerEvents: 'auto',
+        },
       })}
       {routePlaces.length > 1 && (
         <View style={{ position: 'absolute', right: 16, top: 136, width: 150, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.94)', padding: 10, gap: 6 }}>

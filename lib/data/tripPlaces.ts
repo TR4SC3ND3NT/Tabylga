@@ -89,16 +89,19 @@ export interface Stay {
   goodFor: TravelersType[];
   badFor: string[];
   paymentOptions: string[];
+  qrPayment?: boolean;
   offlinePaymentSupported: boolean;
   wifi: boolean;
   familyFriendly: boolean;
   businessFriendly: boolean;
   remote: boolean;
+  comfortLevel?: 'basic' | 'standard' | 'comfort' | 'premium';
   availability: 'available' | 'limited' | 'request';
   description: string;
   reviews: Review[];
   roomTypes: RoomType[];
   commissionRate: number;
+  status?: 'suggested' | 'booked_mock' | 'changed';
 }
 
 export interface Activity {

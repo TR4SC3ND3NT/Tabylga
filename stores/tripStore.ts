@@ -22,6 +22,7 @@ import {
   changeFood as generatorChangeFood,
   changeStay as generatorChangeStay,
   changeTransport as generatorChangeTransport,
+  bookStay as generatorBookStay,
   generateTrip as buildTrip,
   lockTripDemo as generatorLockTrip,
   makeTripCheaper,
@@ -89,6 +90,7 @@ interface TripActions {
   generateTrip: () => Promise<void>;
   changeStay: (dayNumber: number) => void;
   updateStay: (dayNumber: number, stayId: string) => void;
+  bookStay: (dayNumber: number, stayId: string) => void;
   changeTransport: (dayNumber: number) => void;
   updateTransport: (dayNumber: number, transportId: string) => void;
   changeFood: (dayNumber: number) => void;
@@ -335,6 +337,7 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
 
     changeStay: (dayNumber) => edit('Stay updated in your trip', (trip, preferences) => generatorChangeStay(trip, dayNumber, preferences)),
     updateStay: (dayNumber, stayId) => edit('Stay updated in your trip', (trip, preferences) => generatorUpdateStay(trip, dayNumber, stayId, preferences)),
+    bookStay: (dayNumber, stayId) => edit('Stay booked in your trip', (trip, preferences) => generatorBookStay(trip, dayNumber, stayId, preferences)),
     changeTransport: (dayNumber) => edit('Transport updated in your trip', (trip, preferences) => generatorChangeTransport(trip, dayNumber, preferences)),
     updateTransport: (dayNumber, transportId) => edit('Transport updated in your trip', (trip, preferences) => generatorUpdateTransport(trip, dayNumber, transportId, preferences)),
     changeFood: (dayNumber) => edit('Food updated in your trip', (trip, preferences) => generatorChangeFood(trip, dayNumber, preferences)),

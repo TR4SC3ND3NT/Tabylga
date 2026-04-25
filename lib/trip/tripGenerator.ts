@@ -453,15 +453,20 @@ function rebuild(trip: GeneratedTrip, preferencesInput: TripPreferences, dailyPl
   return finalizeTrip({ ...trip, dailyPlans, budgetTier: preferences.budgetTier, travelStyles: preferences.travelStyles, travelerCount: preferences.travelerCount, travelersType: preferences.travelersType, days: preferences.days, startPoint: preferences.startPoint }, preferences);
 }
 
-export function updateStay(trip: GeneratedTrip, dayNumber: number, stayId: string, preferencesInput: TripPreferences): GeneratedTrip {
+export function updateStay(trip: GeneratedTrip, dayNumber: number, stayId: string, preferencesInput: TripPreferences, status: Stay['status'] = 'changed'): GeneratedTrip {
   const preferences = normalizePreferences(preferencesInput);
   const stay = STAYS.find((item) => item.id === stayId);
   if (!stay) return trip;
   return rebuild(trip, preferences, trip.dailyPlans.map((day) => {
     if (day.day !== dayNumber) return day;
-    const estimatedCost = day.estimatedCost - day.stay.pricePerNight + stay.pricePerNight;
-    return { ...day, stay, estimatedCost, offlineReady: day.offlineReady || stay.offlinePaymentSupported, tags: unique([...day.tags, ...stay.tags]).slice(0, 8) };
+    const nextStay = { ...stay, status };
+    const estimatedCost = day.estimatedCost - day.stay.pricePerNight + nextStay.pricePerNight;
+    return { ...day, stay: nextStay, estimatedCost, offlineReady: day.offlineReady || nextStay.offlinePaymentSupported, tags: unique([...day.tags, ...nextStay.tags]).slice(0, 8) };
   }));
+}
+
+export function bookStay(trip: GeneratedTrip, dayNumber: number, stayId: string, preferencesInput: TripPreferences): GeneratedTrip {
+  return updateStay(trip, dayNumber, stayId, preferencesInput, 'booked_mock');
 }
 
 export function updateTransport(trip: GeneratedTrip, dayNumber: number, transportId: string, preferencesInput: TripPreferences): GeneratedTrip {
