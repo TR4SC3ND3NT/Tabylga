@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,14 +10,22 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check, CreditCard, QrCode } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  ShieldCheck,
+  Check,
+  Wifi,
+  KeyRound,
+  Mountain,
+} from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { Pill } from '../../components/Pill';
 import {
+  activateOfflineReserve,
   getWallet,
-  topUpWallet,
   type Transaction,
   type Wallet,
 } from '../../lib/payments/paymentService';
@@ -26,40 +34,18 @@ import { PAYMENT_STRINGS, formatKgs } from '../../lib/payments/paymentStrings';
 const PRESET_AMOUNTS = [500, 1000, 3000, 5000];
 
 type Stage = 'form' | 'loading' | 'success';
-type Method = 'card_demo' | 'online_qr_demo';
 
-function formatCardNumber(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 16);
-  return digits.replace(/(.{4})/g, '$1 ').trim();
-}
-
-function formatExpiry(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 4);
-  if (digits.length <= 2) return digits;
-  return `${digits.slice(0, 2)} / ${digits.slice(2)}`;
-}
-
-export default function TopUpScreen() {
+export default function ActivateOfflineScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [stage, setStage] = useState<Stage>('form');
 
-  // Amount selection
-  const [presetAmount, setPresetAmount] = useState<number | null>(1000);
+  const [presetAmount, setPresetAmount] = useState<number | null>(null);
   const [customMode, setCustomMode] = useState(false);
   const [customText, setCustomText] = useState('');
 
-  // Method
-  const [method, setMethod] = useState<Method>('card_demo');
-
-  // Card form (visual only)
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
-
-  // Validation + result
   const [error, setError] = useState<string | null>(null);
   const [resultTx, setResultTx] = useState<Transaction | null>(null);
   const [resultWallet, setResultWallet] = useState<Wallet | null>(null);
@@ -69,9 +55,22 @@ export default function TopUpScreen() {
     (async () => {
       try {
         const w = await getWallet();
-        if (active) setWallet(w);
+        if (!active) return;
+        setWallet(w);
+        // Pick a sensible default: 1000 if affordable, else the largest
+        // preset that fits, else null (Custom).
+        const preferred = PRESET_AMOUNTS.includes(1000) && w.availableOnline >= 1000
+          ? 1000
+          : [...PRESET_AMOUNTS]
+              .reverse()
+              .find((a) => a <= w.availableOnline) ?? null;
+        if (preferred !== null) {
+          setPresetAmount(preferred);
+        } else {
+          setCustomMode(true);
+        }
       } catch (err) {
-        console.warn('[topup] failed to load wallet', err);
+        console.warn('[activate-offline] failed to load wallet', err);
       }
     })();
     return () => {
@@ -90,6 +89,14 @@ export default function TopUpScreen() {
     Number.isFinite(effectiveAmount) &&
     effectiveAmount > 0;
 
+  const exceedsAvailable = useMemo(() => {
+    if (!wallet || !isValidAmount || effectiveAmount === null) return false;
+    return effectiveAmount > wallet.availableOnline;
+  }, [wallet, isValidAmount, effectiveAmount]);
+
+  const noBalance = wallet ? wallet.availableOnline <= 0 : false;
+  const canConfirm = isValidAmount && !exceedsAvailable && !noBalance;
+
   function handlePickPreset(amount: number) {
     setError(null);
     setCustomMode(false);
@@ -103,20 +110,29 @@ export default function TopUpScreen() {
   }
 
   async function handleConfirm() {
+    if (!wallet) return;
+    if (noBalance) {
+      setError(PAYMENT_STRINGS.activateNeedTopUp);
+      return;
+    }
     if (!isValidAmount || effectiveAmount === null) {
       setError(PAYMENT_STRINGS.topUpInvalidAmount);
+      return;
+    }
+    if (exceedsAvailable) {
+      setError(PAYMENT_STRINGS.activateExceeds);
       return;
     }
     setError(null);
     setStage('loading');
     try {
-      const result = await topUpWallet(effectiveAmount, method);
+      const result = await activateOfflineReserve(effectiveAmount);
       setResultTx(result.transaction);
       setResultWallet(result.wallet);
       setStage('success');
     } catch (err) {
       setStage('form');
-      setError(err instanceof Error ? err.message : 'Top up failed.');
+      setError(err instanceof Error ? err.message : 'Activation failed.');
     }
   }
 
@@ -133,7 +149,7 @@ export default function TopUpScreen() {
             marginTop: 16,
           }}
         >
-          {PAYMENT_STRINGS.topUpProcessing}
+          {PAYMENT_STRINGS.activateProcessing}
         </Text>
       </SafeAreaView>
     );
@@ -151,72 +167,84 @@ export default function TopUpScreen() {
             justifyContent: 'center',
           }}
         >
-          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+          <View style={{ alignItems: 'center', marginBottom: 24 }}>
             <View
               style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                backgroundColor: colors.status.successLight,
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+                backgroundColor: colors.brand.primaryLight,
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: 16,
+                marginBottom: 18,
               }}
             >
-              <Check size={40} color={colors.status.success} strokeWidth={2.5} />
+              <ShieldCheck size={44} color={colors.brand.primary} strokeWidth={2} />
             </View>
             <Text
               style={{
                 fontFamily: 'Fraunces_600SemiBold',
                 fontSize: 24,
                 color: colors.text.primary,
-                marginBottom: 4,
+                marginBottom: 6,
+                textAlign: 'center',
               }}
             >
-              {PAYMENT_STRINGS.topUpSuccessTitle}
+              {PAYMENT_STRINGS.activateSuccessTitle}
             </Text>
             <Text
               style={{
-                fontFamily: 'Inter_700Bold',
-                fontSize: 32,
-                color: colors.brand.primary,
+                fontFamily: 'Inter_500Medium',
+                fontSize: 14,
+                color: colors.text.secondary,
+                marginBottom: 14,
               }}
             >
-              + {formatKgs(resultTx.amount)}
+              {PAYMENT_STRINGS.activateSuccessSub}
             </Text>
+            <Pill
+              label={PAYMENT_STRINGS.activateStatusReady}
+              variant="offline"
+              showDot
+            />
           </View>
 
           <Card style={{ padding: 16, marginBottom: 16 }}>
             <ReceiptRow
+              label={PAYMENT_STRINGS.activateReservedAmount}
+              value={formatKgs(resultTx.amount)}
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.activateNewReserve}
+              value={formatKgs(resultWallet.offlineReserve)}
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.activateNewAvailable}
+              value={formatKgs(resultWallet.availableOnline)}
+            />
+            <ReceiptRow
               label={PAYMENT_STRINGS.receiptCode}
               value={resultTx.receiptCode}
-              mono
-            />
-            <ReceiptRow
-              label={PAYMENT_STRINGS.receiptMethod}
-              value={
-                resultTx.method === 'card_demo'
-                  ? PAYMENT_STRINGS.topUpMethodCard
-                  : PAYMENT_STRINGS.topUpMethodLocalQr
-              }
-            />
-            <ReceiptRow
-              label={PAYMENT_STRINGS.receiptStatus}
-              value={PAYMENT_STRINGS.statusLabels[resultTx.status]}
-            />
-            <ReceiptRow
-              label={PAYMENT_STRINGS.totalBalance}
-              value={formatKgs(resultWallet.totalBalance)}
               isLast
             />
           </Card>
 
-          <Button
-            variant="primary"
-            label={PAYMENT_STRINGS.backToWallet}
-            onPress={() => router.back()}
-            accessibilityLabel={PAYMENT_STRINGS.backToWallet}
-          />
+          <View style={{ gap: 10 }}>
+            <Button
+              variant="primary"
+              label={PAYMENT_STRINGS.backToWallet}
+              onPress={() => router.back()}
+              accessibilityLabel={PAYMENT_STRINGS.backToWallet}
+            />
+            <Button
+              variant="secondary"
+              label={PAYMENT_STRINGS.activatePayLater}
+              onPress={() => {
+                router.replace('/wallet/pay-offline');
+              }}
+              accessibilityLabel={PAYMENT_STRINGS.activatePayLater}
+            />
+          </View>
         </ScrollView>
       </SafeAreaView>
     );
@@ -262,7 +290,7 @@ export default function TopUpScreen() {
             marginRight: 44,
           }}
         >
-          {PAYMENT_STRINGS.topUpTitle}
+          {PAYMENT_STRINGS.activateTitle}
         </Text>
       </View>
 
@@ -271,33 +299,93 @@ export default function TopUpScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Current balance */}
+        <Text
+          style={{
+            fontFamily: 'Inter_400Regular',
+            fontSize: 13,
+            lineHeight: 19,
+            color: colors.text.secondary,
+            marginBottom: 18,
+          }}
+        >
+          {PAYMENT_STRINGS.activateSubtitle}
+        </Text>
+
+        {/* Wallet snapshot — 4 small cards */}
         {wallet && (
-          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-            <BalanceMini
-              label={PAYMENT_STRINGS.totalBalance}
-              value={wallet.totalBalance}
-              accent={colors.brand.primary}
-            />
-            <BalanceMini
-              label={PAYMENT_STRINGS.availableOnline}
-              value={wallet.availableOnline}
-              accent={colors.status.success}
-            />
+          <View style={{ gap: 10, marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <BalanceMini
+                label={PAYMENT_STRINGS.availableOnline}
+                value={wallet.availableOnline}
+                accent={colors.status.success}
+              />
+              <BalanceMini
+                label={PAYMENT_STRINGS.offlineReserve}
+                value={wallet.offlineReserve}
+                accent={colors.brand.primary}
+              />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <BalanceMini
+                label={PAYMENT_STRINGS.lockedOffline}
+                value={wallet.lockedOffline}
+                accent="#C65D3A"
+              />
+              <BalanceMini
+                label={PAYMENT_STRINGS.pendingSync}
+                value={wallet.pendingSync}
+                accent={colors.status.warning}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Need top up first banner */}
+        {noBalance && (
+          <View
+            style={{
+              padding: 14,
+              borderRadius: 14,
+              backgroundColor: colors.status.warningLight,
+              borderWidth: 1,
+              borderColor: '#EBD6B4',
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 13,
+                lineHeight: 18,
+                color: '#5a3a00',
+              }}
+            >
+              {PAYMENT_STRINGS.activateNeedTopUp}
+            </Text>
           </View>
         )}
 
         {/* Amount chips */}
-        <SectionLabel>{PAYMENT_STRINGS.topUpAmountLabel}</SectionLabel>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+        <SectionLabel>{PAYMENT_STRINGS.activateAmountLabel}</SectionLabel>
+        <View
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
           {PRESET_AMOUNTS.map((a) => {
             const sel = !customMode && presetAmount === a;
+            const disabled = wallet ? a > wallet.availableOnline : false;
             return (
               <Pressable
                 key={a}
+                disabled={disabled}
                 onPress={() => handlePickPreset(a)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: sel }}
+                accessibilityState={{ selected: sel, disabled }}
                 accessibilityLabel={`${a} KGS`}
                 style={({ pressed }) => ({
                   height: 48,
@@ -305,10 +393,12 @@ export default function TopUpScreen() {
                   borderRadius: 12,
                   borderWidth: sel ? 2 : 1,
                   borderColor: sel ? colors.brand.primary : colors.border.divider,
-                  backgroundColor: sel ? colors.brand.primaryLight : colors.surface.card,
+                  backgroundColor: sel
+                    ? colors.brand.primaryLight
+                    : colors.surface.card,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
                 })}
               >
                 <Text
@@ -334,7 +424,9 @@ export default function TopUpScreen() {
               borderRadius: 12,
               borderWidth: customMode ? 2 : 1,
               borderColor: customMode ? colors.brand.primary : colors.border.divider,
-              backgroundColor: customMode ? colors.brand.primaryLight : colors.surface.card,
+              backgroundColor: customMode
+                ? colors.brand.primaryLight
+                : colors.surface.card,
               alignItems: 'center',
               justifyContent: 'center',
               opacity: pressed ? 0.85 : 1,
@@ -362,7 +454,7 @@ export default function TopUpScreen() {
                 marginBottom: 6,
               }}
             >
-              {PAYMENT_STRINGS.topUpCustomLabel}
+              {PAYMENT_STRINGS.activateCustomLabel}
             </Text>
             <TextInput
               value={customText}
@@ -373,12 +465,14 @@ export default function TopUpScreen() {
               placeholder="2500"
               placeholderTextColor={colors.text.tertiary}
               keyboardType="number-pad"
-              accessibilityLabel={PAYMENT_STRINGS.topUpCustomLabel}
+              accessibilityLabel={PAYMENT_STRINGS.activateCustomLabel}
               style={{
                 height: 56,
                 borderRadius: 12,
                 borderWidth: 1,
-                borderColor: colors.border.input,
+                borderColor: exceedsAvailable
+                  ? colors.status.error
+                  : colors.border.input,
                 backgroundColor: colors.surface.card,
                 paddingHorizontal: 16,
                 fontFamily: 'Inter_500Medium',
@@ -389,121 +483,116 @@ export default function TopUpScreen() {
           </View>
         )}
 
-        {/* Method */}
-        <SectionLabel>{PAYMENT_STRINGS.topUpMethodLabel}</SectionLabel>
-
-        <MethodOption
-          selected={method === 'card_demo'}
-          onPress={() => setMethod('card_demo')}
-          icon={
-            <CreditCard
-              size={20}
-              color={method === 'card_demo' ? colors.brand.primary : colors.text.secondary}
-              strokeWidth={2}
-            />
-          }
-          label={PAYMENT_STRINGS.topUpMethodCard}
-          sub={PAYMENT_STRINGS.topUpMethodCardSub}
-        />
-
-        <MethodOption
-          selected={method === 'online_qr_demo'}
-          onPress={() => setMethod('online_qr_demo')}
-          icon={
-            <QrCode
-              size={20}
-              color={method === 'online_qr_demo' ? colors.brand.primary : colors.text.secondary}
-              strokeWidth={2}
-            />
-          }
-          label={PAYMENT_STRINGS.topUpMethodLocalQr}
-          sub={PAYMENT_STRINGS.topUpMethodLocalQrSub}
-        />
-
-        {/* Card form (visual only) */}
-        {method === 'card_demo' && (
-          <View style={{ gap: 10, marginTop: 8, marginBottom: 8 }}>
-            <TextInput
-              value={formatCardNumber(cardNumber)}
-              onChangeText={(t) => setCardNumber(t.replace(/\D/g, ''))}
-              placeholder={PAYMENT_STRINGS.topUpCardNumber}
-              placeholderTextColor={colors.text.tertiary}
-              keyboardType="number-pad"
-              maxLength={19}
-              accessibilityLabel={PAYMENT_STRINGS.topUpCardNumber}
-              style={{
-                height: 56,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: colors.border.input,
-                backgroundColor: colors.surface.card,
-                paddingHorizontal: 16,
-                fontFamily: 'Inter_400Regular',
-                fontSize: 16,
-                letterSpacing: 2,
-                color: colors.text.primary,
-              }}
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TextInput
-                value={expiry}
-                onChangeText={(t) => setExpiry(formatExpiry(t))}
-                placeholder={PAYMENT_STRINGS.topUpCardExpiry}
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="number-pad"
-                maxLength={7}
-                accessibilityLabel={PAYMENT_STRINGS.topUpCardExpiry}
-                style={{
-                  flex: 1,
-                  height: 56,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border.input,
-                  backgroundColor: colors.surface.card,
-                  paddingHorizontal: 16,
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 16,
-                  color: colors.text.primary,
-                }}
-              />
-              <TextInput
-                value={cvc}
-                onChangeText={(t) => setCvc(t.replace(/\D/g, '').slice(0, 4))}
-                placeholder={PAYMENT_STRINGS.topUpCardCvc}
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="number-pad"
-                maxLength={4}
-                secureTextEntry
-                accessibilityLabel={PAYMENT_STRINGS.topUpCardCvc}
-                style={{
-                  flex: 1,
-                  height: 56,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: colors.border.input,
-                  backgroundColor: colors.surface.card,
-                  paddingHorizontal: 16,
-                  fontFamily: 'Inter_400Regular',
-                  fontSize: 16,
-                  color: colors.text.primary,
-                }}
-              />
-            </View>
-          </View>
-        )}
-
-        {error && (
+        {/* Inline errors */}
+        {(error || (exceedsAvailable && !error)) && (
           <Text
             style={{
               fontFamily: 'Inter_500Medium',
               fontSize: 13,
               color: colors.status.error,
-              marginTop: 12,
+              marginBottom: 12,
             }}
           >
-            {error}
+            {error ?? PAYMENT_STRINGS.activateExceeds}
           </Text>
         )}
+
+        {/* How it works */}
+        <Card
+          style={{
+            padding: 16,
+            backgroundColor: colors.brand.primaryLight,
+            marginBottom: 14,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 15,
+              color: colors.text.primary,
+              marginBottom: 12,
+            }}
+          >
+            {PAYMENT_STRINGS.activateHowTitle}
+          </Text>
+          <Step
+            n={1}
+            icon={<Wifi size={16} color={colors.brand.primary} strokeWidth={2} />}
+            text={PAYMENT_STRINGS.activateHow1}
+          />
+          <Step
+            n={2}
+            icon={
+              <KeyRound size={16} color={colors.brand.primary} strokeWidth={2} />
+            }
+            text={PAYMENT_STRINGS.activateHow2}
+          />
+          <Step
+            n={3}
+            icon={
+              <Mountain size={16} color={colors.brand.primary} strokeWidth={2} />
+            }
+            text={PAYMENT_STRINGS.activateHow3}
+            isLast
+          />
+        </Card>
+
+        {/* Safety note */}
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 14,
+            backgroundColor: colors.status.warningLight,
+            borderWidth: 1,
+            borderColor: '#EBD6B4',
+            marginBottom: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_500Medium',
+              fontSize: 13,
+              lineHeight: 18,
+              color: '#5a3a00',
+            }}
+          >
+            {PAYMENT_STRINGS.activateSafetyNote}
+          </Text>
+        </View>
+
+        {/* Prototype note */}
+        <View
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            backgroundColor: '#F4F1EA',
+            borderWidth: 1,
+            borderColor: colors.border.divider,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 11,
+              color: colors.text.tertiary,
+              letterSpacing: 0.08 * 11,
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
+            {PAYMENT_STRINGS.prototypeNoteTitle}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              lineHeight: 17,
+              color: colors.text.secondary,
+            }}
+          >
+            {PAYMENT_STRINGS.activatePrototypeNote}
+          </Text>
+        </View>
       </ScrollView>
 
       {/* CTA */}
@@ -523,14 +612,15 @@ export default function TopUpScreen() {
       >
         <Button
           variant="cta"
-          label={PAYMENT_STRINGS.topUpConfirm(
+          label={PAYMENT_STRINGS.activateConfirm(
             isValidAmount && effectiveAmount !== null
               ? effectiveAmount.toLocaleString('en-US')
               : '0',
           )}
           onPress={handleConfirm}
-          disabled={!isValidAmount}
-          accessibilityLabel={PAYMENT_STRINGS.topUpConfirm(
+          disabled={!canConfirm}
+          icon={<ShieldCheck size={18} color="#fff" strokeWidth={2} />}
+          accessibilityLabel={PAYMENT_STRINGS.activateConfirm(
             isValidAmount && effectiveAmount !== null
               ? effectiveAmount.toLocaleString('en-US')
               : '0',
@@ -608,97 +698,71 @@ function BalanceMini({
   );
 }
 
-function MethodOption({
-  selected,
-  onPress,
+function Step({
+  n,
   icon,
-  label,
-  sub,
+  text,
+  isLast = false,
 }: {
-  selected: boolean;
-  onPress: () => void;
+  n: number;
   icon: React.ReactNode;
-  label: string;
-  sub: string;
+  text: string;
+  isLast?: boolean;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-      style={({ pressed }) => ({
+    <View
+      style={{
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        minHeight: 72,
-        padding: 16,
-        borderRadius: 14,
-        marginBottom: 10,
-        borderWidth: selected ? 2 : 1,
-        borderColor: selected ? colors.brand.primary : colors.border.divider,
-        backgroundColor: selected ? colors.brand.primaryLight : colors.surface.card,
-        opacity: pressed ? 0.85 : 1,
-      })}
+        alignItems: 'flex-start',
+        gap: 10,
+        marginBottom: isLast ? 0 : 10,
+      }}
     >
       <View
         style={{
-          width: 18,
-          height: 18,
-          borderRadius: 9,
-          borderWidth: selected ? 0 : 1.5,
-          borderColor: colors.border.input,
-          backgroundColor: selected ? colors.brand.primary : 'transparent',
+          width: 26,
+          height: 26,
+          borderRadius: 13,
+          backgroundColor: '#fff',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        {selected && (
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: '#fff',
-            }}
-          />
-        )}
-      </View>
-      {icon}
-      <View style={{ flex: 1 }}>
         <Text
           style={{
-            fontFamily: 'Inter_600SemiBold',
-            fontSize: 15,
-            color: selected ? colors.brand.primary : colors.text.primary,
+            fontFamily: 'Inter_700Bold',
+            fontSize: 12,
+            color: colors.brand.primary,
           }}
         >
-          {label}
+          {n}
         </Text>
+      </View>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        {icon}
         <Text
           style={{
-            fontFamily: 'Inter_400Regular',
+            flex: 1,
+            fontFamily: 'Inter_500Medium',
             fontSize: 13,
-            color: colors.text.secondary,
-            marginTop: 2,
+            lineHeight: 18,
+            color: colors.text.primary,
           }}
         >
-          {sub}
+          {text}
         </Text>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 function ReceiptRow({
   label,
   value,
-  mono = false,
   isLast = false,
 }: {
   label: string;
   value: string;
-  mono?: boolean;
   isLast?: boolean;
 }) {
   return (
@@ -725,7 +789,7 @@ function ReceiptRow({
       </Text>
       <Text
         style={{
-          fontFamily: mono ? 'Inter_500Medium' : 'Inter_600SemiBold',
+          fontFamily: 'Inter_600SemiBold',
           fontSize: 13,
           color: colors.text.primary,
           maxWidth: '60%',

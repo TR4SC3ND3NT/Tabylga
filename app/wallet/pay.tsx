@@ -1,197 +1,598 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Modal } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { X, Flashlight, Check, Camera, Keyboard } from 'lucide-react-native';
-import { useStrings } from '../../lib/i18n';
+import { ArrowLeft, Check, QrCode, Star } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { shadows } from '../../constants/shadows';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import {
+  getOnlineQRMerchants,
+  getWallet,
+  payOnlineQR,
+  type Transaction,
+  type Wallet,
+} from '../../lib/payments/paymentService';
+import { type PaymentMerchant } from '../../lib/data/paymentMerchants';
+import { PAYMENT_STRINGS, formatKgs } from '../../lib/payments/paymentStrings';
 
-type Stage = 'scanning' | 'confirming' | 'loading' | 'success';
+type Stage = 'form' | 'loading' | 'success';
 
-type MerchantPayment = {
-  name: string;
-  amount: number;
-  payload: string;
-};
-
-const MOCK_MERCHANT: MerchantPayment = {
-  name: 'Supara Ethno Restaurant',
-  amount: 18.5,
-  payload: 'tabylga://pay?merchant=Supara%20Ethno%20Restaurant&amount=18.50',
-};
-
-function parseQrPayload(data: string): MerchantPayment {
-  try {
-    const url = new URL(data);
-    const merchant = url.searchParams.get('merchant') || 'Tabylga Merchant';
-    const amount = Number(url.searchParams.get('amount') || '18.5');
-    return {
-      name: merchant,
-      amount: Number.isFinite(amount) ? amount : 18.5,
-      payload: data,
-    };
-  } catch {
-    return { ...MOCK_MERCHANT, payload: data };
-  }
-}
-
-export default function PayScreen() {
+export default function PayOnlineQRScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const strings = useStrings();
-  const [permission, requestPermission] = useCameraPermissions();
-  const [stage, setStage] = useState<Stage>('scanning');
-  const [flashOn, setFlashOn] = useState(false);
-  const [scanned, setScanned] = useState(false);
-  const [merchant, setMerchant] = useState<MerchantPayment>(MOCK_MERCHANT);
 
-  function handleScanned(data: string) {
-    if (scanned || stage !== 'scanning') return;
-    setScanned(true);
-    setMerchant(parseQrPayload(data));
-    setStage('confirming');
-  }
+  const merchants = useMemo<PaymentMerchant[]>(() => getOnlineQRMerchants(), []);
+
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [stage, setStage] = useState<Stage>('form');
+
+  const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(
+    merchants[0]?.id ?? null,
+  );
+  const [amountText, setAmountText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const [resultTx, setResultTx] = useState<Transaction | null>(null);
+  const [resultMerchant, setResultMerchant] = useState<PaymentMerchant | null>(
+    null,
+  );
+  const [resultWallet, setResultWallet] = useState<Wallet | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const w = await getWallet();
+        if (active) setWallet(w);
+      } catch (err) {
+        console.warn('[pay] failed to load wallet', err);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const amount = amountText.trim() === '' ? null : Number(amountText);
+  const isAmountValid =
+    amount !== null && Number.isFinite(amount) && amount > 0;
+  const exceedsBalance =
+    isAmountValid && wallet ? (amount as number) > wallet.availableOnline : false;
+  const canConfirm =
+    isAmountValid && !exceedsBalance && selectedMerchantId !== null;
 
   async function handleConfirm() {
+    if (!selectedMerchantId) {
+      setError(PAYMENT_STRINGS.payNoMerchant);
+      return;
+    }
+    if (!isAmountValid || amount === null) {
+      setError(PAYMENT_STRINGS.topUpInvalidAmount);
+      return;
+    }
+    if (exceedsBalance) {
+      setError(PAYMENT_STRINGS.payInsufficient);
+      return;
+    }
+    setError(null);
     setStage('loading');
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setStage('success');
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    router.back();
+    try {
+      const result = await payOnlineQR({
+        merchantId: selectedMerchantId,
+        amount,
+      });
+      setResultTx(result.transaction);
+      setResultMerchant(result.merchant);
+      setResultWallet(result.wallet);
+      setStage('success');
+    } catch (err) {
+      setStage('form');
+      setError(err instanceof Error ? err.message : 'Payment failed.');
+    }
   }
 
-  if (stage === 'success') {
+  if (stage === 'loading') {
     return (
-      <View style={{ flex: 1, backgroundColor: '#1A1A1A', alignItems: 'center', justifyContent: 'center' }}>
-        <StatusBar style="light" />
-        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.status.success, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-          <Check size={40} color="#fff" strokeWidth={2.5} />
-        </View>
-        <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff' }}>{strings.walletExtra.paymentSent}</Text>
-        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
-          ${merchant.amount.toFixed(2)} to {merchant.name}
+      <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center">
+        <StatusBar style="dark" />
+        <ActivityIndicator size="large" color={colors.brand.primary} />
+        <Text
+          style={{
+            fontFamily: 'Inter_500Medium',
+            fontSize: 15,
+            color: colors.text.secondary,
+            marginTop: 16,
+          }}
+        >
+          {PAYMENT_STRINGS.payProcessing}
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
-  const hasPermission = permission?.granted;
+  if (stage === 'success' && resultTx && resultMerchant && resultWallet) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={{
+            padding: 24,
+            paddingBottom: Math.max(insets.bottom, 24) + 24,
+            flexGrow: 1,
+            justifyContent: 'center',
+          }}
+        >
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: colors.status.successLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+              }}
+            >
+              <Check size={40} color={colors.status.success} strokeWidth={2.5} />
+            </View>
+            <Text
+              style={{
+                fontFamily: 'Fraunces_600SemiBold',
+                fontSize: 24,
+                color: colors.text.primary,
+                marginBottom: 4,
+              }}
+            >
+              {PAYMENT_STRINGS.paySuccessTitle}
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 32,
+                color: colors.text.primary,
+              }}
+            >
+              − {formatKgs(resultTx.amount)}
+            </Text>
+          </View>
+
+          <Card style={{ padding: 16, marginBottom: 16 }}>
+            <ReceiptRow
+              label={PAYMENT_STRINGS.receiptCode}
+              value={resultTx.receiptCode}
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.receiptMerchant}
+              value={resultMerchant.name}
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.receiptMethod}
+              value="Online QR (demo)"
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.receiptStatus}
+              value={PAYMENT_STRINGS.statusLabels[resultTx.status]}
+            />
+            <ReceiptRow
+              label={PAYMENT_STRINGS.availableOnline}
+              value={formatKgs(resultWallet.availableOnline)}
+              isLast
+            />
+          </Card>
+
+          <Button
+            variant="primary"
+            label={PAYMENT_STRINGS.backToWallet}
+            onPress={() => router.back()}
+            accessibilityLabel={PAYMENT_STRINGS.backToWallet}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#1A1A1A' }}>
-      <StatusBar style="light" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+      <StatusBar style="dark" />
 
-      {hasPermission ? (
-        <CameraView
-          style={{ position: 'absolute', inset: 0 }}
-          facing="back"
-          enableTorch={flashOn}
-          barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
-          onBarcodeScanned={(result) => handleScanned(result.data)}
-        />
-      ) : (
-        <View style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 28 }}>
-          <Camera size={48} color="#fff" strokeWidth={1.5} />
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff', textAlign: 'center', marginTop: 18 }}>
-            Camera access
-          </Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.72)', textAlign: 'center', marginTop: 8 }}>
-            Camera is required to scan merchant QR codes.
-          </Text>
-          <Pressable
-            onPress={requestPermission}
-            accessibilityRole="button"
-            style={({ pressed }) => ({ marginTop: 20, height: 50, paddingHorizontal: 22, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}
-          >
-            <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: '#fff' }}>
-              Allow camera
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      <View style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.28)' }} pointerEvents="none" />
-
-      <View style={{ paddingTop: (insets.top || 0) + 8, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable onPress={() => router.back()} accessibilityLabel={strings.common.close} accessibilityRole="button" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <X size={22} color="#fff" strokeWidth={1.5} />
-        </Pressable>
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.15)' }}>
-          <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: '#fff' }}>
-            {strings.walletExtra.scanInstruction}
-          </Text>
-        </View>
-        <Pressable onPress={() => setFlashOn(!flashOn)} accessibilityRole="button" style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Flashlight size={22} color={flashOn ? colors.status.warning : '#fff'} strokeWidth={1.5} />
-        </Pressable>
-      </View>
-
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} pointerEvents="none">
-        <View style={{ width: 260, height: 260, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
-          {[{ top: 0, left: 0 }, { top: 0, right: 0 }, { bottom: 0, left: 0 }, { bottom: 0, right: 0 }].map((pos, i) => (
-            <View key={i} style={{ position: 'absolute', width: 32, height: 32, ...pos }}>
-              <View style={{ position: 'absolute', top: 0, left: 0, width: 32, height: 4, backgroundColor: colors.brand.cta, borderRadius: 2, ...(pos.right !== undefined ? { right: 0, left: undefined } : {}) }} />
-              <View style={{ position: 'absolute', top: 0, left: 0, width: 4, height: 32, backgroundColor: colors.brand.cta, borderRadius: 2, ...(pos.right !== undefined ? { right: 0, left: undefined } : {}), ...(pos.bottom !== undefined ? { bottom: 0, top: undefined } : {}) }} />
-            </View>
-          ))}
-          <View style={{ width: 205, height: 205, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' }} />
-        </View>
-      </View>
-
-      <View style={{ alignItems: 'center', paddingBottom: Math.max(insets.bottom, 24) + 16 }}>
+      {/* Header */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+          paddingTop: 8,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border.divider,
+        }}
+      >
         <Pressable
+          onPress={() => router.back()}
+          accessibilityLabel="Back"
           accessibilityRole="button"
-          onPress={() => handleScanned(MOCK_MERCHANT.payload)}
-          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, height: 38, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.16)', opacity: pressed ? 0.75 : 1 })}
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.6 : 1,
+          })}
         >
-          <Keyboard size={16} color="rgba(255,255,255,0.84)" strokeWidth={2} />
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: 'rgba(255,255,255,0.84)' }}>
-            {strings.walletExtra.cantScan}
-          </Text>
+          <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
+        <Text
+          style={{
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 17,
+            color: colors.text.primary,
+            flex: 1,
+            textAlign: 'center',
+            marginRight: 44,
+          }}
+        >
+          {PAYMENT_STRINGS.payTitle}
+        </Text>
       </View>
 
-      <Modal visible={stage === 'confirming'} transparent animationType="slide">
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: colors.surface.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: Math.max(insets.bottom, 24) }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border.divider, borderRadius: 2, alignSelf: 'center', marginBottom: 20 }} />
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.tertiary, marginBottom: 4, letterSpacing: 0.08 * 13, textTransform: 'uppercase' }}>
-              {strings.walletExtra.confirmTitle}
-            </Text>
-            <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, color: colors.text.primary, marginBottom: 4 }}>
-              {merchant.name}
-            </Text>
-            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginBottom: 8 }} numberOfLines={1}>
-              {merchant.payload}
-            </Text>
-            <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 36, color: colors.text.primary, marginBottom: 24 }}>
-              ${merchant.amount.toFixed(2)}
-            </Text>
-            <Pressable
-              onPress={handleConfirm}
-              accessibilityRole="button"
-              style={({ pressed }) => ({ height: 56, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', marginBottom: 10, opacity: pressed ? 0.85 : 1 })}
-            >
-              {stage === 'loading'
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>{strings.walletExtra.confirmPay}</Text>
-              }
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                setStage('scanning');
-                setScanned(false);
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Available online balance */}
+        {wallet && (
+          <View
+            style={[
+              {
+                padding: 14,
+                borderRadius: 14,
+                backgroundColor: colors.surface.card,
+                borderLeftWidth: 3,
+                borderLeftColor: colors.status.success,
+                marginBottom: 16,
+              },
+              shadows.card,
+            ]}
+          >
+            <Text
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 11,
+                color: colors.text.tertiary,
+                letterSpacing: 0.08 * 11,
+                textTransform: 'uppercase',
+                marginBottom: 4,
               }}
-              accessibilityRole="button"
-              style={({ pressed }) => ({ height: 52, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
             >
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.text.secondary }}>{strings.common.cancel}</Text>
-            </Pressable>
+              {PAYMENT_STRINGS.availableOnline}
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 22,
+                color: colors.text.primary,
+              }}
+            >
+              {formatKgs(wallet.availableOnline)}
+            </Text>
           </View>
+        )}
+
+        {/* Mock scanner */}
+        <View
+          style={{
+            backgroundColor: '#1A1A1A',
+            borderRadius: 18,
+            padding: 24,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 20,
+            minHeight: 180,
+          }}
+        >
+          <View style={{ width: 120, height: 120, position: 'relative', alignItems: 'center', justifyContent: 'center' }}>
+            {[
+              { top: 0, left: 0 },
+              { top: 0, right: 0 },
+              { bottom: 0, left: 0 },
+              { bottom: 0, right: 0 },
+            ].map((pos, i) => (
+              <View key={i} style={{ position: 'absolute', width: 28, height: 28, ...pos }}>
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 28,
+                    height: 3,
+                    backgroundColor: colors.brand.cta,
+                    borderRadius: 2,
+                    ...(pos.right !== undefined ? { right: 0, left: undefined } : {}),
+                  }}
+                />
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: 3,
+                    height: 28,
+                    backgroundColor: colors.brand.cta,
+                    borderRadius: 2,
+                    ...(pos.right !== undefined ? { right: 0, left: undefined } : {}),
+                    ...(pos.bottom !== undefined ? { bottom: 0, top: undefined } : {}),
+                  }}
+                />
+              </View>
+            ))}
+            <QrCode size={56} color="rgba(255,255,255,0.55)" strokeWidth={1.5} />
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_500Medium',
+              fontSize: 13,
+              color: 'rgba(255,255,255,0.78)',
+              textAlign: 'center',
+              marginTop: 14,
+            }}
+          >
+            {PAYMENT_STRINGS.payScannerHint}
+          </Text>
         </View>
-      </Modal>
+
+        {/* Merchant selector */}
+        <SectionLabel>{PAYMENT_STRINGS.payMerchantLabel}</SectionLabel>
+        <View style={{ gap: 10, marginBottom: 16 }}>
+          {merchants.map((m) => {
+            const sel = selectedMerchantId === m.id;
+            return (
+              <Pressable
+                key={m.id}
+                onPress={() => {
+                  setError(null);
+                  setSelectedMerchantId(m.id);
+                }}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: sel }}
+                accessibilityLabel={m.name}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: 14,
+                  borderRadius: 14,
+                  borderWidth: sel ? 2 : 1,
+                  borderColor: sel ? colors.brand.primary : colors.border.divider,
+                  backgroundColor: sel ? colors.brand.primaryLight : colors.surface.card,
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    borderWidth: sel ? 0 : 1.5,
+                    borderColor: colors.border.input,
+                    backgroundColor: sel ? colors.brand.primary : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {sel && (
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#fff',
+                      }}
+                    />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_600SemiBold',
+                      fontSize: 14,
+                      color: sel ? colors.brand.primary : colors.text.primary,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {m.name}
+                  </Text>
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_400Regular',
+                      fontSize: 12,
+                      color: colors.text.secondary,
+                      marginTop: 2,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {m.region} · {m.type}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Star
+                    size={13}
+                    color={colors.status.warning}
+                    strokeWidth={0}
+                    fill={colors.status.warning}
+                  />
+                  <Text
+                    style={{
+                      fontFamily: 'Inter_600SemiBold',
+                      fontSize: 12,
+                      color: colors.text.primary,
+                    }}
+                  >
+                    {m.rating.toFixed(1)}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Amount */}
+        <SectionLabel>{PAYMENT_STRINGS.payAmountLabel}</SectionLabel>
+        <TextInput
+          value={amountText}
+          onChangeText={(t) => {
+            setError(null);
+            setAmountText(t.replace(/[^0-9]/g, ''));
+          }}
+          placeholder={PAYMENT_STRINGS.payAmountPlaceholder}
+          placeholderTextColor={colors.text.tertiary}
+          keyboardType="number-pad"
+          accessibilityLabel={PAYMENT_STRINGS.payAmountLabel}
+          style={{
+            height: 56,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: exceedsBalance ? colors.status.error : colors.border.input,
+            backgroundColor: colors.surface.card,
+            paddingHorizontal: 16,
+            fontFamily: 'Inter_600SemiBold',
+            fontSize: 18,
+            color: colors.text.primary,
+          }}
+        />
+
+        {error && (
+          <Text
+            style={{
+              fontFamily: 'Inter_500Medium',
+              fontSize: 13,
+              color: colors.status.error,
+              marginTop: 12,
+            }}
+          >
+            {error}
+          </Text>
+        )}
+        {!error && exceedsBalance && (
+          <Text
+            style={{
+              fontFamily: 'Inter_500Medium',
+              fontSize: 13,
+              color: colors.status.error,
+              marginTop: 12,
+            }}
+          >
+            {PAYMENT_STRINGS.payInsufficient}
+          </Text>
+        )}
+      </ScrollView>
+
+      {/* CTA */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: Math.max(insets.bottom, 16),
+          backgroundColor: colors.surface.primary,
+          borderTopWidth: 1,
+          borderTopColor: colors.border.divider,
+        }}
+      >
+        <Button
+          variant="cta"
+          label={PAYMENT_STRINGS.payConfirm(
+            isAmountValid && amount !== null
+              ? amount.toLocaleString('en-US')
+              : '0',
+          )}
+          onPress={handleConfirm}
+          disabled={!canConfirm}
+          accessibilityLabel={PAYMENT_STRINGS.payConfirm(
+            isAmountValid && amount !== null
+              ? amount.toLocaleString('en-US')
+              : '0',
+          )}
+        />
+      </View>
+    </SafeAreaView>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      style={{
+        fontFamily: 'Inter_600SemiBold',
+        fontSize: 13,
+        color: colors.text.secondary,
+        marginBottom: 10,
+        letterSpacing: 0.08 * 13,
+        textTransform: 'uppercase',
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function ReceiptRow({
+  label,
+  value,
+  isLast = false,
+}: {
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 10,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: colors.border.divider,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: 'Inter_500Medium',
+          fontSize: 12,
+          color: colors.text.tertiary,
+          letterSpacing: 0.08 * 12,
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 13,
+          color: colors.text.primary,
+          maxWidth: '60%',
+          textAlign: 'right',
+        }}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
