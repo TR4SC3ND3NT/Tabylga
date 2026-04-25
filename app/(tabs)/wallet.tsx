@@ -478,13 +478,13 @@ function BalanceCard({
       <Text
         style={{
           fontFamily: 'Inter_500Medium',
-          fontSize: 11,
+          fontSize: 10,
           color: colors.text.tertiary,
           letterSpacing: 0.08 * 11,
           textTransform: 'uppercase',
           marginBottom: 4,
         }}
-        numberOfLines={1}
+        numberOfLines={2}
       >
         {label}
       </Text>

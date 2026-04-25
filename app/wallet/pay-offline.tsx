@@ -668,7 +668,7 @@ function QrReadyView({
             }}
           >
             <QRCode
-              value={token.qrPayload}
+              value={token.qrDeepLink ?? token.qrPayload}
               size={210}
               color="#1A1A1A"
               backgroundColor="#fff"
@@ -696,6 +696,72 @@ function QrReadyView({
               {PAYMENT_STRINGS.qrPlaceholder}
             </Text>
           </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 6,
+              textAlign: 'center',
+            }}
+          >
+            Scan with Tabylga Merchant Mode
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 3,
+              textAlign: 'center',
+            }}
+          >
+            Or open this QR as Tabylga payment link
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 3,
+              textAlign: 'center',
+            }}
+          >
+            Reserve-backed offline token
+          </Text>
+        </View>
+
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 16,
+            backgroundColor: colors.status.warningLight,
+            borderWidth: 1,
+            borderColor: colors.border.divider,
+            marginBottom: 16,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 14,
+              color: colors.text.primary,
+              marginBottom: 6,
+            }}
+          >
+            Amount deducted from your offline reserve
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 19,
+              color: colors.text.secondary,
+            }}
+          >
+            Waiting for merchant scan. After merchant accepts, this payment
+            cannot be cancelled.
+          </Text>
         </View>
 
         {/* Token details */}

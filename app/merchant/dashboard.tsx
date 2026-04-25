@@ -19,6 +19,7 @@ import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
 import {
+  extractOfflinePayload,
   getOfflineMerchants,
   getOfflineTokens,
   getTransactions,
@@ -65,7 +66,6 @@ export default function MerchantDashboard() {
       ]);
       setTokens(
         offlineTokens
-          .filter((token) => token.status === 'created')
           .sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -116,15 +116,32 @@ export default function MerchantDashboard() {
 
     setScanningTokenId(token.id);
     try {
+      const offlinePayload = extractOfflinePayload(token.qrDeepLink ?? token.qrPayload);
+      if (!offlinePayload) {
+        router.push({
+          pathname: '/merchant/accept',
+          params: {
+            errorReason: 'invalid_payload',
+            tokenId: token.id,
+            merchantId: selectedMerchant.id,
+          },
+        } as never);
+        return;
+      }
+
       const verification = await merchantScanOfflineQR(
-        token.qrPayload,
+        offlinePayload,
         selectedMerchant.id,
       );
       if (!verification.ok || !verification.token) {
-        Alert.alert(
-          'Invalid or expired token.',
-          verification.reason ?? 'The QR could not be verified.',
-        );
+        router.push({
+          pathname: '/merchant/accept',
+          params: {
+            errorReason: verification.reason ?? 'unknown',
+            tokenId: verification.tokenId ?? token.id,
+            merchantId: selectedMerchant.id,
+          },
+        } as never);
         await refresh();
         return;
       }
@@ -299,7 +316,7 @@ export default function MerchantDashboard() {
             onPress={() =>
               Alert.alert(
                 'Camera scanner not enabled',
-                'Use Demo scan latest token for this Phase 6 prototype.',
+                'Use Demo scan latest token for this prototype.',
               )
             }
             style={{ marginBottom: 10 }}
@@ -311,6 +328,39 @@ export default function MerchantDashboard() {
             disabled={!latestToken || !!scanningTokenId}
             onPress={() => latestToken && scanToken(latestToken)}
           />
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 14,
+              backgroundColor: colors.brand.primaryLight,
+              borderWidth: 1,
+              borderColor: colors.border.divider,
+              marginTop: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 12,
+                color: colors.text.primary,
+                marginBottom: 4,
+              }}
+            >
+              Prototype note
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 12,
+                lineHeight: 18,
+                color: colors.text.secondary,
+              }}
+            >
+              External phone camera opens a Tabylga deep link. Real cross-device
+              verification would require a backend or bank partner infrastructure.
+              This demo stores offline tokens locally.
+            </Text>
+          </View>
           <Text
             style={{
               fontFamily: 'Inter_600SemiBold',
@@ -320,7 +370,7 @@ export default function MerchantDashboard() {
               marginBottom: 8,
             }}
           >
-            Waiting offline QR tokens
+            Offline QR tokens
           </Text>
           {tokens.length === 0 ? (
             <Text
@@ -583,6 +633,16 @@ function TokenRow({
             }}
           >
             KICB Demo token - expires {formatTime(token.expiresAt)}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 11,
+              color: token.status === 'created' ? colors.brand.primary : colors.status.warningText,
+              marginTop: 3,
+            }}
+          >
+            Status: {token.status}
           </Text>
         </View>
         <Text

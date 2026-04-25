@@ -15,11 +15,11 @@ export const PAYMENT_STRINGS = {
   statusOfflineReady: 'Offline Pay ready',
   statusNoOfflineReserve: 'Offline Pay not activated',
 
-  totalBalance: 'Total balance',
+  totalBalance: 'Remaining spendable balance',
   availableOnline: 'Available online',
-  offlineReserve: 'Offline reserve',
-  lockedOffline: 'Locked offline',
-  pendingSync: 'Pending sync',
+  offlineReserve: 'Reserved for future offline payments',
+  lockedOffline: 'Already deducted and waiting',
+  pendingSync: 'Offline payments waiting for internet',
 
   actionTopUp: 'Top up',
   actionPayOnlineQr: 'Pay Online QR',

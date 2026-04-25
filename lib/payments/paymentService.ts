@@ -98,9 +98,11 @@ export interface OfflineToken {
   canCancel: boolean;
   mockSignature: string;
   qrPayload: string;
+  qrDeepLink?: string;
 }
 
 export interface OfflineQrPayload {
+  version: 'tabylga_offline_v1';
   tokenId: string;
   transactionId: string;
   amount: number;
@@ -112,10 +114,27 @@ export interface OfflineQrPayload {
   mockSignature: string;
 }
 
+export type OfflineQrVerificationReason =
+  | 'invalid_payload'
+  | 'missing_fields'
+  | 'token_not_found'
+  | 'signature_or_payload_mismatch'
+  | 'expired'
+  | 'already_used'
+  | 'merchant_not_supported'
+  | 'unknown';
+
 export interface OfflineQrVerification {
   ok: boolean;
-  reason?: string;
+  reason?: OfflineQrVerificationReason;
   token?: OfflineToken;
+  tokenId?: string;
+  transactionId?: string;
+  amount?: number;
+  currency?: Currency;
+  merchantId?: string;
+  expiresAt?: string;
+  status?: 'valid';
   issuer: 'KICB_DEMO';
   signatureVerified: boolean;
   reserveBacked: boolean;
@@ -142,6 +161,7 @@ const DEFAULT_WALLET: Wallet = {
 };
 
 const OFFLINE_TOKEN_TTL_MS = 1000 * 60 * 60 * 24; // 24h demo TTL
+const OFFLINE_DEEP_LINK_PREFIX = 'tabylga://merchant/accept?payload=';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function nowIso(): string {
@@ -161,6 +181,35 @@ function makeReceiptCode(): string {
 
 function makeNonce(): string {
   return Math.random().toString(36).slice(2, 12);
+}
+
+function makeOfflineQrDeepLink(qrPayload: string): string {
+  return `${OFFLINE_DEEP_LINK_PREFIX}${encodeURIComponent(qrPayload)}`;
+}
+
+export function extractOfflinePayload(scannedValue: string): string | null {
+  const value = scannedValue.trim();
+  if (!value) return null;
+
+  if (value.startsWith(OFFLINE_DEEP_LINK_PREFIX)) {
+    const encoded = value.slice(OFFLINE_DEEP_LINK_PREFIX.length).split('&')[0];
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return null;
+    }
+  }
+
+  if (value.startsWith('{')) {
+    try {
+      JSON.parse(value);
+      return value;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -447,6 +496,7 @@ export async function createOfflineCustomerQRPayment(
 
   const next: Wallet = {
     ...wallet,
+    totalBalance: wallet.totalBalance - amount,
     offlineReserve: wallet.offlineReserve - amount,
     lockedOffline: wallet.lockedOffline + amount,
     pendingSync: wallet.pendingSync + amount,
@@ -463,6 +513,7 @@ export async function createOfflineCustomerQRPayment(
   );
 
   const qrPayloadObj: OfflineQrPayload = {
+    version: 'tabylga_offline_v1',
     tokenId,
     transactionId: txId,
     amount,
@@ -474,6 +525,7 @@ export async function createOfflineCustomerQRPayment(
     mockSignature,
   };
   const qrPayload = JSON.stringify(qrPayloadObj);
+  const qrDeepLink = makeOfflineQrDeepLink(qrPayload);
 
   const tx: Transaction = {
     id: txId,
@@ -507,6 +559,7 @@ export async function createOfflineCustomerQRPayment(
     canCancel: true,
     mockSignature,
     qrPayload,
+    qrDeepLink,
   };
   await saveOfflineToken(token);
 
@@ -514,22 +567,53 @@ export async function createOfflineCustomerQRPayment(
 }
 
 // ── Merchant: scan + accept ─────────────────────────────────────────────────
-function parseQrPayload(raw: string): OfflineQrPayload | null {
+function parseQrPayload(raw: string): OfflineQrPayload | null | 'missing_fields' {
   try {
-    const parsed = JSON.parse(raw) as OfflineQrPayload;
+    const parsed = JSON.parse(raw) as Partial<OfflineQrPayload>;
     if (
+      typeof parsed?.version === 'string' &&
       typeof parsed?.tokenId === 'string' &&
       typeof parsed?.transactionId === 'string' &&
       typeof parsed?.amount === 'number' &&
-      parsed?.issuer === 'KICB_DEMO' &&
+      typeof parsed?.currency === 'string' &&
+      typeof parsed?.issuer === 'string' &&
+      typeof parsed?.createdAt === 'string' &&
+      typeof parsed?.expiresAt === 'string' &&
+      typeof parsed?.nonce === 'string' &&
       typeof parsed?.mockSignature === 'string'
     ) {
-      return parsed;
+      if (
+        parsed.version !== 'tabylga_offline_v1' ||
+        parsed.currency !== 'KGS' ||
+        parsed.issuer !== 'KICB_DEMO'
+      ) {
+        return null;
+      }
+      return parsed as OfflineQrPayload;
     }
-    return null;
+    return 'missing_fields';
   } catch {
     return null;
   }
+}
+
+async function expireCreatedOfflineToken(token: OfflineToken): Promise<void> {
+  if (token.status !== 'created' && token.status !== 'shown_to_merchant') return;
+
+  await updateOfflineToken(token.id, { status: 'expired', canCancel: false });
+  await updateTransaction(token.transactionId, {
+    status: 'expired',
+    canCancel: false,
+  });
+
+  const wallet = await getWallet();
+  await saveWallet({
+    ...wallet,
+    totalBalance: wallet.totalBalance + token.amount,
+    offlineReserve: wallet.offlineReserve + token.amount,
+    lockedOffline: Math.max(0, wallet.lockedOffline - token.amount),
+    pendingSync: Math.max(0, wallet.pendingSync - token.amount),
+  });
 }
 
 export async function merchantScanOfflineQR(
@@ -537,9 +621,16 @@ export async function merchantScanOfflineQR(
   merchantId: string,
 ): Promise<OfflineQrVerification> {
   const merchant = getPaymentMerchantById(merchantId);
-  const baseFail = (reason: string): OfflineQrVerification => ({
+  const baseFail = (reason: OfflineQrVerificationReason, token?: OfflineToken): OfflineQrVerification => ({
     ok: false,
     reason,
+    token,
+    tokenId: token?.id,
+    transactionId: token?.transactionId,
+    amount: token?.amount,
+    currency: token?.currency,
+    merchantId,
+    expiresAt: token?.expiresAt,
     issuer: 'KICB_DEMO',
     signatureVerified: false,
     reserveBacked: false,
@@ -548,42 +639,61 @@ export async function merchantScanOfflineQR(
     risk: 'high',
   });
 
-  if (!merchant) return baseFail('Merchant profile not found.');
+  if (!merchant) return baseFail('merchant_not_supported');
   if (!merchant.offlineQrSupported) {
-    return baseFail('Merchant does not support offline QR.');
+    return baseFail('merchant_not_supported');
   }
 
   const payload = parseQrPayload(qrPayload);
-  if (!payload) return baseFail('Invalid QR payload.');
+  if (payload === 'missing_fields') return baseFail('missing_fields');
+  if (!payload) return baseFail('invalid_payload');
 
   const tokens = await getOfflineTokens();
   const token = tokens.find((t) => t.id === payload.tokenId);
-  if (!token) return baseFail('Token not found.');
+  if (!token) {
+    return {
+      ...baseFail('token_not_found'),
+      tokenId: payload.tokenId,
+      transactionId: payload.transactionId,
+      amount: payload.amount,
+      currency: payload.currency,
+      expiresAt: payload.expiresAt,
+    };
+  }
+
+  const consistent =
+    payload.tokenId === token.id &&
+    payload.transactionId === token.transactionId &&
+    payload.amount === token.amount &&
+    payload.currency === token.currency &&
+    payload.issuer === token.issuer &&
+    payload.createdAt === token.createdAt &&
+    payload.expiresAt === token.expiresAt &&
+    payload.mockSignature === token.mockSignature;
+  if (!consistent) return baseFail('signature_or_payload_mismatch', token);
+
+  if (token.status !== 'created') {
+    if (token.status === 'expired') return baseFail('expired', token);
+    return baseFail('already_used', token);
+  }
 
   const expired = Date.now() >= new Date(token.expiresAt).getTime();
   if (expired) {
-    await updateOfflineToken(token.id, { status: 'expired', canCancel: false });
-    await updateTransaction(token.transactionId, {
-      status: 'expired',
-      canCancel: false,
-    });
-    return { ...baseFail('Token expired.'), notExpired: false };
+    await expireCreatedOfflineToken(token);
+    const refreshed = (await getOfflineTokens()).find((t) => t.id === token.id) ?? token;
+    return { ...baseFail('expired', refreshed), notExpired: false };
   }
-
-  if (token.status !== 'created') {
-    return baseFail(`Token already ${token.status}.`);
-  }
-
-  const expectedSig = token.mockSignature;
-  const signatureVerified = expectedSig === payload.mockSignature;
-  if (!signatureVerified) return baseFail('Signature mismatch.');
-
-  await updateOfflineToken(token.id, { status: 'shown_to_merchant' });
-  const refreshed = (await getOfflineTokens()).find((t) => t.id === token.id) ?? token;
 
   return {
     ok: true,
-    token: refreshed,
+    token,
+    tokenId: token.id,
+    transactionId: token.transactionId,
+    amount: token.amount,
+    currency: token.currency,
+    merchantId,
+    expiresAt: token.expiresAt,
+    status: 'valid',
     issuer: 'KICB_DEMO',
     signatureVerified: true,
     reserveBacked: true,
@@ -605,13 +715,21 @@ export async function merchantAcceptOfflinePayment(
 ): Promise<MerchantAcceptResult> {
   const merchant = getPaymentMerchantById(merchantId);
   if (!merchant) throw new Error('Merchant not found.');
+  if (!merchant.offlineQrSupported) {
+    throw new Error('Merchant does not support offline QR payments.');
+  }
 
   const tokens = await getOfflineTokens();
   const token = tokens.find((t) => t.id === tokenId);
   if (!token) throw new Error('Token not found.');
 
-  if (token.status !== 'created' && token.status !== 'shown_to_merchant') {
-    throw new Error(`Token cannot be accepted in status ${token.status}.`);
+  if (token.status !== 'created') {
+    throw new Error('Token already used');
+  }
+
+  if (Date.now() >= new Date(token.expiresAt).getTime()) {
+    await expireCreatedOfflineToken(token);
+    throw new Error('Token expired');
   }
 
   const acceptedAt = nowIso();
@@ -668,7 +786,6 @@ export async function syncOfflinePayments(): Promise<SyncResult> {
   const wallet = await getWallet();
   const next: Wallet = {
     ...wallet,
-    totalBalance: wallet.totalBalance - syncedAmount,
     lockedOffline: Math.max(0, wallet.lockedOffline - syncedAmount),
     pendingSync: Math.max(0, wallet.pendingSync - syncedAmount),
   };
@@ -735,10 +852,12 @@ export async function sendViaBluetoothDemo(
   if (input.tokenId) {
     const existing = (await getOfflineTokens()).find((t) => t.id === input.tokenId);
     if (!existing) throw new Error('Token not found.');
-    if (existing.status !== 'created' && existing.status !== 'shown_to_merchant') {
-      throw new Error(
-        `Token cannot be sent over Bluetooth in status ${existing.status}.`,
-      );
+    if (existing.status !== 'created') {
+      throw new Error('Token already used');
+    }
+    if (Date.now() >= new Date(existing.expiresAt).getTime()) {
+      await expireCreatedOfflineToken(existing);
+      throw new Error('Token expired');
     }
     token = existing;
     transactionId = existing.transactionId;
