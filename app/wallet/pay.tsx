@@ -10,7 +10,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check, QrCode, Star } from 'lucide-react-native';
+import { ArrowLeft, Bluetooth, Check, QrCode, ShieldCheck, Star, Store } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
@@ -181,6 +181,10 @@ export default function PayOnlineQRScreen() {
               value="Online QR (demo)"
             />
             <ReceiptRow
+              label="Provider"
+              value={resultMerchant.providerLabel}
+            />
+            <ReceiptRow
               label={PAYMENT_STRINGS.receiptStatus}
               value={PAYMENT_STRINGS.statusLabels[resultTx.status]}
             />
@@ -289,6 +293,47 @@ export default function PayOnlineQRScreen() {
             </Text>
           </View>
         )}
+
+        <Card
+          style={{
+            padding: 16,
+            backgroundColor: colors.brand.primaryLight,
+            marginBottom: 16,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <Store size={20} color={colors.brand.primary} strokeWidth={2} />
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 15,
+                color: colors.text.primary,
+              }}
+            >
+              Provider-agnostic payment layer
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 19,
+              color: colors.text.secondary,
+              marginBottom: 12,
+            }}
+          >
+            Tabylga uses a provider-agnostic payment layer. In the prototype,
+            payments are simulated. In production, services can be connected
+            through licensed partners such as KICB, MBANK/MTravel or other local
+            payment providers.
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
+            <ProviderChip label="KICB Demo" />
+            <ProviderChip label="MBANK / MTravel Demo" />
+            <ProviderChip label="Online QR Demo" />
+            <ProviderChip label="MPay-style Bluetooth Demo" icon="bluetooth" />
+          </View>
+        </Card>
 
         {/* Mock scanner */}
         <View
@@ -422,8 +467,14 @@ export default function PayOnlineQRScreen() {
                     }}
                     numberOfLines={1}
                   >
-                    {m.region} · {m.type}
+                    {m.region} - {m.type}
                   </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                    <ProviderChip label={m.providerLabel} />
+                    {m.onlineQrSupported ? <CapabilityChip label="Online QR" icon="qr" /> : null}
+                    {m.offlineQrSupported ? <CapabilityChip label="Offline QR" icon="shield" /> : null}
+                    {m.bluetoothDemoSupported ? <CapabilityChip label="Bluetooth demo" icon="bluetooth" /> : null}
+                  </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Star
@@ -547,6 +598,71 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
     >
       {children}
     </Text>
+  );
+}
+
+function ProviderChip({ label, icon }: { label: string; icon?: 'bluetooth' }) {
+  return (
+    <View
+      style={{
+        minHeight: 26,
+        paddingHorizontal: 9,
+        borderRadius: 999,
+        backgroundColor: colors.surface.card,
+        borderWidth: 1,
+        borderColor: colors.border.divider,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+      }}
+    >
+      {icon === 'bluetooth' ? (
+        <Bluetooth size={12} color={colors.brand.primary} strokeWidth={2} />
+      ) : null}
+      <Text
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 11,
+          color: colors.brand.primary,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function CapabilityChip({
+  label,
+  icon,
+}: {
+  label: string;
+  icon: 'qr' | 'shield' | 'bluetooth';
+}) {
+  const Icon = icon === 'qr' ? QrCode : icon === 'shield' ? ShieldCheck : Bluetooth;
+  return (
+    <View
+      style={{
+        minHeight: 24,
+        paddingHorizontal: 8,
+        borderRadius: 999,
+        backgroundColor: colors.status.warningLight,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+      }}
+    >
+      <Icon size={11} color={colors.brand.cta} strokeWidth={2} />
+      <Text
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 10,
+          color: colors.brand.cta,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 

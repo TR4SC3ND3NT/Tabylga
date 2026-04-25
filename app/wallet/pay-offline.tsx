@@ -183,7 +183,12 @@ export default function PayOfflineScreen() {
         transaction={resultTx}
         token={resultToken}
         onOpenMerchantMode={() => router.push('/merchant/dashboard')}
-        onSendBluetooth={() => router.push('/wallet/bluetooth')}
+        onSendBluetooth={() =>
+          router.push({
+            pathname: '/wallet/bluetooth',
+            params: { tokenId: resultToken.id },
+          } as never)
+        }
         onBack={() => router.back()}
       />
     );

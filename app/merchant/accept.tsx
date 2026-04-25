@@ -1,175 +1,542 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, Text, Pressable, TextInput, Animated } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Delete } from 'lucide-react-native';
-import QRCode from 'react-native-qrcode-svg';
-import { useStrings } from '../../lib/i18n';
-import { colors } from '../../constants/colors';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  ReceiptText,
+  ShieldCheck,
+  XCircle,
+} from 'lucide-react-native';
+
 import { Button } from '../../components/Button';
+import { colors } from '../../constants/colors';
+import { shadows } from '../../constants/shadows';
+import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
+import {
+  getOfflineMerchants,
+  getOfflineTokens,
+  getTransactions,
+  merchantAcceptOfflinePayment,
+  type MerchantAcceptResult,
+  type OfflineToken,
+  type Transaction,
+} from '../../lib/payments/paymentService';
+import { formatKgs } from '../../lib/payments/paymentStrings';
 
-type Stage = 'entry' | 'qr';
-
-const KEYS = ['1','2','3','4','5','6','7','8','9','.','0','⌫'];
-const TOTAL_SECONDS = 298;
-
-function formatCountdown(s: number): string {
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+function formatTime(value: string | null): string {
+  if (!value) return 'Not set';
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
-export default function AcceptScreen() {
+export default function MerchantAcceptScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const strings = useStrings();
-  const [currency, setCurrency] = useState<'KGS'|'USD'>('KGS');
-  const [amountStr, setAmountStr] = useState('0');
-  const [note, setNote] = useState('');
-  const [stage, setStage] = useState<Stage>('entry');
-  const [countdown, setCountdown] = useState(TOTAL_SECONDS);
+  const params = useLocalSearchParams<{ tokenId?: string; merchantId?: string }>();
+  const [token, setToken] = useState<OfflineToken | null>(null);
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [merchant, setMerchant] = useState<PaymentMerchant | null>(null);
+  const [accepted, setAccepted] = useState<MerchantAcceptResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [accepting, setAccepting] = useState(false);
 
-  useEffect(() => {
-    if (stage !== 'qr') return;
-    const t = setInterval(() => setCountdown(c => Math.max(0, c - 1)), 1000);
-    return () => clearInterval(t);
-  }, [stage]);
+  const refresh = useCallback(async () => {
+    try {
+      const [tokens, transactions] = await Promise.all([
+        getOfflineTokens(),
+        getTransactions(),
+      ]);
+      const nextToken = tokens.find((item) => item.id === params.tokenId) ?? null;
+      const nextMerchant =
+        getOfflineMerchants().find((item) => item.id === params.merchantId) ?? null;
+      const nextTx = nextToken
+        ? transactions.find((item) => item.id === nextToken.transactionId) ?? null
+        : null;
 
-  function handleKey(k: string) {
-    setAmountStr(prev => {
-      if (k === '⌫') return prev.length > 1 ? prev.slice(0, -1) : '0';
-      if (k === '.' && prev.includes('.')) return prev;
-      if (prev === '0' && k !== '.') return k;
-      return prev + k;
-    });
+      setToken(nextToken);
+      setTransaction(nextTx);
+      setMerchant(nextMerchant);
+    } catch (err) {
+      console.warn('[merchant-accept] failed to load verification', err);
+      Alert.alert('Offline payment request', 'Failed to load token details.');
+    } finally {
+      setLoading(false);
+    }
+  }, [params.merchantId, params.tokenId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        if (active) await refresh();
+      })();
+      return () => {
+        active = false;
+      };
+    }, [refresh]),
+  );
+
+  async function acceptPayment() {
+    if (!token || !merchant || accepting) return;
+    setAccepting(true);
+    try {
+      const result = await merchantAcceptOfflinePayment(token.id, merchant.id);
+      setAccepted(result);
+      setToken(result.token);
+      setTransaction(result.transaction);
+      setMerchant(result.merchant);
+    } catch (err) {
+      Alert.alert(
+        'Cannot accept payment',
+        err instanceof Error ? err.message : 'The token could not be accepted.',
+      );
+    } finally {
+      setAccepting(false);
+    }
   }
 
-  const amount = parseFloat(amountStr) || 0;
-  const qrData = JSON.stringify({ type: 'tabylga_pay', merchantId: 'merchant_demo_001', amount, currency, nonce: Date.now(), timestamp: Date.now() });
-
-  if (stage === 'qr') {
+  if (loading) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
         <StatusBar style="dark" />
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-          <Pressable onPress={() => { setStage('entry'); setCountdown(TOTAL_SECONDS); }} accessibilityLabel={strings.common.back} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.brand.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!token || !merchant || !transaction) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 12,
+            paddingTop: 8,
+            paddingBottom: 12,
+          }}
+        >
+          <Pressable
+            onPress={() => router.replace('/merchant/dashboard')}
+            accessibilityLabel="Back"
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
             <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
           </Pressable>
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.text.primary, flex: 1, textAlign: 'center', marginRight: 44 }}>
-            {strings.merchantExtra.showToCustomer}
-          </Text>
         </View>
-
-        <View className="flex-1 items-center justify-center px-8">
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 40, color: colors.text.primary, marginBottom: 4 }}>
-            {amount.toLocaleString('ru-RU')} {currency}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+          <XCircle size={44} color={colors.status.error} strokeWidth={1.8} />
+          <Text
+            style={{
+              fontFamily: 'Fraunces_600SemiBold',
+              fontSize: 25,
+              color: colors.text.primary,
+              textAlign: 'center',
+              marginTop: 16,
+            }}
+          >
+            Invalid or expired token.
           </Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: colors.text.secondary, marginBottom: 28 }}>
-            {strings.merchantExtra.showToCustomer}
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 14,
+              lineHeight: 20,
+              color: colors.text.secondary,
+              textAlign: 'center',
+              marginTop: 8,
+              marginBottom: 22,
+            }}
+          >
+            The merchant should ask the tourist to generate a new KICB Demo offline QR.
           </Text>
-
-          <View style={{ padding: 20, borderRadius: 20, backgroundColor: colors.surface.card, shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4, marginBottom: 20 }}>
-            <QRCode value={qrData} size={220} color={colors.text.primary} backgroundColor={colors.surface.card} />
-          </View>
-
-          <View style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: countdown < 60 ? colors.status.errorLight : colors.status.warningLight }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: countdown < 60 ? colors.status.error : colors.text.primary }}>
-              {strings.merchantExtra.expiresIn.replace('{time}', formatCountdown(countdown))}
-            </Text>
-          </View>
-        </View>
-
-        <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) }}>
           <Button
-            variant="secondary"
-            label={strings.merchantExtra.cancelPayment}
-            onPress={() => { setStage('entry'); setCountdown(TOTAL_SECONDS); }}
-            style={{ borderColor: colors.border.divider, backgroundColor: 'transparent' }}
+            label="Back to Merchant Mode"
+            onPress={() => router.replace('/merchant/dashboard')}
           />
         </View>
       </SafeAreaView>
     );
   }
 
+  if (accepted) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <Header title="Payment accepted offline" onBack={() => router.replace('/merchant/dashboard')} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            padding: 20,
+            paddingBottom: Math.max(insets.bottom, 18) + 24,
+          }}
+        >
+          <View
+            style={[
+              {
+                padding: 18,
+                borderRadius: 22,
+                backgroundColor: colors.status.successLight,
+                alignItems: 'center',
+                marginBottom: 16,
+              },
+              shadows.card,
+            ]}
+          >
+            <CheckCircle2
+              size={48}
+              color={colors.status.successText}
+              strokeWidth={1.8}
+            />
+            <Text
+              style={{
+                fontFamily: 'Fraunces_600SemiBold',
+                fontSize: 27,
+                lineHeight: 32,
+                color: colors.text.primary,
+                textAlign: 'center',
+                marginTop: 14,
+              }}
+            >
+              Payment accepted offline
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 14,
+                lineHeight: 20,
+                color: colors.text.secondary,
+                textAlign: 'center',
+                marginTop: 8,
+              }}
+            >
+              Customer cannot cancel this payment after acceptance. Settlement
+              will sync when internet is available.
+            </Text>
+          </View>
+
+          <View style={[stylesCard, shadows.card]}>
+            <Detail label="Amount" value={formatKgs(accepted.transaction.amount)} />
+            <Detail label="Merchant" value={accepted.merchant.name} />
+            <Detail label="Status" value="Pending sync" />
+            <Detail label="Receipt code" value={accepted.transaction.receiptCode} />
+            <Detail label="Token ID" value={accepted.token.id} />
+          </View>
+
+          <View style={{ gap: 10, marginTop: 18 }}>
+            <Button
+              label="Back to Merchant Mode"
+              onPress={() => router.replace('/merchant/dashboard')}
+            />
+            <Button
+              variant="secondary"
+              label="Sync payments"
+              onPress={() =>
+                Alert.alert(
+                  'Sync payments',
+                  'Sync accepted offline payments will be implemented in Phase 7.',
+                )
+              }
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  const notExpired = Date.now() < new Date(token.expiresAt).getTime();
+  const canAccept =
+    notExpired && (token.status === 'created' || token.status === 'shown_to_merchant');
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
+      <Header title="Offline payment request" onBack={() => router.back()} />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityLabel={strings.common.back} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
-          <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
-        </Pressable>
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.text.primary, flex: 1, textAlign: 'center' }}>
-          {strings.merchantExtra.acceptTitle}
-        </Text>
-
-        {/* Currency toggle */}
-        <View style={{ flexDirection: 'row', borderRadius: 8, backgroundColor: colors.surface.primary, borderWidth: 1, borderColor: colors.border.divider, overflow: 'hidden' }}>
-          {(['KGS','USD'] as const).map(c => (
-            <Pressable key={c} onPress={() => setCurrency(c)} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: currency === c ? colors.brand.primary : 'transparent' }}>
-              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: currency === c ? '#fff' : colors.text.secondary }}>{c}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* Amount display */}
-      <View className="items-center py-6">
-        <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 48, lineHeight: 54, color: colors.text.primary }}>
-          {parseFloat(amountStr).toLocaleString('ru-RU')} {currency}
-        </Text>
-        {amountStr !== '0' && (
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.text.secondary, marginTop: 6 }}>
-            ≈ {currency === 'KGS' ? `$${(parseFloat(amountStr) / 87).toFixed(2)}` : `${Math.round(parseFloat(amountStr) * 87).toLocaleString('ru-RU')} KGS`}
-          </Text>
-        )}
-      </View>
-
-      {/* Note */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
-        <TextInput
-          value={note}
-          onChangeText={setNote}
-          placeholder={strings.merchantExtra.addNote}
-          placeholderTextColor={colors.text.tertiary}
-          style={{ height: 44, borderRadius: 10, borderWidth: 1, borderColor: colors.border.divider, backgroundColor: colors.surface.card, paddingHorizontal: 14, fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.text.primary }}
-        />
-      </View>
-
-      {/* Keypad */}
-      <View style={{ flex: 1, paddingHorizontal: 20 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {KEYS.map((k) => (
-            <Pressable
-              key={k}
-              onPress={() => handleKey(k)}
-              accessibilityLabel={k === '⌫' ? strings.common.close : k}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                width: '30.5%', height: 72, borderRadius: 12,
-                backgroundColor: k === '⌫' ? colors.status.errorLight : colors.surface.card,
-                borderWidth: 1, borderColor: colors.border.divider,
-                alignItems: 'center', justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: Math.max(insets.bottom, 18) + 24,
+        }}
+      >
+        <View
+          style={[
+            {
+              padding: 18,
+              borderRadius: 22,
+              backgroundColor: colors.brand.primaryLight,
+              marginBottom: 16,
+            },
+            shadows.card,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 16,
+                backgroundColor: colors.surface.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              {k === '⌫'
-                ? <Delete size={22} color={colors.status.error} strokeWidth={1.5} />
-                : <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 24, color: colors.text.primary }}>{k}</Text>
-              }
-            </Pressable>
-          ))}
+              <ShieldCheck size={25} color={colors.brand.primary} strokeWidth={1.8} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontSize: 15,
+                  color: colors.text.primary,
+                }}
+              >
+                KICB Demo token verified
+              </Text>
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 13,
+                  lineHeight: 18,
+                  color: colors.text.secondary,
+                  marginTop: 2,
+                }}
+              >
+                Prototype only. No real bank integration or settlement.
+              </Text>
+            </View>
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 36,
+              lineHeight: 42,
+              color: colors.text.primary,
+              marginTop: 18,
+            }}
+          >
+            {formatKgs(token.amount)}
+          </Text>
         </View>
-      </View>
 
-      {/* CTA */}
-      <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16), paddingTop: 12 }}>
-        <Button
-          variant="cta"
-          label={strings.merchantExtra.generateQr}
-          onPress={() => { if (amount > 0) setStage('qr'); }}
-          disabled={amount <= 0}
-        />
-      </View>
+        <View style={[stylesCard, shadows.card]}>
+          <Detail label="Amount" value={formatKgs(token.amount)} />
+          <Detail label="Currency" value="KGS" />
+          <Detail label="Merchant name" value={merchant.name} />
+          <Detail label="Issuer" value="KICB Demo" />
+          <Detail label="Signature" value="verified" />
+          <Detail label="Reserve-backed token" value="yes" />
+          <Detail label="One-time token" value="yes" />
+          <Detail label="Not expired" value={notExpired ? 'yes' : 'no'} />
+          <Detail label="Risk" value="low" />
+          <Detail label="Token ID" value={token.id} />
+          <Detail label="Expires at" value={formatTime(token.expiresAt)} />
+        </View>
+
+        <View style={{ marginTop: 16, marginBottom: 16 }}>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 16,
+              color: colors.text.primary,
+              marginBottom: 10,
+            }}
+          >
+            Trust signals
+          </Text>
+          <View style={{ gap: 8 }}>
+            <TrustSignal label="Issued by KICB Demo" />
+            <TrustSignal label="Signature verified" />
+            <TrustSignal label="Reserve-backed token" />
+            <TrustSignal label="One-time token" />
+            <TrustSignal label="Not expired" />
+            <TrustSignal label="Receipt will be saved for sync" />
+          </View>
+        </View>
+
+        <View
+          style={{
+            padding: 14,
+            borderRadius: 16,
+            backgroundColor: colors.status.warningLight,
+            borderWidth: 1,
+            borderColor: colors.border.divider,
+            marginBottom: 18,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 13,
+              color: colors.text.primary,
+              marginBottom: 4,
+            }}
+          >
+            Prototype only
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 19,
+              color: colors.text.secondary,
+            }}
+          >
+            This is a demo. In production, the token would be issued and
+            settled by a licensed banking partner.
+          </Text>
+        </View>
+
+        <View style={{ gap: 10 }}>
+          <Button
+            variant="cta"
+            label={accepting ? 'Accepting...' : 'Accept payment'}
+            disabled={!canAccept || accepting}
+            icon={<ReceiptText size={18} color="#fff" strokeWidth={2} />}
+            onPress={acceptPayment}
+          />
+          <Button
+            variant="ghost"
+            label="Reject / Back"
+            onPress={() => router.replace('/merchant/dashboard')}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+function Header({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border.divider,
+      }}
+    >
+      <Pressable
+        onPress={onBack}
+        accessibilityLabel="Back"
+        accessibilityRole="button"
+        style={({ pressed }) => ({
+          width: 44,
+          height: 44,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
+      </Pressable>
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: 'Inter_700Bold',
+          fontSize: 17,
+          color: colors.text.primary,
+          textAlign: 'center',
+          marginRight: 44,
+        }}
+      >
+        {title}
+      </Text>
+    </View>
+  );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border.divider,
+      }}
+    >
+      <Text
+        style={{
+          width: 126,
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 12,
+          color: colors.text.secondary,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: 'Inter_700Bold',
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.text.primary,
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function TrustSignal({ label }: { label: string }) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        padding: 12,
+        borderRadius: 14,
+        backgroundColor: colors.surface.card,
+        borderWidth: 1,
+        borderColor: colors.border.divider,
+      }}
+    >
+      <CheckCircle2 size={18} color={colors.status.successText} strokeWidth={2} />
+      <Text
+        style={{
+          flex: 1,
+          fontFamily: 'Inter_700Bold',
+          fontSize: 13,
+          color: colors.text.primary,
+        }}
+      >
+        {label}
+      </Text>
+      <Clock size={15} color={colors.text.tertiary} strokeWidth={1.7} />
+    </View>
+  );
+}
+
+const stylesCard = {
+  padding: 16,
+  borderRadius: 18,
+  backgroundColor: colors.surface.card,
+};
