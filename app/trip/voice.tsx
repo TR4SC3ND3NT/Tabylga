@@ -4,12 +4,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Mic, Keyboard, X } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 
 export default function VoiceScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const outerPulse = useRef(new Animated.Value(1)).current;
 

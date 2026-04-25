@@ -2,6 +2,7 @@
   "expo": {
     "name": "tabylga",
     "slug": "tabylga",
+    "scheme": "tabylga",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +14,16 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "kg.tabylga.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Tabylga uses your location to show nearby places and generate routes from your current position.",
+        "NSCameraUsageDescription": "Tabylga uses the camera to scan merchant QR codes.",
+        "NSPhotoLibraryUsageDescription": "Tabylga can attach photos to reviews when you choose images from your library.",
+        "NSBluetoothAlwaysUsageDescription": "Tabylga uses Bluetooth for offline payment handshakes with nearby merchants.",
+        "NSBluetoothPeripheralUsageDescription": "Tabylga uses Bluetooth for offline payment handshakes with nearby merchants."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +40,19 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Tabylga to use your location to show nearby places and generate routes."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Tabylga to use your camera to scan merchant QR codes."
+        }
+      ]
     ],
     "extra": {
       "router": {},

@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 
@@ -30,6 +30,7 @@ function formatPhoneDisplay(raw: string): string {
 export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const { startPhoneAuth, loading, error } = useAuthStore();
 
   const [phoneDigits, setPhoneDigits] = useState('');

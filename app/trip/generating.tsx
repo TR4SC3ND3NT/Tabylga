@@ -5,21 +5,22 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Sparkles, AlertTriangle } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
-
-const STATUS_MESSAGES = [
-  strings.planner.genStep1,
-  strings.planner.genStep2,
-  strings.planner.genStep3,
-  strings.planner.genStep4,
-  strings.planner.genStep5,
-];
 
 export default function GeneratingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const { generateTrip, isGenerating, error, generatedItinerary, resetTrip } = useTripStore();
+  const statusMessages = [
+    'Matching your travel style',
+    'Checking your budget',
+    'Choosing stays near your route',
+    'Planning transport between regions',
+    'Adding food and activities',
+    'Preparing offline-ready details',
+  ];
 
   const [statusIndex, setStatusIndex] = useState(0);
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -40,7 +41,7 @@ export default function GeneratingScreen() {
     return () => loop.stop();
   }, []);
 
-  // Trigger Gemini once
+  // Trigger local deterministic planner once
   useEffect(() => {
     generateTrip();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,16 +51,16 @@ export default function GeneratingScreen() {
   useEffect(() => {
     if (!isGenerating) return;
     const t = setInterval(() => {
-      setStatusIndex((i) => Math.min(i + 1, STATUS_MESSAGES.length - 2));
-    }, 2000);
+              setStatusIndex((i) => Math.min(i + 1, statusMessages.length - 1));
+    }, 300);
     return () => clearInterval(t);
-  }, [isGenerating]);
+  }, [isGenerating, statusMessages.length]);
 
   // On success → "Ready!" then nav
   useEffect(() => {
     if (!generatedItinerary) return;
-    setStatusIndex(STATUS_MESSAGES.length - 1);
-    const t = setTimeout(() => router.replace('/trip/itinerary'), 1000);
+    setStatusIndex(statusMessages.length - 1);
+    const t = setTimeout(() => router.replace('/(tabs)'), 1000);
     return () => clearTimeout(t);
   }, [generatedItinerary]);
 
@@ -173,7 +174,7 @@ export default function GeneratingScreen() {
             color: colors.text.primary, textAlign: 'center', marginBottom: 16,
           }}
         >
-          {strings.planner.generatingTitle}
+          Building your trip
         </Text>
 
         <View style={{ minHeight: 24 }}>
@@ -184,7 +185,7 @@ export default function GeneratingScreen() {
               color: colors.text.secondary, textAlign: 'center',
             }}
           >
-            {STATUS_MESSAGES[statusIndex]}
+            {statusMessages[statusIndex]}
           </Text>
         </View>
       </View>

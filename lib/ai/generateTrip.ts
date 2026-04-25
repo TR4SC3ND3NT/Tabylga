@@ -1,186 +1,76 @@
-import { env } from '../env';
-import { getDb } from '../db/client';
-import type {
-  Purpose, Companions, ActivityLevel, BudgetRange, Interest, Dietary,
-} from '../../stores/tripStore';
+import {
+  DEFAULT_TRIP_PREFERENCES,
+  normalizeTravelerCount,
+  type BudgetTier,
+  type ExperienceKey,
+  type PlannerActivityLevel,
+  type RequirementKey,
+  type TravelersType,
+  type TravelStyle,
+  type TripDays,
+  type TripPreferences,
+} from '../data/tripPlaces';
+import { generateTrip as generateLocalTrip, type GeneratedTrip } from '../trip/tripGenerator';
 
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+export type Itinerary = GeneratedTrip;
 
-export interface ItineraryActivity {
-  time: string;
-  placeId: string;
-  placeName: string;
-  duration: string;
-  description: string;
-  costUsd: number;
+export interface GenerateTripInput extends Partial<TripPreferences> {
+  purpose?: string | null;
+  companions?: TravelersType | null;
+  companionCount?: number | null;
+  budget?: string | null;
+  interests?: string[];
+  dietaryNeeds?: string[];
 }
 
-export interface ItineraryDay {
-  day: number;
-  activities: ItineraryActivity[];
+function mapDays(value: number | null | undefined): TripDays {
+  return value === 3 || value === 5 || value === 7 || value === 10 || value === 14 ? value : DEFAULT_TRIP_PREFERENCES.days;
 }
 
-export interface Itinerary {
-  title: string;
-  days: ItineraryDay[];
-  totalCostUsd: number;
-  regionsCovered: string[];
-  tips: string[];
+function mapBudget(value: string | null | undefined): BudgetTier {
+  if (value === '100-300') return 'budget';
+  if (value === '300-600') return 'standard';
+  if (value === '600-1200') return 'comfort';
+  if (value === '1200+') return 'premium';
+  if (value === 'budget' || value === 'standard' || value === 'comfort' || value === 'premium') return value;
+  return DEFAULT_TRIP_PREFERENCES.budgetTier;
 }
 
-export interface GenerateTripInput {
-  purpose: Purpose;
-  companions: Companions;
-  companionCount: number;
-  kidsAgeRange: string | null;
-  days: number;
-  budget: BudgetRange;
-  activityLevel: ActivityLevel;
-  interests: Interest[];
-  dietaryNeeds: Dietary[];
+function mapActivity(value: string | null | undefined): PlannerActivityLevel {
+  if (value === 'chill') return 'easy';
+  if (value === 'active') return 'moderate';
+  if (value === 'extreme') return 'hard';
+  if (value === 'easy' || value === 'light' || value === 'moderate' || value === 'hard') return value;
+  return DEFAULT_TRIP_PREFERENCES.activityLevel;
 }
 
-interface PlaceRow {
-  id: string;
-  name: string;
-  lat: number;
-  lon: number;
-  category: string;
-  region: string;
-  tags: string | null;
+function mapStyle(value: string | null | undefined): TravelStyle | null {
+  if (!value) return null;
+  if (value === 'culture' || value === 'cultural') return 'cultural_discovery';
+  if (value === 'food') return 'food_local_life';
+  if (value === 'family') return 'family_trip';
+  if (value === 'leisure') return 'relax';
+  if (value === 'adventure' || value === 'business' || value === 'digital_nomad') return value;
+  return null;
 }
 
-const RESPONSE_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    title: { type: 'STRING' },
-    days: {
-      type: 'ARRAY',
-      items: {
-        type: 'OBJECT',
-        properties: {
-          day: { type: 'INTEGER' },
-          activities: {
-            type: 'ARRAY',
-            items: {
-              type: 'OBJECT',
-              properties: {
-                time: { type: 'STRING' },
-                placeId: { type: 'STRING' },
-                placeName: { type: 'STRING' },
-                duration: { type: 'STRING' },
-                description: { type: 'STRING' },
-                costUsd: { type: 'NUMBER' },
-              },
-              required: ['time', 'placeId', 'placeName', 'duration', 'description', 'costUsd'],
-            },
-          },
-        },
-        required: ['day', 'activities'],
-      },
-    },
-    totalCostUsd: { type: 'NUMBER' },
-    regionsCovered: { type: 'ARRAY', items: { type: 'STRING' } },
-    tips: { type: 'ARRAY', items: { type: 'STRING' } },
-  },
-  required: ['title', 'days', 'totalCostUsd', 'regionsCovered', 'tips'],
-};
-
-async function fetchAvailablePlaces(): Promise<PlaceRow[]> {
-  const db = await getDb();
-  return db.getAllAsync<PlaceRow>(
-    `SELECT id, name, lat, lon, category, region, tags FROM places LIMIT 60`
-  );
-}
-
-function buildPrompt(input: GenerateTripInput, places: PlaceRow[]): string {
-  const placesList = places
-    .map((p) => `  { "id": "${p.id}", "name": "${p.name}", "category": "${p.category}", "region": "${p.region}", "lat": ${p.lat}, "lon": ${p.lon}, "tags": ${p.tags || '{}'} }`)
-    .join(',\n');
-
-  return `You are Tabylga, an AI trip planner specialized in Kyrgyzstan tourism. Generate a realistic, day-by-day itinerary.
-
-TRAVELER PREFERENCES:
-- Purpose: ${input.purpose}
-- Companions: ${input.companions} (${input.companionCount} travelers${input.kidsAgeRange ? `, kids ${input.kidsAgeRange}` : ''})
-- Trip length: ${input.days} days
-- Budget per person: $${input.budget}
-- Activity level: ${input.activityLevel}
-- Interests: ${input.interests.join(', ') || 'general'}
-- Dietary/accessibility: ${input.dietaryNeeds.length ? input.dietaryNeeds.join(', ') : 'none'}
-
-AVAILABLE PLACES (you must use these — do not invent locations):
-[
-${placesList}
-]
-
-REQUIREMENTS:
-1. Use ONLY places from the list above. Reference each by its exact "id" and "name".
-2. Group activities by region per day to minimize travel time. Don't bounce between distant regions in one day.
-3. 3-5 activities per day, with realistic times between 08:00 and 21:00.
-4. Estimate realistic costUsd for each activity using tags (entry_fee_usd, price_usd) or sensible defaults: hotel/yurt $35-180/night, restaurant $8-25/meal, attraction $0-5, activity $20-50.
-5. totalCostUsd should sum all activities and roughly fit budget × days × travelers.
-6. Include 3-5 practical tips (altitude warnings, cash needs, weather, language tips).
-7. Title should be evocative and specific to the regions covered (e.g. "5 Days Through the Tien Shan").
-
-Return JSON exactly matching the response schema.`;
+function normalizeInput(input: GenerateTripInput): TripPreferences {
+  const travelersType = input.travelersType ?? input.companions ?? DEFAULT_TRIP_PREFERENCES.travelersType;
+  const legacyStyle = mapStyle(input.purpose);
+  return {
+    ...DEFAULT_TRIP_PREFERENCES,
+    ...input,
+    days: mapDays(input.days),
+    travelersType,
+    travelerCount: normalizeTravelerCount(travelersType, input.travelerCount ?? input.companionCount ?? DEFAULT_TRIP_PREFERENCES.travelerCount),
+    travelStyles: (input.travelStyles?.length ? input.travelStyles : legacyStyle ? [legacyStyle] : DEFAULT_TRIP_PREFERENCES.travelStyles) as TravelStyle[],
+    budgetTier: mapBudget(input.budgetTier ?? input.budget),
+    activityLevel: mapActivity(input.activityLevel),
+    experiences: (input.experiences?.length ? input.experiences : input.interests ?? DEFAULT_TRIP_PREFERENCES.experiences) as ExperienceKey[],
+    requirements: (input.requirements?.length ? input.requirements : input.dietaryNeeds ?? DEFAULT_TRIP_PREFERENCES.requirements) as RequirementKey[],
+  };
 }
 
 export async function generateTrip(input: GenerateTripInput): Promise<Itinerary> {
-  const places = await fetchAvailablePlaces();
-  if (places.length === 0) {
-    throw new Error('No places in database. Restart the app to seed.');
-  }
-
-  const prompt = buildPrompt(input, places);
-
-  const response = await fetch(`${GEMINI_URL}?key=${env.gemini.apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const errText = await response.text().catch(() => '');
-    throw new Error(`Gemini API ${response.status}: ${errText.slice(0, 120) || 'request failed'}`);
-  }
-
-  const data = await response.json();
-  const textPart = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!textPart) {
-    throw new Error('Gemini returned an empty response.');
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(textPart);
-  } catch {
-    throw new Error('Gemini returned malformed JSON.');
-  }
-
-  if (!isValidItinerary(parsed)) {
-    throw new Error('AI response did not match expected itinerary shape.');
-  }
-  return parsed;
-}
-
-function isValidItinerary(x: unknown): x is Itinerary {
-  if (!x || typeof x !== 'object') return false;
-  const o = x as Record<string, unknown>;
-  return (
-    typeof o.title === 'string' &&
-    Array.isArray(o.days) &&
-    typeof o.totalCostUsd === 'number' &&
-    Array.isArray(o.regionsCovered) &&
-    Array.isArray(o.tips)
-  );
+  return generateLocalTrip(normalizeInput(input));
 }

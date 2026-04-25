@@ -1,8 +1,10 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDb } from '../lib/db/client';
+import { getStrings, type Language } from '../lib/strings';
+import { STORAGE_KEYS } from '../lib/data/tripPlaces';
 
-export type Language = 'en' | 'ru' | 'ky' | 'zh' | 'ar' | 'de';
+export type { Language };
 
 export interface AuthUser {
   id: string;
@@ -14,6 +16,7 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  guestSessionId: string | null;
   language: Language;
   loading: boolean;
   error: string | null;
@@ -26,6 +29,7 @@ interface AuthActions {
   startPhoneAuth: (phone: string) => Promise<void>;
   verifyOtp: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
+  startGuestSession: () => Promise<string>;
   hydrate: () => Promise<void>;
 }
 
@@ -39,6 +43,7 @@ function generateId(): string {
 export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   user: null,
   isAuthenticated: false,
+  guestSessionId: null,
   language: 'en',
   loading: false,
   error: null,
@@ -46,8 +51,20 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   _pendingPhone: null,
 
   setLanguage: (lang) => {
-    set({ language: lang });
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...get(), language: lang })).catch(() => null);
+    const current = get();
+    const user = current.user ? { ...current.user, language: lang } : null;
+    set({ language: lang, user });
+
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ userId: user?.id, language: lang })
+    ).catch(() => null);
+
+    if (user) {
+      getDb()
+        .then((db) => db.runAsync('UPDATE users SET language = ? WHERE id = ?', lang, user.id))
+        .catch(() => null);
+    }
   },
 
   startPhoneAuth: async (phone) => {
@@ -59,11 +76,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   verifyOtp: async (code) => {
     const { _pendingPhone, language } = get();
     if (!_pendingPhone) {
-      set({ error: 'No phone number pending. Please restart.' });
+      set({ error: getStrings(language).auth.genericError });
       return;
     }
     if (code !== DEMO_OTP) {
-      set({ error: 'Invalid code. Use 000000 for the demo.' });
+      set({ error: getStrings(language).auth.invalidCode });
       return;
     }
 
@@ -89,27 +106,80 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
         STORAGE_KEY,
         JSON.stringify({ userId: user.id, language: user.language })
       );
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.session,
+        JSON.stringify({ id: user.id, type: 'user', createdAt: Date.now() })
+      );
 
-      set({ user, isAuthenticated: true, language: user.language, loading: false, _pendingPhone: null });
+      set({ user, isAuthenticated: true, guestSessionId: null, language: user.language, loading: false, _pendingPhone: null });
     } catch (e) {
-      set({ error: 'Something went wrong. Please try again.', loading: false });
+      set({ error: getStrings(language).auth.genericError, loading: false });
     }
   },
 
   signOut: async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    set({ user: null, isAuthenticated: false, _pendingPhone: null, error: null });
+    const { language } = get();
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ language }));
+    await AsyncStorage.removeItem(STORAGE_KEYS.session);
+    set({ user: null, isAuthenticated: false, guestSessionId: null, _pendingPhone: null, error: null });
+  },
+
+  startGuestSession: async () => {
+    const current = get();
+    if (current.user) {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.session,
+        JSON.stringify({ id: current.user.id, type: 'user', createdAt: Date.now() })
+      );
+      return current.user.id;
+    }
+
+    const existing = await AsyncStorage.getItem(STORAGE_KEYS.session);
+    if (existing) {
+      try {
+        const parsed = JSON.parse(existing) as { id?: string; type?: string };
+        if (parsed.id && parsed.type === 'guest') {
+          set({ guestSessionId: parsed.id });
+          return parsed.id;
+        }
+      } catch {
+        await AsyncStorage.removeItem(STORAGE_KEYS.session);
+      }
+    }
+
+    const id = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.session,
+      JSON.stringify({ id, type: 'guest', createdAt: Date.now() })
+    );
+    set({ guestSessionId: id, isAuthenticated: false });
+    return id;
   },
 
   hydrate: async () => {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      const sessionRaw = await AsyncStorage.getItem(STORAGE_KEYS.session);
+      let guestSessionId: string | null = null;
+      if (sessionRaw) {
+        try {
+          const session = JSON.parse(sessionRaw) as { id?: string; type?: string };
+          if (session.type === 'guest' && session.id) guestSessionId = session.id;
+        } catch {
+          await AsyncStorage.removeItem(STORAGE_KEYS.session);
+        }
+      }
       if (!raw) {
-        set({ _hydrated: true });
+        set({ guestSessionId, _hydrated: true });
         return;
       }
 
-      const { userId, language } = JSON.parse(raw) as { userId: string; language: Language };
+      const { userId, language } = JSON.parse(raw) as { userId?: string; language?: Language };
+      if (!userId) {
+        set({ language: language ?? 'en', guestSessionId, _hydrated: true });
+        return;
+      }
+
       const db = await getDb();
       const user = await db.getFirstAsync<AuthUser>(
         'SELECT id, phone, name, language FROM users WHERE id = ?',
@@ -117,10 +187,14 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       );
 
       if (user) {
-        set({ user, isAuthenticated: true, language: user.language ?? language, _hydrated: true });
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.session,
+          JSON.stringify({ id: user.id, type: 'user', createdAt: Date.now() })
+        );
+        set({ user, isAuthenticated: true, guestSessionId: null, language: user.language ?? language ?? 'en', _hydrated: true });
       } else {
-        await AsyncStorage.removeItem(STORAGE_KEY);
-        set({ _hydrated: true });
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ language: language ?? 'en' }));
+        set({ language: language ?? 'en', guestSessionId, _hydrated: true });
       }
     } catch {
       set({ _hydrated: true });
