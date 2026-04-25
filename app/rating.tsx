@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { X, Star, Plus } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { useStrings } from '../lib/i18n';
@@ -10,8 +10,11 @@ import { Button } from '../components/Button';
 
 export default function RatingScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ name?: string; region?: string }>();
   const insets = useSafeAreaInsets();
   const strings = useStrings();
+  const targetName = typeof params.name === 'string' ? params.name : strings.rating.targetName;
+  const targetRegion = typeof params.region === 'string' ? params.region : strings.rating.targetRegion;
   const [rating, setRating] = useState(0);
   const [subRatings, setSubRatings] = useState({
     cleanliness: 0,
@@ -65,8 +68,8 @@ export default function RatingScreen() {
         {/* Identity */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#4a7289', marginBottom: 10, borderWidth: 3, borderColor: colors.brand.primaryLight }} />
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary }}>{strings.rating.targetName}</Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 3 }}>{strings.rating.targetRegion}</Text>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary }}>{targetName}</Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 3 }}>{targetRegion}</Text>
           <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, color: colors.text.primary, marginTop: 14 }}>{strings.rating.title}</Text>
         </View>
 

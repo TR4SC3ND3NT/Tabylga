@@ -68,7 +68,7 @@ export default function WelcomeScreen() {
 
   async function handleFinish() {
     await completeWelcome();
-    router.replace('/auth/phone');
+    router.replace('/preferences');
   }
 
   function handleScroll(e: { nativeEvent: { contentOffset: { x: number } } }) {

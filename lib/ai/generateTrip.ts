@@ -110,7 +110,7 @@ function buildPrompt(input: GenerateTripInput, places: PlaceRow[]): string {
     .map((p) => `  { "id": "${p.id}", "name": "${p.name}", "category": "${p.category}", "region": "${p.region}", "lat": ${p.lat}, "lon": ${p.lon}, "tags": ${p.tags || '{}'} }`)
     .join(',\n');
 
-  return `You are Tabylga, an AI trip planner specialized in Kyrgyzstan tourism. Generate a realistic, day-by-day itinerary.
+  return `You are Tabylga, a senior AI trip planner and logistics optimizer specialized in Kyrgyzstan tourism. Generate a realistic, monetizable, day-by-day itinerary.
 
 TRAVELER PREFERENCES:
 - Purpose: ${input.purpose}
@@ -128,12 +128,13 @@ ${placesList}
 
 REQUIREMENTS:
 1. Use ONLY places from the list above. Reference each by its exact "id" and "name".
-2. Group activities by region per day to minimize travel time. Don't bounce between distant regions in one day.
-3. 3-5 activities per day, with realistic times between 08:00 and 21:00.
-4. Estimate realistic costUsd for each activity using tags (entry_fee_usd, price_usd) or sensible defaults: hotel/yurt $35-180/night, restaurant $8-25/meal, attraction $0-5, activity $20-50.
+2. Build a short route: group activities by region, avoid long backtracking, and keep each day geographically coherent.
+3. 3-5 activities per day, with realistic times between 08:00 and 21:00. Put hotels/yurts at the start or end of a day.
+4. Estimate realistic costUsd using tags (entry_fee_usd, price_usd) or defaults: hotel/yurt $35-180/night, restaurant $8-25/meal, taxi/transfer $5-70, attraction $0-5, activity $20-50.
 5. totalCostUsd should sum all activities and roughly fit budget × days × travelers.
-6. Include 3-5 practical tips (altitude warnings, cash needs, weather, language tips).
-7. Title should be evocative and specific to the regions covered (e.g. "5 Days Through the Tien Shan").
+6. Respect companions and age-sensitive constraints: family/couple/solo/business trips should feel different.
+7. Include practical tips for monetizable flows: QR payment, cash backup, eSIM, altitude, weather, language, and when to book transport.
+8. Title should be evocative and specific to the regions covered (e.g. "5 Days Through the Tien Shan").
 
 Return JSON exactly matching the response schema.`;
 }

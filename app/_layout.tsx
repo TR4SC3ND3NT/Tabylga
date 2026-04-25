@@ -72,6 +72,7 @@ export default function RootLayout() {
           <Stack.Screen name="index" />
           <Stack.Screen name="splash" />
           <Stack.Screen name="welcome" />
+          <Stack.Screen name="preferences" />
           <Stack.Screen name="auth/phone" />
           <Stack.Screen name="auth/otp" />
           <Stack.Screen name="(tabs)" />

@@ -1,17 +1,47 @@
-import { Platform } from 'react-native';
-import { View, Text } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import {
+  Bed,
+  Building2,
+  Coffee,
+  Landmark,
+  MapPin,
+  Mountain,
+  ShoppingBag,
+  TreePine,
+  Trees,
+  Utensils,
+  WalletCards,
+} from 'lucide-react-native';
 import type { MapCanvasProps } from './MapCanvas.types';
+
+const CATEGORY_ICONS: Record<string, any> = {
+  hotel: Bed,
+  hostel: Bed,
+  yurt: Building2,
+  guesthouse: Bed,
+  restaurant: Utensils,
+  cafe: Coffee,
+  activity: Mountain,
+  attraction: Landmark,
+  nature: Trees,
+  market: ShoppingBag,
+  park: TreePine,
+  rest_point: MapPin,
+  atm: WalletCards,
+};
 
 export function MapCanvas({
   places,
   routePlaces = [],
+  navigationCoordinates = [],
   region,
   initialRegion,
   pinColors,
   onSelectPlace,
 }: MapCanvasProps) {
   const routeCoordinates = routePlaces.map((place) => ({ latitude: place.lat, longitude: place.lon }));
+  const visibleRoute = navigationCoordinates.length > 1 ? navigationCoordinates : routeCoordinates;
 
   return (
     <MapView
@@ -22,25 +52,32 @@ export function MapCanvas({
       showsUserLocation
       showsMyLocationButton={false}
     >
-      {routeCoordinates.length > 1 && (
+      {visibleRoute.length > 1 && (
         <Polyline
-          coordinates={routeCoordinates}
-          strokeColor="#D9822B"
-          strokeWidth={4}
-          lineDashPattern={[8, 5]}
+          coordinates={visibleRoute}
+          strokeColor="#C65D3A"
+          strokeWidth={5}
         />
       )}
 
-      {places.map((place) => (
-        <Marker
-          key={place.id}
-          coordinate={{ latitude: place.lat, longitude: place.lon }}
-          title={place.name}
-          description={`${place.category} · ${place.region}`}
-          pinColor={pinColors[place.category]}
-          onPress={() => onSelectPlace(place)}
-        />
-      ))}
+      {places.map((place) => {
+        const Icon = CATEGORY_ICONS[place.category] ?? MapPin;
+        const color = pinColors[place.category] ?? '#1E4D6B';
+
+        return (
+          <Marker
+            key={place.id}
+            coordinate={{ latitude: place.lat, longitude: place.lon }}
+            title={place.name}
+            description={`${place.category} · ${place.region}`}
+            onPress={() => onSelectPlace(place)}
+          >
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: color, borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon size={17} color="#fff" strokeWidth={2.2} />
+            </View>
+          </Marker>
+        );
+      })}
 
       {routePlaces.map((place, index) => (
         <Marker
@@ -51,7 +88,7 @@ export function MapCanvas({
           onPress={() => onSelectPlace(place)}
           zIndex={100 + index}
         >
-          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#D9822B', borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#C65D3A', borderWidth: 2, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: '#fff' }}>
               {index + 1}
             </Text>

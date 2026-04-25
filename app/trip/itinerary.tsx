@@ -5,10 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Share2, Sparkles, X, Plus, MapPin } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
-import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
 import { formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
-import { TOUR_TRANSPORT_QUOTES } from '../../lib/backend/demoBackend';
 import { colors } from '../../constants/colors';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
@@ -28,8 +26,6 @@ export default function ItineraryScreen() {
   const insets = useSafeAreaInsets();
   const strings = useStrings();
   const { generatedItinerary, companionCount } = useTripStore();
-  const peopleCount = useTravelPreferencesStore((s) => s.peopleCount);
-  const preferredTourPeople = useTravelPreferencesStore((s) => s.preferredTourPeople);
   const [activeDay, setActiveDay] = useState(1);
   const [showInsight, setShowInsight] = useState(true);
 
@@ -53,7 +49,7 @@ export default function ItineraryScreen() {
 
   const trip = generatedItinerary;
   const currentDay = trip.days.find((d) => d.day === activeDay) || trip.days[0];
-  const transportQuote = preferredTourPeople >= 10 ? TOUR_TRANSPORT_QUOTES[1] : TOUR_TRANSPORT_QUOTES[0];
+  const transportQuote = { title: 'Transport menu', route: 'shared buses and minivans' };
 
   return (
     <View className="flex-1 bg-surface-primary">
@@ -160,11 +156,11 @@ export default function ItineraryScreen() {
                 {strings.taxi.depositPerPerson}
               </Text>
               <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.brand.cta, marginTop: 2 }}>
-                {formatUSD(transportQuote.pricePerPersonUsd)}
+                {formatUSD(14)}
               </Text>
             </View>
             <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.text.primary }}>
-              {formatString(strings.taxi.peopleWant, { count: Math.max(peopleCount, preferredTourPeople) })}
+              Transport menu
             </Text>
           </View>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 8 }}>

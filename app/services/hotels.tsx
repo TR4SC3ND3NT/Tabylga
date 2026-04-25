@@ -98,13 +98,22 @@ export default function HotelsScreen() {
                 </View>
                 <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
                   <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.brand.primary }}>${h.priceUsd}<Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>{strings.common.perNight}</Text></Text>
-                  <View style={{ width: 80 }}>
+                  <View style={{ width: 86, gap: 6 }}>
                     <Button
                       variant="secondary"
                       label={strings.services.book}
+                      onPress={() => router.push({ pathname: '/rating', params: { name: h.name, region: h.region } } as never)}
                       height={32}
                       fontSize={13}
                       style={{ borderRadius: 8, borderWidth: 1.5 }}
+                    />
+                    <Button
+                      variant="primary"
+                      label="Review"
+                      onPress={() => router.push({ pathname: '/rating', params: { name: h.name, region: h.region } } as never)}
+                      height={30}
+                      fontSize={12}
+                      style={{ borderRadius: 8 }}
                     />
                   </View>
                 </View>

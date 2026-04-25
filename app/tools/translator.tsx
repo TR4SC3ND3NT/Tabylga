@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput, Platform } from 'react-native';
+import { View, Text, Pressable, ScrollView, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Speech from 'expo-speech';
 import { ArrowLeft, Languages, Mic, Volume2 } from 'lucide-react-native';
 import { useStrings } from '../../lib/i18n';
-import { translateDemo } from '../../lib/backend/demoBackend';
+import { translateWithGemini, type TranslationSource } from '../../lib/ai/translate';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
@@ -14,6 +17,9 @@ const TARGETS = [
   { code: 'ru', label: 'RU' },
   { code: 'en', label: 'EN' },
   { code: 'ky', label: 'KG' },
+  { code: 'de', label: 'DE' },
+  { code: 'zh', label: 'ZH' },
+  { code: 'ar', label: 'AR' },
 ];
 
 export default function TranslatorScreen() {
@@ -21,23 +27,84 @@ export default function TranslatorScreen() {
   const strings = useStrings();
   const [text, setText] = useState('Where is the nearest bus stop?');
   const [target, setTarget] = useState('ru');
-  const [output, setOutput] = useState(translateDemo('Where is the nearest bus stop?', 'ru'));
+  const [output, setOutput] = useState('');
+  const [detected, setDetected] = useState('auto');
+  const [provider, setProvider] = useState<'gemini' | 'fallback'>('fallback');
   const [voiceState, setVoiceState] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
-  function handleTranslate() {
-    setOutput(translateDemo(text, target));
-    setVoiceState(null);
+  async function runTranslate(source: TranslationSource = 'text', overrideText?: string) {
+    const sourceText = overrideText ?? text;
+    setLoading(true);
+    setVoiceState(source === 'voice' ? strings.translator.listening : null);
+    try {
+      const result = await translateWithGemini({
+        text: sourceText,
+        targetLang: target,
+        source,
+      });
+      setText(sourceText);
+      setOutput(result.translatedText);
+      setDetected(result.detectedLanguage);
+      setProvider(result.provider);
+    } finally {
+      setLoading(false);
+      setVoiceState(source === 'voice' ? 'Voice captured and translated' : null);
+    }
+  }
+
+  async function handleVoiceTranslate() {
+    if (recording) {
+      setLoading(true);
+      try {
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        setRecording(null);
+        if (!uri) return;
+
+        const audioBase64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const result = await translateWithGemini({
+          text,
+          targetLang: target,
+          source: 'voice',
+          audioBase64,
+          audioMimeType: 'audio/m4a',
+        });
+        setOutput(result.translatedText);
+        setDetected(result.detectedLanguage);
+        setProvider(result.provider);
+        setVoiceState('Voice translated');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    const permission = await Audio.requestPermissionsAsync();
+    if (!permission.granted) {
+      setVoiceState('Microphone permission denied');
+      return;
+    }
+
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: true,
+      playsInSilentModeIOS: true,
+    });
+    const nextRecording = new Audio.Recording();
+    await nextRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+    await nextRecording.startAsync();
+    setRecording(nextRecording);
+    setVoiceState(strings.translator.listening);
   }
 
   function handleReadAloud() {
     setVoiceState(strings.translator.readAloud);
-    if (Platform.OS === 'web') {
-      const speech = (globalThis as any).speechSynthesis;
-      const utteranceCtor = (globalThis as any).SpeechSynthesisUtterance;
-      if (speech && utteranceCtor && output) {
-        speech.cancel();
-        speech.speak(new utteranceCtor(output));
-      }
+    if (output) {
+      Speech.stop();
+      Speech.speak(output);
     }
   }
 
@@ -60,7 +127,7 @@ export default function TranslatorScreen() {
             {strings.translator.title}
           </Text>
           <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, lineHeight:21, color:colors.text.secondary, marginTop:6 }}>
-            {strings.translator.subtitle}
+            Gemini-powered text and voice-ready translation for hotels, taxis, cafes and emergencies.
           </Text>
         </View>
 
@@ -78,13 +145,13 @@ export default function TranslatorScreen() {
             style={{ minHeight:92, fontFamily:'Inter_400Regular', fontSize:16, lineHeight:22, color:colors.text.primary }}
           />
           <Pressable
-            onPress={() => setVoiceState(strings.translator.listening)}
+            onPress={handleVoiceTranslate}
             accessibilityRole="button"
             style={({ pressed }) => ({ alignSelf:'flex-start', marginTop:10, flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:12, height:34, borderRadius:999, backgroundColor:colors.status.warningLight, opacity: pressed ? 0.75 : 1 })}
           >
             <Mic size={15} color={colors.brand.cta} strokeWidth={2} />
             <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.brand.cta }}>
-              {strings.translator.listening}
+              {recording ? 'Stop and translate' : strings.translator.listening}
             </Text>
           </Pressable>
         </View>
@@ -93,7 +160,7 @@ export default function TranslatorScreen() {
           <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:13, color:colors.text.primary, marginBottom:8 }}>
             {strings.translator.targetLanguage}
           </Text>
-          <View style={{ flexDirection:'row', gap:8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap:8 }}>
             {TARGETS.map((option) => (
               <Chip
                 key={option.code}
@@ -104,14 +171,19 @@ export default function TranslatorScreen() {
                 style={{ minWidth:72 }}
               />
             ))}
-          </View>
+          </ScrollView>
         </View>
 
-        <Button label={strings.translator.translate} onPress={handleTranslate} />
+        <Button
+          label={loading ? strings.common.loading : strings.translator.translate}
+          onPress={() => runTranslate('text')}
+          disabled={loading}
+          icon={loading ? <ActivityIndicator color="#fff" size="small" /> : undefined}
+        />
 
         <View style={{ borderRadius:18, backgroundColor:colors.surface.card, borderWidth:1, borderColor:colors.border.divider, padding:16 }}>
           <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:13, color:colors.text.secondary }}>
-            {strings.translator.output}
+            {strings.translator.output} · {provider === 'gemini' ? 'Gemini' : 'fallback'} · {detected}
           </Text>
           <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, lineHeight:30, color:colors.text.primary, marginTop:8 }}>
             {output || strings.common.noResults}

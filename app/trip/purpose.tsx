@@ -7,7 +7,6 @@ import {
   X, Minus, Plus,
   TreePalm, Mountain, Users, Briefcase,
   Heart, Landmark, Laptop, Star,
-  MessageCircle,
 } from 'lucide-react-native';
 import { useTripStore, type Purpose, type Companions } from '../../stores/tripStore';
 import { useStrings } from '../../lib/i18n';
@@ -225,32 +224,6 @@ export default function PurposeScreen() {
           </View>
         )}
 
-        <Pressable
-          onPress={() => router.push('/trip/group-match')}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            marginTop: 18,
-            borderRadius: 16,
-            backgroundColor: colors.brand.primaryLight,
-            padding: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: colors.surface.card, alignItems: 'center', justifyContent: 'center' }}>
-            <MessageCircle size={20} color={colors.brand.primary} strokeWidth={2} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
-              {strings.groupPlanner.title}
-            </Text>
-            <Text numberOfLines={2} style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 3 }}>
-              {strings.groupPlanner.subtitle}
-            </Text>
-          </View>
-        </Pressable>
       </ScrollView>
 
       {/* Sticky bottom CTA */}
