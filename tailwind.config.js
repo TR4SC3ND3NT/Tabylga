@@ -48,10 +48,15 @@ module.exports = {
       },
 
       // ── Font families ────────────────────────────────────────
-      // Usage: font-sans (Inter), font-display (Fraunces)
+      // Usage: font-sans (Inter 400), font-sans-semibold (Inter 600), font-display-semibold (Fraunces 600)
+      // Names must match exactly what @expo-google-fonts loads — native uses the string literally.
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
+        'sans':             ['Inter_400Regular'],
+        'sans-medium':      ['Inter_500Medium'],
+        'sans-semibold':    ['Inter_600SemiBold'],
+        'sans-bold':        ['Inter_700Bold'],
+        'display':          ['Fraunces_500Medium'],
+        'display-semibold': ['Fraunces_600SemiBold'],
       },
 
       // ── Font sizes ───────────────────────────────────────────

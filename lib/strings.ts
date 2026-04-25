@@ -1,0 +1,297 @@
+// Central strings — English source of truth.
+// To add a locale: duplicate this object and translate values only, never keys.
+
+export const strings = {
+  // ── Splash & Language Select (screen 01) ─────────────────
+  splash: {
+    wordmark: 'Tabylga',
+    tagline: 'Your Kyrgyzstan, one tap away',
+    taglineSub: 'Find · Планируй · Табыл',
+    languageSheetTitle: 'Choose your language',
+    continueButton: 'Continue',
+  },
+
+  // ── Welcome Carousel (screen 02) ─────────────────────────
+  welcome: {
+    skip: 'Skip',
+    next: 'Next',
+    getStarted: 'Get Started',
+    slide1: {
+      title: 'Plan with AI, or plan yourself.',
+      body: 'Generate a full multi-day trip from a sentence, or book each hotel, taxi and guide on your own — it\'s all in one place.',
+    },
+    slide2: {
+      title: 'One wallet for everything.',
+      body: 'Top up once with Visa, MBank, UnionPay or Apple Pay. Pay every yurt camp, guide and restaurant without touching cash.',
+    },
+    slide3: {
+      title: 'Works even offline in the mountains.',
+      body: 'No signal? No problem. Pay yurt hosts on Song-Kul with your signed offline token. It syncs when you\'re back in range.',
+    },
+  },
+
+  // ── Auth (screens 03–04) ──────────────────────────────────
+  auth: {
+    phoneTitle: 'Enter your phone',
+    phoneSubtitle: 'We\'ll send you a 6-digit code to sign in. International tourists and MBank users both welcome.',
+    phonePlaceholder: 'Phone number',
+    phoneHelper: 'We\'ll send you a verification code. Standard rates apply.',
+    continueButton: 'Continue',
+    orDivider: 'or',
+    continueGoogle: 'Continue with Google',
+    continueApple: 'Continue with Apple',
+    terms: 'By continuing you agree to our',
+    termsLink: 'Terms',
+    and: 'and',
+    privacyLink: 'Privacy Policy',
+    otpTitle: 'Check your messages',
+    otpSubtitle: 'We sent a code to',
+    otpResend: 'Didn\'t get it?',
+    otpResendTimer: 'Resend in',
+    otpVerify: 'Verify',
+    otpChangeNumber: 'Change number',
+    otpAutoFillTitle: 'Auto-fill from SMS',
+    otpAutoFillBody: 'Tabylga will detect the code automatically when your SMS arrives.',
+    demoHint: 'Demo: use code 000000',
+    invalidCode: 'Invalid code. Use 000000 for the demo.',
+    genericError: 'Something went wrong. Please try again.',
+  },
+
+  // ── Home (screen 05) ─────────────────────────────────────
+  home: {
+    greeting: 'Hello, Traveler 👋',
+    searchPlaceholder: 'Where are you going?',
+    sectionRetreat: 'Countryside escapes this weekend',
+    sectionTrending: 'Trending now',
+    sectionServices: 'What are you looking for?',
+    sectionAi: 'Plan with AI',
+    aiCtaTitle: 'Plan my full trip with AI',
+    aiCtaSubtitle: 'Answer 6 questions, get a complete itinerary in seconds.',
+    aiCtaButton: 'Start planning',
+    seeAll: 'See all',
+    serviceHotels: 'Hotels',
+    serviceHotelsSub: '324 places nearby',
+    serviceFood: 'Food',
+    serviceFoodSub: 'Dine in or delivery',
+    serviceTransport: 'Transport',
+    serviceTransportSub: 'Taxi, transfers, rent',
+    serviceActivities: 'Activities',
+    serviceActivitiesSub: 'Tours and guides',
+    countrysideTag: 'Countryside',
+    fromPrice: 'from',
+    perNight: '/ night',
+  },
+
+  // ── Map (screen 20) ──────────────────────────────────────
+  map: {
+    searchPlaceholder: 'Search on map…',
+    filterAll: 'All',
+    filterHotels: 'Hotels',
+    filterFood: 'Food',
+    filterActivities: 'Activities',
+    filterNature: 'Nature',
+  },
+
+  // ── Trips (screen 19) ────────────────────────────────────
+  trips: {
+    title: 'My Trips',
+    emptyTitle: 'No trips yet',
+    emptySubtitle: 'Plan your first trip with AI or browse our suggested itineraries.',
+    emptyButton: 'Plan a trip',
+    statusDraft: 'Draft',
+    statusActive: 'Active',
+    statusCompleted: 'Completed',
+  },
+
+  // ── Wallet (screens 21–23) ───────────────────────────────
+  wallet: {
+    title: 'My Wallet',
+    balanceLabel: 'Available balance',
+    statusOnline: 'Online',
+    statusOfflineReady: 'Offline ready',
+    statusReconnecting: 'Reconnecting…',
+    topUp: 'Top up',
+    pay: 'Pay',
+    receive: 'Receive',
+    historyTitle: 'Transactions',
+    historyEmpty: 'No transactions yet.',
+    topUpTitle: 'Top up wallet',
+    payTitle: 'Scan to pay',
+    scanPrompt: 'Point camera at a Tabylga or ELQR code',
+    confirmTitle: 'Confirm payment',
+    confirmButton: 'Pay now',
+    offlineLimitLabel: 'Offline limit',
+  },
+
+  // ── Merchant (screens 24–25) ─────────────────────────────
+  merchant: {
+    title: 'Merchant Mode',
+    dashboardTitle: 'My Business',
+    acceptPayment: 'Accept Payment',
+    amountPlaceholder: 'Enter amount (KGS)',
+    showQrButton: 'Show QR Code',
+    awaitingPayment: 'Waiting for customer scan…',
+    paymentReceived: 'Payment received!',
+    totalToday: 'Today\'s total',
+    balanceLabel: 'Balance',
+  },
+
+  // ── Profile (screen 26) ──────────────────────────────────
+  profile: {
+    title: 'Profile',
+    settingsSection: 'Settings',
+    languageLabel: 'Language',
+    merchantToggle: 'Switch to Merchant Mode',
+    signOut: 'Sign out',
+    reviewsTitle: 'My Reviews',
+    reviewsEmpty: 'You haven\'t reviewed anything yet.',
+  },
+
+  // ── AI Planner (screens 14–18) ───────────────────────────
+  planner: {
+    stepPurposeQuestion: 'What brings you to Kyrgyzstan?',
+    stepPurposeSubtitle: 'Pick what fits best — we\'ll tailor the trip around it.',
+    stepCompanionsQuestion: 'Who are you traveling with?',
+    stepDurationQuestion: 'How many days?',
+    stepBudgetQuestion: 'What\'s your budget per person?',
+    stepActivityQuestion: 'How active do you want to be?',
+    stepInterestsQuestion: 'What interests you?',
+    stepInterestsSubtitle: 'Pick all that apply.',
+    stepDietaryQuestion: 'Any special requirements?',
+    stepDietarySubtitle: 'Pick all that apply, or skip.',
+
+    purposeLeisure: 'Leisure',
+    purposeLeisureDesc: 'Slow days, beautiful views',
+    purposeAdventure: 'Adventure',
+    purposeAdventureDesc: 'Trekking, glaciers, peaks',
+    purposeFamily: 'Family',
+    purposeFamilyDesc: 'Kid-friendly stays',
+    purposeBusiness: 'Business',
+    purposeBusinessDesc: 'Bishkek, fast in/out',
+    purposeRomantic: 'Romantic',
+    purposeRomanticDesc: 'Lakes, yurts, sunsets',
+    purposeCultural: 'Cultural',
+    purposeCulturalDesc: 'History, crafts, music',
+    purposeNomad: 'Digital Nomad',
+    purposeNomadDesc: 'Wifi, cafés, long stays',
+    purposePilgrimage: 'Pilgrimage',
+    purposePilgrimageDesc: 'Sacred sites, reflection',
+
+    companionSolo: 'Solo',
+    companionCouple: 'Couple',
+    companionFamily: 'Family',
+    companionFriends: 'Friends',
+    companionColleagues: 'Colleagues',
+    groupSize: 'Group size',
+    kidsAges: 'Kids ages 5–12 years',
+
+    activityChill: 'Chill',
+    activityChillDesc: 'Cafés, views, easy walks',
+    activityModerate: 'Moderate',
+    activityModerateDesc: 'Some hiking, sightseeing',
+    activityActive: 'Active',
+    activityActiveDesc: 'Daily hikes, horse riding',
+    activityExtreme: 'Extreme',
+    activityExtremeDesc: 'Glaciers, peaks, multi-day',
+
+    interestNature: 'Nature',
+    interestCulture: 'Culture',
+    interestFood: 'Food',
+    interestExtreme: 'Extreme sports',
+    interestPhoto: 'Photography',
+    interestShopping: 'Shopping',
+    interestWellness: 'Wellness',
+    interestNightlife: 'Nightlife',
+
+    dietaryVegetarian: 'Vegetarian',
+    dietaryHalal: 'Halal',
+    dietaryVegan: 'Vegan',
+    dietaryWheelchair: 'Wheelchair',
+    dietaryFamily: 'Family-friendly',
+    dietaryNone: 'None',
+
+    days3: '3 days',
+    days5: '5 days',
+    days7: '7 days',
+    days10: '10 days',
+    days14: '14+ days',
+
+    budget100: '$100–300',
+    budget300: '$300–600',
+    budget600: '$600–1200',
+    budget1200: '$1200+',
+
+    progressLabel: 'Step {current} of {total}',
+    backButton: 'Back',
+    nextButton: 'Next',
+    generateButton: 'Generate my trip ✨',
+
+    discardTitle: 'Discard trip?',
+    discardMessage: 'Your answers won\'t be saved.',
+    discardConfirm: 'Discard',
+    discardCancel: 'Keep planning',
+
+    generatingTitle: 'Building your perfect trip',
+    genStep1: 'Analyzing 847 places…',
+    genStep2: 'Matching your interests…',
+    genStep3: 'Optimizing logistics…',
+    genStep4: 'Balancing regions…',
+    genStep5: 'Ready!',
+    generatingError: 'AI couldn\'t finish this trip.',
+    generatingRetry: 'Try again',
+
+    voiceTitle: 'Tell me about your trip',
+    voiceHint: 'Hold to speak',
+    voiceTranscribing: 'Listening…',
+    collaborateTitle: 'Plan together',
+    collaborateSubtitle: 'Invite friends to add their preferences.',
+    inviteButton: 'Invite by phone',
+  },
+
+  // ── Itinerary (screen 19) ────────────────────────────────
+  itinerary: {
+    headerTitle: 'Your trip',
+    metaTravelers: '{count} travelers',
+    metaActivity: 'Moderate',
+    totalLabel: 'Total',
+    payCta: 'Pay & lock itinerary',
+    dayLabel: 'Day {n}',
+    aiInsightTitle: 'AI suggestion',
+    aiInsightExample: 'Add horseback riding on Day 3? +$25',
+    aiInsightAdd: 'Add',
+    tipsTitle: 'Tips for this trip',
+  },
+
+  // ── Shared / Global ──────────────────────────────────────
+  common: {
+    back: 'Back',
+    close: 'Close',
+    cancel: 'Cancel',
+    save: 'Save',
+    confirm: 'Confirm',
+    loading: 'Loading…',
+    error: 'Something went wrong.',
+    retry: 'Try again',
+    noResults: 'No results found.',
+    bookNow: 'Book now',
+    viewDetails: 'View details',
+    perNight: '/ night',
+    perPerson: '/ person',
+    rating: 'Rating',
+    reviews: 'reviews',
+    from: 'From',
+    usd: 'USD',
+    kgs: 'KGS',
+  },
+
+  // ── States ───────────────────────────────────────────────
+  states: {
+    offline: 'You\'re offline',
+    offlineSubtitle: 'Your wallet is ready for offline payments.',
+    empty: 'Nothing here yet',
+    errorTitle: 'Something went wrong',
+    errorButton: 'Try again',
+  },
+} as const;
+
+export type Strings = typeof strings;
