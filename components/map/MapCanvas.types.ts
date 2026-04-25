@@ -11,6 +11,7 @@ export interface MapCanvasProps {
   places: Place[];
   selectedPlace: Place | null;
   routePlaces?: Place[];
+  navigationCoordinates?: Array<{ latitude: number; longitude: number }>;
   region: MapRegion;
   initialRegion: MapRegion;
   pinColors: Record<string, string>;

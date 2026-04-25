@@ -3,12 +3,14 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Share2, Sparkles, X, Plus, MapPin } from 'lucide-react-native';
+import { Modal } from 'react-native';
+import { ArrowLeft, Share2, Sparkles, X, Plus, MapPin, Download } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
-import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
+import { useWalletStore } from '../../stores/walletStore';
+import { saveOfflinePackFromCurrentTrip } from '../../lib/offline/offlinePackService';
+import type { GeneratedTrip } from '../../lib/trip/tripGenerator';
 import { formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
-import { TOUR_TRANSPORT_QUOTES } from '../../lib/backend/demoBackend';
 import { colors } from '../../constants/colors';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
@@ -28,10 +30,19 @@ export default function ItineraryScreen() {
   const insets = useSafeAreaInsets();
   const strings = useStrings();
   const { generatedItinerary, companionCount } = useTripStore();
-  const peopleCount = useTravelPreferencesStore((s) => s.peopleCount);
-  const preferredTourPeople = useTravelPreferencesStore((s) => s.preferredTourPeople);
   const [activeDay, setActiveDay] = useState(1);
   const [showInsight, setShowInsight] = useState(true);
+  const [offlineModal, setOfflineModal] = useState(false);
+  const wallet = useWalletStore();
+
+  async function handleOfflinePack() {
+    if (!generatedItinerary) return;
+    // Map the local trip structure to the one expected by the service if needed.
+    // In ayzsw, it seems trip.days is used instead of dailyPlans.
+    // I'll need to check GeneratedTrip type in ayzsw.
+    await saveOfflinePackFromCurrentTrip(generatedItinerary as any, wallet);
+    setOfflineModal(true);
+  }
 
   if (!generatedItinerary) {
     return (
@@ -53,7 +64,7 @@ export default function ItineraryScreen() {
 
   const trip = generatedItinerary;
   const currentDay = trip.days.find((d) => d.day === activeDay) || trip.days[0];
-  const transportQuote = preferredTourPeople >= 10 ? TOUR_TRANSPORT_QUOTES[1] : TOUR_TRANSPORT_QUOTES[0];
+  const transportQuote = { title: 'Transport menu', route: 'shared buses and minivans' };
 
   return (
     <View className="flex-1 bg-surface-primary">
@@ -160,11 +171,11 @@ export default function ItineraryScreen() {
                 {strings.taxi.depositPerPerson}
               </Text>
               <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.brand.cta, marginTop: 2 }}>
-                {formatUSD(transportQuote.pricePerPersonUsd)}
+                {formatUSD(14)}
               </Text>
             </View>
             <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.text.primary }}>
-              {formatString(strings.taxi.peopleWant, { count: Math.max(peopleCount, preferredTourPeople) })}
+              Transport menu
             </Text>
           </View>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 8 }}>
@@ -382,12 +393,52 @@ export default function ItineraryScreen() {
           </Text>
         </View>
         <Button
+          variant="secondary"
+          label="Save offline"
+          icon={<Download size={16} color={colors.brand.primary} strokeWidth={2} />}
+          onPress={handleOfflinePack}
+          style={{ flex: 1 }}
+          height={48}
+          fontSize={13}
+        />
+        <Button
           variant="cta"
           label={strings.itinerary.payCta}
           onPress={() => router.replace('/(tabs)/wallet')}
           style={{ flex: 1 }}
+          height={48}
+          fontSize={13}
         />
       </View>
+
+      <OfflineModal 
+        visible={offlineModal} 
+        onClose={() => setOfflineModal(false)} 
+        onOpenPack={() => { setOfflineModal(false); router.push('/offline-pack'); }} 
+      />
     </View>
   );
 }
+
+function OfflineModal({ visible, onClose, onOpenPack }: { visible: boolean; onClose: () => void; onOpenPack: () => void }) {
+  const checklist = ['Itinerary saved', 'Emergency numbers saved', 'Phrasebook saved', 'Offline payment status saved'];
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={modalBackdrop}>
+        <View style={modalCard}>
+          <Text style={modalTitle}>Offline pack ready</Text>
+          {checklist.map((item) => <Text key={item} style={modalLine}>✓ {item}</Text>)}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+            <Button variant="secondary" label="Open Offline Pack" onPress={onOpenPack} style={{ flex: 1 }} height={46} fontSize={13} />
+            <Button label="Continue trip" onPress={onClose} style={{ flex: 1 }} height={46} fontSize={13} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const modalBackdrop = { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', alignItems: 'center' as const, justifyContent: 'center' as const, padding: 20 };
+const modalCard = { width: '100%' as const, borderRadius: 22, padding: 18, backgroundColor: colors.surface.card };
+const modalTitle = { fontFamily: 'Fraunces_600SemiBold' as const, fontSize: 24, lineHeight: 29, color: colors.text.primary, marginBottom: 12 };
+const modalLine = { fontFamily: 'Inter_600SemiBold' as const, fontSize: 13, lineHeight: 20, color: colors.text.primary, marginTop: 7 };

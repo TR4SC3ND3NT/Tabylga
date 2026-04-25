@@ -3,7 +3,7 @@ import { View, Text, Pressable, ScrollView, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Bus, CheckCircle2, MapPin, Star } from 'lucide-react-native';
+import { ArrowLeft, Bus, CheckCircle2, MapPin, Star, Users } from 'lucide-react-native';
 import { formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
 import { TAXI_OPTIONS, TOUR_TRANSPORT_QUOTES } from '../../lib/backend/demoBackend';
@@ -175,6 +175,15 @@ export default function TransportScreen() {
                 </Pressable>
               </View>
             </View>
+            <Button
+              variant="secondary"
+              label={strings.groupPlanner.title}
+              onPress={() => router.push('/trip/group-match')}
+              icon={<Users size={17} color={colors.brand.primary} strokeWidth={2} />}
+              style={{ marginTop:12 }}
+              height={42}
+              fontSize={12}
+            />
           </Card>
 
           {TOUR_TRANSPORT_QUOTES.map((quote) => {

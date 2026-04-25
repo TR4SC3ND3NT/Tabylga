@@ -1,227 +1,135 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TextInput, ActivityIndicator } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, ScrollView, TextInput, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Check } from 'lucide-react-native';
-import { formatString } from '../../lib/strings';
-import { useStrings } from '../../lib/i18n';
+import { CreditCard, QrCode } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
+import { paymentService } from '../../services/paymentService';
 
-const AMOUNTS = [50, 100, 200, 500];
-const RATE = 87.0;
-
-type Method = 'mbank' | 'card' | 'applepay';
-type Stage = 'form' | 'loading' | 'success';
-
-function formatCard(raw: string): string {
-  const digits = raw.replace(/\D/g, '').slice(0, 16);
-  return digits.replace(/(.{4})/g, '$1 ').trim();
-}
+const AMOUNTS = [500, 1000, 3000, 5000];
 
 export default function TopUpScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const strings = useStrings();
-  const [amount, setAmount] = useState(100);
-  const [method, setMethod] = useState<Method>('mbank');
-  const [cardNum, setCardNum] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
-  const [stage, setStage] = useState<Stage>('form');
+  const [amount, setAmount] = useState<number | null>(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [method, setMethod] = useState<'card_demo' | 'online_qr_demo'>('card_demo');
+  const [loading, setLoading] = useState(false);
 
-  async function handlePay() {
-    setStage('loading');
-    await new Promise(r => setTimeout(r, 2000));
-    setStage('success');
-    await new Promise(r => setTimeout(r, 1200));
-    router.back();
-  }
+  const handleTopUp = async () => {
+    const finalAmount = amount || parseInt(customAmount, 10);
+    if (!finalAmount || isNaN(finalAmount) || finalAmount <= 0) {
+      Alert.alert('Error', 'Please select or enter a valid amount');
+      return;
+    }
 
-  if (stage === 'loading') {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center">
-        <ActivityIndicator size="large" color={colors.brand.primary} />
-        <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.text.secondary, marginTop: 16 }}>
-          {strings.walletExtra.processingPayment}
-        </Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (stage === 'success') {
-    return (
-      <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center">
-        <View style={{
-          width: 80, height: 80, borderRadius: 40,
-          backgroundColor: colors.status.successLight,
-          alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-        }}>
-          <Check size={40} color={colors.status.success} strokeWidth={2.5} />
-        </View>
-        <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.text.primary }}>
-          {formatString(strings.walletExtra.topUpSuccess, { amount })}
-        </Text>
-      </SafeAreaView>
-    );
-  }
+    setLoading(true);
+    try {
+      await paymentService.topUpWallet(finalAmount, method);
+      Alert.alert('Success', `Topped up ${finalAmount} KGS successfully.`, [
+        { text: 'OK', onPress: () => router.back() }
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Top up failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
-
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityLabel={strings.common.back}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-        >
-          <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
-        </Pressable>
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.text.primary, flex: 1, textAlign: 'center', marginRight: 44 }}>
-          {strings.walletExtra.topUpTitle}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+        <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text.primary, marginBottom: 16 }}>
+          Top Up Wallet
         </Text>
-      </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-
-        {/* Amount chips */}
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text.secondary, marginBottom: 10, letterSpacing: 0.08 * 14, textTransform: 'uppercase' }}>
-          {strings.walletExtra.amountLabel}
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
+          Select Amount (KGS)
         </Text>
-        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
-          {AMOUNTS.map(a => {
-            const sel = amount === a;
-            return (
-              <Pressable
-                key={a}
-                onPress={() => setAmount(a)}
-                accessibilityLabel={`$${a}`}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: sel }}
-                style={({ pressed }) => ({
-                  flex: 1, height: 48, borderRadius: 12,
-                  borderWidth: sel ? 2 : 1,
-                  borderColor: sel ? colors.brand.primary : colors.border.divider,
-                  backgroundColor: sel ? colors.brand.primaryLight : colors.surface.card,
-                  alignItems: 'center', justifyContent: 'center',
-                  opacity: pressed ? 0.8 : 1,
-                })}
-              >
-                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: sel ? colors.brand.primary : colors.text.primary }}>
-                  ${a}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+          {AMOUNTS.map(amt => (
+            <Button
+              key={amt}
+              variant={amount === amt ? 'primary' : 'secondary'}
+              label={`${amt}`}
+              onPress={() => { setAmount(amt); setCustomAmount(''); }}
+              style={{ flexBasis: '48%', flexGrow: 1 }}
+            />
+          ))}
         </View>
-        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary, marginBottom: 24 }}>
-          {formatString(strings.walletExtra.convertedRate, { kgs: (amount * RATE).toLocaleString('ru-RU'), rate: RATE.toFixed(2) })}
+
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 8 }}>
+          Custom Amount
         </Text>
+        <Card style={{ marginBottom: 24, padding: 0, overflow: 'hidden' }}>
+          <TextInput
+            placeholder="Enter custom amount"
+            keyboardType="number-pad"
+            value={customAmount}
+            onChangeText={t => { setCustomAmount(t); setAmount(null); }}
+            style={{
+              fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary,
+              padding: 16,
+            }}
+          />
+        </Card>
 
-        {/* Payment methods */}
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text.secondary, marginBottom: 10, letterSpacing: 0.08 * 14, textTransform: 'uppercase' }}>
-          {strings.walletExtra.paymentMethod}
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
+          Payment Method
         </Text>
+        <View style={{ gap: 10, marginBottom: 24 }}>
+          <Button
+            variant={method === 'card_demo' ? 'primary' : 'secondary'}
+            label="International Card Demo"
+            onPress={() => setMethod('card_demo')}
+            icon={<CreditCard size={18} color={method === 'card_demo' ? '#fff' : colors.brand.primary} />}
+          />
+          <Button
+            variant={method === 'online_qr_demo' ? 'primary' : 'secondary'}
+            label="Local QR Demo"
+            onPress={() => setMethod('online_qr_demo')}
+            icon={<QrCode size={18} color={method === 'online_qr_demo' ? '#fff' : colors.brand.primary} />}
+          />
+        </View>
 
-        {([
-          { key: 'mbank', label: strings.walletExtra.methodMBank, sub: strings.walletExtra.methodMBankSub, badge: strings.walletExtra.methodMBankBadge },
-          { key: 'card',  label: strings.walletExtra.methodCard, sub: null, badge: null },
-          { key: 'applepay', label: strings.walletExtra.methodApplePay, sub: null, badge: null },
-        ] as { key: Method; label: string; sub: string | null; badge: string | null }[]).map(m => {
-          const sel = method === m.key;
-          return (
-            <Pressable
-              key={m.key}
-              onPress={() => setMethod(m.key)}
-              accessibilityLabel={m.label}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: sel }}
-              style={({ pressed }) => ({
-                flexDirection: 'row', alignItems: 'center', gap: 12,
-                minHeight: 72, padding: 16, borderRadius: 14, marginBottom: 10,
-                borderWidth: sel ? 2 : 1,
-                borderColor: sel ? colors.brand.primary : colors.border.divider,
-                backgroundColor: sel ? colors.brand.primaryLight : colors.surface.card,
-                opacity: pressed ? 0.85 : 1,
-              })}
-            >
-              <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: sel ? 0 : 1.5, borderColor: colors.border.input, backgroundColor: sel ? colors.brand.primary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                {sel && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />}
-              </View>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: sel ? colors.brand.primary : colors.text.primary }}>
-                    {m.label}
-                  </Text>
-                  {m.badge && (
-                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: colors.status.warning }}>
-                      <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 11, color: colors.text.primary }}>{m.badge}</Text>
-                    </View>
-                  )}
-                </View>
-                {m.sub && <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary, marginTop: 2 }}>{m.sub}</Text>}
-              </View>
-            </Pressable>
-          );
-        })}
-
-        {/* Card form */}
-        {method === 'card' && (
-          <View style={{ gap: 10, marginBottom: 8 }}>
+        {method === 'card_demo' && (
+          <Card style={{ padding: 16, marginBottom: 24 }}>
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text.primary, marginBottom: 12 }}>
+              Fake Card Form
+            </Text>
             <TextInput
-              value={formatCard(cardNum)}
-              onChangeText={t => setCardNum(t.replace(/\D/g, ''))}
-              placeholder={strings.walletExtra.cardNumber}
-              placeholderTextColor={colors.text.tertiary}
-              keyboardType="number-pad"
-              maxLength={19}
-              style={{ height: 56, borderRadius: 12, borderWidth: 1, borderColor: colors.border.input, backgroundColor: colors.surface.card, paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 16, letterSpacing: 2, color: colors.text.primary }}
+              placeholder="Card Number (Demo)"
+              value="4111 1111 1111 1111"
+              editable={false}
+              style={{ backgroundColor: '#f0f0f0', padding: 12, borderRadius: 8, marginBottom: 10 }}
             />
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TextInput
-                value={expiry}
-                onChangeText={t => { const d = t.replace(/\D/g,''); setExpiry(d.length > 2 ? `${d.slice(0,2)} / ${d.slice(2,4)}` : d); }}
-                placeholder={strings.walletExtra.expiry}
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="number-pad"
-                maxLength={7}
-                style={{ flex: 1, height: 56, borderRadius: 12, borderWidth: 1, borderColor: colors.border.input, backgroundColor: colors.surface.card, paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 16, color: colors.text.primary }}
+                placeholder="MM/YY"
+                value="12/25"
+                editable={false}
+                style={{ backgroundColor: '#f0f0f0', padding: 12, borderRadius: 8, flex: 1 }}
               />
               <TextInput
-                value={cvc}
-                onChangeText={t => setCvc(t.replace(/\D/g,'').slice(0,4))}
-                placeholder={strings.walletExtra.cvc}
-                placeholderTextColor={colors.text.tertiary}
-                keyboardType="number-pad"
-                maxLength={4}
-                secureTextEntry
-                style={{ flex: 1, height: 56, borderRadius: 12, borderWidth: 1, borderColor: colors.border.input, backgroundColor: colors.surface.card, paddingHorizontal: 16, fontFamily: 'Inter_400Regular', fontSize: 16, color: colors.text.primary }}
+                placeholder="CVC"
+                value="123"
+                editable={false}
+                style={{ backgroundColor: '#f0f0f0', padding: 12, borderRadius: 8, flex: 1 }}
               />
             </View>
-          </View>
+          </Card>
         )}
 
-        {/* Trust */}
-        <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary, textAlign: 'center', marginTop: 16 }}>
-          {strings.walletExtra.securedBy}
-        </Text>
+        <Button
+          variant="cta"
+          label={loading ? 'Processing...' : `Confirm Top Up`}
+          onPress={handleTopUp}
+          disabled={loading || (!amount && !customAmount)}
+        />
       </ScrollView>
-
-      {/* CTA */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.surface.primary, borderTopWidth: 1, borderTopColor: colors.border.divider }}>
-        <Pressable
-          onPress={handlePay}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ height: 56, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
-            {formatString(strings.walletExtra.payAmount, { amount })}
-          </Text>
-        </Pressable>
-      </View>
     </SafeAreaView>
   );
 }

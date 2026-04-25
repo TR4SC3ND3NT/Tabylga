@@ -1,107 +1,144 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Bluetooth, CheckCircle2, Clock } from 'lucide-react-native';
-import { useStrings } from '../../lib/i18n';
-import { createOfflineBluetoothPayment } from '../../lib/backend/demoBackend';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Bluetooth, CheckCircle, Loader } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { paymentService } from '../../services/paymentService';
+import { PaymentMerchant } from '../../data/paymentMerchants';
 
-const MERCHANTS = [
-  { id: 'm1', name: "Nomad's Yurt Camp", amountUsd: 65, distance: '12 m' },
-  { id: 'm2', name: 'Ala-Archa Gate', amountUsd: 3, distance: '31 m' },
-  { id: 'm3', name: 'Local Guide Bakyt', amountUsd: 25, distance: '44 m' },
-];
-
-export default function BluetoothPayScreen() {
+export default function BluetoothDemoScreen() {
   const router = useRouter();
-  const strings = useStrings();
-  const [selectedMerchant, setSelectedMerchant] = useState(MERCHANTS[0]);
-  const [payment, setPayment] = useState<ReturnType<typeof createOfflineBluetoothPayment> | null>(null);
+  const { tokenId } = useLocalSearchParams<{ tokenId?: string }>();
+  
+  const [step, setStep] = useState(0);
+  const [merchant, setMerchant] = useState<PaymentMerchant | null>(null);
 
-  function handleSign() {
-    setPayment(createOfflineBluetoothPayment(selectedMerchant.amountUsd, selectedMerchant.name));
-  }
+  useEffect(() => {
+    if (!tokenId) {
+      Alert.alert('Error', 'No token provided', [{ text: 'OK', onPress: () => router.back() }]);
+      return;
+    }
+
+    const runDemo = async () => {
+      try {
+        const bluetoothMerchants = await paymentService.getBluetoothMerchants();
+        const demoMerchant = bluetoothMerchants[0]; // Just pick the first one for demo
+        setMerchant(demoMerchant);
+
+        // Step 1: Searching nearby merchants...
+        setStep(1);
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Step 2: Merchant found
+        setStep(2);
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Step 3: Creating signed token...
+        setStep(3);
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Step 4: Sending via Bluetooth...
+        setStep(4);
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Step 5: Merchant verifies signature...
+        setStep(5);
+        await new Promise(r => setTimeout(r, 1500));
+
+        // Step 6 & 7: Accepted
+        await paymentService.sendViaBluetoothDemo({ tokenId, merchantId: demoMerchant.id });
+        setStep(6);
+      } catch (e: any) {
+        Alert.alert('Demo Error', e.message || 'Bluetooth demo failed');
+      }
+    };
+
+    runDemo();
+  }, [tokenId]);
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
-      <View style={{ flexDirection:'row', alignItems:'center', paddingHorizontal:12, paddingTop:8, paddingBottom:12, borderBottomWidth:1, borderBottomColor:colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={strings.common.back} style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
-          <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
-        </Pressable>
-        <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:17, color:colors.text.primary, flex:1, textAlign:'center', marginRight:44 }}>
-          {strings.bluetoothPay.title}
-        </Text>
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding:20, gap:14 }} showsVerticalScrollIndicator={false}>
-        <View style={{ padding:18, borderRadius:18, backgroundColor:colors.status.warningLight }}>
-          <Bluetooth size={30} color={colors.brand.cta} strokeWidth={1.8} />
-          <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.text.primary, marginTop:12 }}>
-            {strings.bluetoothPay.title}
-          </Text>
-          <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, lineHeight:21, color:colors.text.secondary, marginTop:6 }}>
-            {strings.bluetoothPay.subtitle}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
+        <View style={{ alignItems: 'center', marginBottom: 32, marginTop: 24 }}>
+          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.brand.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+            <Bluetooth size={40} color={colors.brand.primary} />
+          </View>
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text.primary }}>
+            Bluetooth Pay
           </Text>
         </View>
 
-        <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-          <Clock size={16} color={colors.brand.primary} strokeWidth={2} />
-          <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.text.primary }}>
-            {strings.bluetoothPay.scanning}
-          </Text>
-        </View>
-
-        <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:16, color:colors.text.primary }}>
-          {strings.bluetoothPay.nearby}
-        </Text>
-
-        {MERCHANTS.map((merchant) => {
-          const selected = selectedMerchant.id === merchant.id;
-          return (
-            <Pressable
-              key={merchant.id}
-              onPress={() => {
-                setSelectedMerchant(merchant);
-                setPayment(null);
-              }}
-              accessibilityRole="radio"
-              accessibilityState={{ selected }}
-              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-            >
-              <Card style={{ padding:16, borderWidth:selected ? 2 : 1, borderColor:selected ? colors.brand.primary : colors.border.divider }}>
-                <View style={{ flexDirection:'row', alignItems:'center', gap:12 }}>
-                  <View style={{ width:46, height:46, borderRadius:16, backgroundColor:selected ? colors.brand.primaryLight : '#F4F1EA', alignItems:'center', justifyContent:'center' }}>
-                    <Bluetooth size={20} color={selected ? colors.brand.primary : colors.text.secondary} strokeWidth={2} />
-                  </View>
-                  <View style={{ flex:1 }}>
-                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }}>{merchant.name}</Text>
-                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary, marginTop:3 }}>{merchant.distance}</Text>
-                  </View>
-                  <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:22, color:colors.text.primary }}>${merchant.amountUsd}</Text>
-                </View>
-              </Card>
-            </Pressable>
-          );
-        })}
-
-        <Button label={strings.bluetoothPay.sign} onPress={handleSign} icon={<Bluetooth size={18} color="#fff" strokeWidth={2} />} />
-
-        {payment && (
-          <View style={{ borderRadius:18, backgroundColor:colors.brand.primaryLight, padding:16, flexDirection:'row', alignItems:'flex-start', gap:12 }}>
-            <CheckCircle2 size={24} color={colors.brand.primary} strokeWidth={2} />
-            <View style={{ flex:1 }}>
-              <Text style={{ fontFamily:'Inter_700Bold', fontSize:15, color:colors.text.primary }}>
-                {strings.bluetoothPay.signed}
-              </Text>
-              <Text style={{ fontFamily:'Inter_400Regular', fontSize:13, lineHeight:18, color:colors.text.secondary, marginTop:4 }}>
-                {payment.merchantName} · ${payment.amountUsd} · {strings.bluetoothPay.syncLater}
+        <Card style={{ padding: 20, marginBottom: 24 }}>
+          <View style={{ gap: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 1 ? 1 : 0.3 }}>
+              {step === 1 ? <Loader size={20} color={colors.brand.primary} /> : <CheckCircle size={20} color={step > 1 ? colors.status.success : colors.text.tertiary} />}
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary }}>
+                Searching nearby merchants...
               </Text>
             </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 2 ? 1 : 0.3 }}>
+              {step === 2 ? <Loader size={20} color={colors.brand.primary} /> : <CheckCircle size={20} color={step > 2 ? colors.status.success : colors.text.tertiary} />}
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary }}>
+                Merchant found: {merchant ? merchant.name : '...'}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 3 ? 1 : 0.3 }}>
+              {step === 3 ? <Loader size={20} color={colors.brand.primary} /> : <CheckCircle size={20} color={step > 3 ? colors.status.success : colors.text.tertiary} />}
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary }}>
+                Creating KICB Demo signed token...
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 4 ? 1 : 0.3 }}>
+              {step === 4 ? <Loader size={20} color={colors.brand.primary} /> : <CheckCircle size={20} color={step > 4 ? colors.status.success : colors.text.tertiary} />}
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary }}>
+                Sending token via Bluetooth demo...
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 5 ? 1 : 0.3 }}>
+              {step === 5 ? <Loader size={20} color={colors.brand.primary} /> : <CheckCircle size={20} color={step > 5 ? colors.status.success : colors.text.tertiary} />}
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.text.primary }}>
+                Merchant verifies signature...
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, opacity: step >= 6 ? 1 : 0.3 }}>
+              <CheckCircle size={20} color={step >= 6 ? colors.status.success : colors.text.tertiary} />
+              <View>
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary }}>
+                  Merchant accepted payment
+                </Text>
+                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>
+                  Status: Pending sync
+                </Text>
+              </View>
+            </View>
+          </View>
+        </Card>
+
+        {step >= 6 && (
+          <View>
+            <Card style={{ backgroundColor: colors.status.successLight, padding: 16, marginBottom: 24, alignItems: 'center' }}>
+              <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.status.success, marginBottom: 4 }}>
+                Bluetooth demo payment accepted offline
+              </Text>
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.status.success }}>
+                Sync when internet is available
+              </Text>
+            </Card>
+            <Button
+              variant="cta"
+              label="Back to Wallet"
+              onPress={() => router.push('/(tabs)/wallet')}
+            />
           </View>
         )}
       </ScrollView>
