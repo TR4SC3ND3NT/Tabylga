@@ -11,19 +11,18 @@ export function MapCanvas({
   routePointsLabel = 'Route points',
   routeMoreLabel,
 }: MapCanvasProps) {
-  const center = selectedPlace ?? routePlaces[0] ?? places[0];
-  const latitude = center?.lat ?? region.latitude ?? initialRegion.latitude;
-  const longitude = center?.lon ?? region.longitude ?? initialRegion.longitude;
-  const delta = selectedPlace ? 0.08 : Math.max(region.latitudeDelta, 0.4);
+  const latitude = region?.latitude ?? initialRegion.latitude;
+  const longitude = region?.longitude ?? initialRegion.longitude;
+  const delta = region?.latitudeDelta ? region.latitudeDelta / 2 : 0.4;
   const src =
     `https://www.openstreetmap.org/export/embed.html?bbox=${longitude - delta},${latitude - delta},${longitude + delta},${latitude + delta}&layer=mapnik&marker=${latitude},${longitude}`;
 
   return (
-    <View style={{ position: 'absolute', inset: 0, backgroundColor: '#DDE6DD' }}>
+    <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 0, backgroundColor: '#DDE6DD' }}>
       {React.createElement('iframe' as any, {
         src,
         title: 'Tabylga map',
-        style: { width: '100%', height: '100%', border: 0 },
+        style: { position: 'absolute', inset: 0, zIndex: 0, width: '100%', height: '100%', border: 0 },
       })}
       {routePlaces.length > 1 && (
         <View style={{ position: 'absolute', right: 16, top: 136, width: 150, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.94)', padding: 10, gap: 6 }}>

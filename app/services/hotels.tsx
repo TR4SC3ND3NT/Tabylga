@@ -10,6 +10,7 @@ import { colors } from '../../constants/colors';
 import { Chip } from '../../components/Chip';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { PlacePhoto } from '../../components/PlacePhoto';
 import { formatUSD } from '../../lib/format';
 import { useTripStore } from '../../stores/tripStore';
 
@@ -101,11 +102,20 @@ export default function HotelsScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
         {stays.map((stay) => (
-          <Card key={stay.id}>
-            <View style={{ flexDirection: 'row' }}>
-              <View style={{ width: 112, minHeight: 136, backgroundColor: BG_TINTS[stay.type] ?? '#3d6479', alignItems: 'center', justifyContent: 'center' }}>
-                {stay.wifi ? <Wifi size={28} color="#fff" strokeWidth={1.6} /> : <WifiOff size={28} color="#fff" strokeWidth={1.6} />}
-              </View>
+          <Pressable
+            key={stay.id}
+            onPress={() => router.push({ pathname: '/(tabs)/map', params: { q: stay.name } } as never)}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+          >
+            <Card>
+              <View style={{ flexDirection: 'row' }}>
+              <PlacePhoto
+                width={112}
+                height={136}
+                tint={BG_TINTS[stay.type] ?? '#3d6479'}
+                imageUrl={stay.imageUrl}
+              />
               <View style={{ flex: 1, padding: 12 }}>
                 <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }} numberOfLines={2}>{stay.name}</Text>
                 <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>{stay.city}, {stay.region}</Text>
@@ -128,6 +138,7 @@ export default function HotelsScreen() {
               </View>
             </View>
           </Card>
+        </Pressable>
         ))}
       </ScrollView>
 

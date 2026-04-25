@@ -79,6 +79,7 @@ export interface Stay {
   type: 'hotel' | 'hostel' | 'guesthouse' | 'yurt';
   city: string;
   region: string;
+  imageUrl?: string;
   pricePerNight: number;
   tier: BudgetTier;
   rating: number;

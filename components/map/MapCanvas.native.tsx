@@ -1,4 +1,5 @@
 import { Platform, View, Text } from 'react-native';
+import { useEffect, useRef } from 'react';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import {
   Bed,
@@ -40,15 +41,23 @@ export function MapCanvas({
   pinColors,
   onSelectPlace,
 }: MapCanvasProps) {
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    if (region && mapRef.current) {
+      mapRef.current.animateToRegion(region, 350);
+    }
+  }, [region]);
+
   const routeCoordinates = routePlaces.map((place) => ({ latitude: place.lat, longitude: place.lon }));
   const visibleRoute = navigationCoordinates.length > 1 ? navigationCoordinates : routeCoordinates;
 
   return (
     <MapView
+      ref={mapRef}
       style={{ position: 'absolute', inset: 0 }}
       provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
       initialRegion={initialRegion}
-      region={region}
       showsUserLocation
       showsMyLocationButton={false}
     >

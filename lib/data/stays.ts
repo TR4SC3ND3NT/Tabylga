@@ -3,6 +3,7 @@ import type { Stay } from './tripPlaces';
 export const STAYS: Stay[] = [
   {
     id: 'stay_hyatt_bishkek',
+    imageUrl: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
     name: 'Hyatt Regency Bishkek',
     type: 'hotel',
     city: 'Bishkek',
@@ -35,6 +36,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_golden_tulip',
+    imageUrl: "https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400",
     name: 'Golden Tulip Garden Hotel',
     type: 'hotel',
     city: 'Bishkek',
@@ -64,6 +66,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_bugu_bishkek',
+    imageUrl: "https://images.unsplash.com/photo-1542314831-c6a4d14d837e?w=400",
     name: 'Bugu Hotel Bishkek',
     type: 'hotel',
     city: 'Bishkek',
@@ -93,6 +96,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_apple_hostel',
+    imageUrl: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400",
     name: 'Apple Hostel Bishkek',
     type: 'hostel',
     city: 'Bishkek',
@@ -122,6 +126,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_karakol_guesthouse',
+    imageUrl: "https://images.unsplash.com/photo-1551882547-ff40c0d13c05?w=400",
     name: 'Karakol Guesthouse',
     type: 'guesthouse',
     city: 'Karakol',
@@ -151,6 +156,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_issyk_kul_lake_hotel',
+    imageUrl: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400",
     name: 'Issyk-Kul Lake Hotel',
     type: 'hotel',
     city: 'Cholpon-Ata',
@@ -180,6 +186,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_tamga_yurt',
+    imageUrl: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400",
     name: 'Tamga Yurt Camp',
     type: 'yurt',
     city: 'Tamga',
@@ -206,6 +213,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_shepherd_life',
+    imageUrl: "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?w=400",
     name: "Shepherd's Life Yurt Camp",
     type: 'yurt',
     city: 'Song-Kul',
@@ -232,6 +240,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_songkul_nomad',
+    imageUrl: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400",
     name: 'Song-Kul Nomad Camp',
     type: 'yurt',
     city: 'Song-Kul',
@@ -258,6 +267,7 @@ export const STAYS: Stay[] = [
   },
   {
     id: 'stay_osh_boutique_guesthouse',
+    imageUrl: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=400",
     name: 'Osh Boutique Guesthouse',
     type: 'guesthouse',
     city: 'Osh',

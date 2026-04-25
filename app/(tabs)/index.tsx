@@ -1,8 +1,16 @@
-import { useEffect, useState } from 'react';
-import { View, Text, Pressable, TextInput, ScrollView, useWindowDimensions } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
+import { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  TextInput,
+  ScrollView,
+  useWindowDimensions,
+  ActivityIndicator,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
 import {
   Search,
   Mic,
@@ -22,17 +30,30 @@ import { colors } from '../../constants/colors';
 import { useAuthStore } from '../../stores/authStore';
 import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
 import { useTripStore } from '../../stores/tripStore';
-import { getPlacesByCategories } from '../../lib/api/places';
+import {
+  DGIS_BUSINESS_RUBRICS,
+  getDgisBusinessSection,
+} from '../../lib/api/dgis';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
 import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
+import { PlacePhoto } from '../../components/PlacePhoto';
 
 interface PlaceCard {
   id: string;
   name: string;
-  region: string;
-  category: string;
+  subtitle: string;
   bgTint: string;
+  rating?: number;
+  description?: string;
+  imageUrl?: string;
+  hasPhotos?: boolean;
+}
+
+type ServiceKey = "hotels" | "food" | "transport" | "activities";
+
+function formatServiceSubtitle(count: number | undefined, fallback: string) {
+  return typeof count === "number" && count > 0 ? `2GIS · ${count}` : fallback;
 }
 
 export default function HomeScreen() {
@@ -50,26 +71,112 @@ export default function HomeScreen() {
   const { height } = useWindowDimensions();
   const compact = height < 740;
   const [trending, setTrending] = useState<PlaceCard[]>([]);
+  const [serviceCounts, setServiceCounts] = useState<
+    Partial<Record<ServiceKey, number>>
+  >({});
+  const [homeLoading, setHomeLoading] = useState(true);
 
   const serviceTiles = [
-    { key: 'hotels', icon: Bed, label: strings.home.serviceHotels, sub: strings.home.serviceHotelsSub, bg: '#1E4D6B', route: '/services/hotels' },
-    { key: 'food', icon: Utensils, label: strings.home.serviceFood, sub: strings.home.serviceFoodSub, bg: '#C65D3A', route: '/services/food' },
-    { key: 'transport', icon: Car, label: strings.home.serviceTransport, sub: strings.home.serviceTransportSub, bg: '#4A6B40', route: '/services/transport' },
-    { key: 'activities', icon: Mountain, label: strings.home.serviceActivities, sub: strings.home.serviceActivitiesSub, bg: '#6A5A4B', route: '/services/activities' },
+    {
+      key: "hotels" as const,
+      icon: Bed,
+      label: strings.home.serviceHotels,
+      sub: formatServiceSubtitle(serviceCounts.hotels, "Live on 2GIS"),
+      bg: "#1E4D6B",
+      route: "/services/hotels",
+    },
+    {
+      key: "food" as const,
+      icon: Utensils,
+      label: strings.home.serviceFood,
+      sub: formatServiceSubtitle(
+        serviceCounts.food,
+        strings.home.serviceFoodSub,
+      ),
+      bg: "#C65D3A",
+      route: "/services/food",
+    },
+    {
+      key: "transport" as const,
+      icon: Car,
+      label: strings.home.serviceTransport,
+      sub: formatServiceSubtitle(
+        serviceCounts.transport,
+        strings.home.serviceTransportSub,
+      ),
+      bg: "#4A6B40",
+      route: "/services/transport",
+    },
+    {
+      key: "activities" as const,
+      icon: Mountain,
+      label: strings.home.serviceActivities,
+      sub: formatServiceSubtitle(
+        serviceCounts.activities,
+        strings.home.serviceActivitiesSub,
+      ),
+      bg: "#6A5A4B",
+      route: "/services/activities",
+    },
   ];
 
   useEffect(() => {
     let active = true;
+    setHomeLoading(true);
+
     (async () => {
       try {
-        const rows = await getPlacesByCategories(['hotel', 'attraction', 'nature'], language, 4);
+        const [hotels, food, transport, activities] = await Promise.all(
+          [
+            getDgisBusinessSection(DGIS_BUSINESS_RUBRICS.hotels, 6, language),
+            getDgisBusinessSection(DGIS_BUSINESS_RUBRICS.food, 6, language),
+            getDgisBusinessSection(DGIS_BUSINESS_RUBRICS.transport, 6, language),
+            getDgisBusinessSection(DGIS_BUSINESS_RUBRICS.activities, 6, language),
+          ],
+        );
         if (!active) return;
-        const tints = ['#1E4D6B', '#4A6B40', '#6A5A4B', '#C65D3A'];
-        setTrending(rows.map((row, index) => ({ ...row, bgTint: tints[index % tints.length] })));
+
+        setServiceCounts({
+          hotels: hotels.total,
+          food: food.total,
+          transport: transport.total,
+          activities: activities.total,
+        });
+
+        const seen = new Set<string>();
+        const cards = [
+          { section: hotels, bgTint: "#1E4D6B" },
+          { section: food, bgTint: "#C65D3A" },
+          { section: nature, bgTint: "#4A6B40" },
+          { section: activities, bgTint: "#6A5A4B" },
+          { section: transport, bgTint: "#4A7289" },
+        ].flatMap(({ section, bgTint }) => {
+          const place = section.items.find((item) => item.hasPhotos && !seen.has(item.id)) 
+                     ?? section.items.find((item) => !seen.has(item.id));
+          if (!place) return [];
+          seen.add(place.id);
+          return [
+            {
+              id: place.id,
+              name: place.name,
+              subtitle: place.address ?? place.category ?? "2GIS",
+              bgTint,
+              rating: place.rating,
+              description: place.description,
+              imageUrl: place.photoUrl,
+              hasPhotos: place.hasPhotos,
+            },
+          ];
+        });
+
+        setTrending(cards.slice(0, 4));
       } catch (error) {
-        console.warn('[home] trending query failed', error);
+        console.warn("[home] trending query failed", error);
+      } finally {
+        if (active) setHomeLoading(false);
       }
     })();
+
     return () => {
       active = false;
     };
@@ -80,31 +187,71 @@ export default function HomeScreen() {
       <StatusBar style="dark" />
       <KyrgyzBackdrop height={compact ? 260 : 305} />
 
-      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <View style={{ flex: 1, paddingTop: 8, paddingBottom: Math.max(insets.bottom, 12) + 82 }}>
-          <View className="flex-row items-center px-5" style={{ minHeight: 44 }}>
-            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.84)', alignItems: 'center', justifyContent: 'center' }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingTop: Math.max(insets.top, 12) + 8,
+          paddingBottom: Math.max(insets.bottom, 12) + 82,
+        }}
+      >
+        <View
+          className="flex-row items-center px-5"
+          style={{ minHeight: 44 }}
+        >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.84)",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <User size={20} color={colors.brand.primary} strokeWidth={1.8} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
                 {user?.name ? `Hi, ${user.name}` : guestSessionId ? 'Hi, traveler' : strings.home.greeting}
               </Text>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, marginTop: 1 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter_500Medium",
+                  fontSize: 12,
+                  color: colors.text.secondary,
+                  marginTop: 1,
+                }}
+              >
                 {peopleCount} travelers · age {age}
               </Text>
             </View>
             <Pressable
               accessibilityLabel={strings.home.notifications}
               accessibilityRole="button"
-              style={({ pressed }) => ({ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+              style={({ pressed }) => ({
+                width: 40,
+                height: 40,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: pressed ? 0.6 : 1,
+              })}
             >
               <Bell size={23} color={colors.text.primary} strokeWidth={1.7} />
             </Pressable>
           </View>
 
-          <View style={{ paddingHorizontal: 20, paddingTop: compact ? 14 : 20 }}>
-            <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: compact ? 30 : 36, lineHeight: compact ? 35 : 41, color: colors.text.primary }}>
+          <View
+            style={{ paddingHorizontal: 20, paddingTop: compact ? 14 : 20 }}
+          >
+            <Text
+              style={{
+                fontFamily: "Fraunces_600SemiBold",
+                fontSize: compact ? 30 : 36,
+                lineHeight: compact ? 35 : 41,
+                color: colors.text.primary,
+              }}
+            >
               Kyrgyzstan routes that actually work
             </Text>
             <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20, color: colors.text.secondary, marginTop: 8, maxWidth: 310 }}>
@@ -117,9 +264,9 @@ export default function HomeScreen() {
             style={{
               height: 54,
               borderRadius: 16,
-              backgroundColor: 'rgba(255,255,255,0.94)',
-              flexDirection: 'row',
-              alignItems: 'center',
+              backgroundColor: "rgba(255,255,255,0.94)",
+              flexDirection: "row",
+              alignItems: "center",
               paddingHorizontal: 15,
               gap: 11,
               borderWidth: 1,
@@ -131,15 +278,39 @@ export default function HomeScreen() {
             <TextInput
               placeholder={strings.home.searchPlaceholder}
               placeholderTextColor={colors.text.tertiary}
-              onSubmitEditing={(event) => router.push({ pathname: '/(tabs)/map', params: { q: event.nativeEvent.text } } as never)}
-              style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.text.primary }}
+              keyboardAppearance="light"
+              returnKeyType="search"
+              onSubmitEditing={(event) =>
+                router.push({
+                  pathname: "/(tabs)/map",
+                  params: { q: event.nativeEvent.text },
+                } as never)
+              }
+              style={{
+                flex: 1,
+                fontFamily: "Inter_500Medium",
+                fontSize: 15,
+                color: colors.text.primary,
+              }}
             />
-            <Pressable accessibilityLabel={strings.home.voiceSearch} accessibilityRole="button" onPress={() => router.push('/trip/voice')}>
+            <Pressable
+              accessibilityLabel={strings.home.voiceSearch}
+              accessibilityRole="button"
+              onPress={() => router.push("/trip/voice")}
+            >
               <Mic size={19} color={colors.brand.primary} strokeWidth={1.8} />
             </Pressable>
           </View>
 
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20, marginTop: compact ? 14 : 18 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 10,
+              paddingHorizontal: 20,
+              marginTop: compact ? 14 : 18,
+            }}
+          >
             {serviceTiles.map((tile) => {
               const Icon = tile.icon;
               return (
@@ -149,21 +320,35 @@ export default function HomeScreen() {
                   accessibilityLabel={tile.label}
                   accessibilityRole="button"
                   style={({ pressed }) => ({
-                    width: '48.4%',
+                    width: "48.4%",
                     height: compact ? 92 : 106,
                     borderRadius: 18,
                     backgroundColor: tile.bg,
                     padding: 13,
-                    justifyContent: 'space-between',
+                    justifyContent: "space-between",
                     opacity: pressed ? 0.85 : 1,
                   })}
                 >
                   <Icon size={22} color="#fff" strokeWidth={1.8} />
                   <View>
-                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: '#fff' }}>
+                    <Text
+                      style={{
+                        fontFamily: "Inter_700Bold",
+                        fontSize: 15,
+                        color: "#fff",
+                      }}
+                    >
                       {tile.label}
                     </Text>
-                    <Text numberOfLines={1} style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.78)', marginTop: 2 }}>
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        fontFamily: "Inter_500Medium",
+                        fontSize: 11,
+                        color: "rgba(255,255,255,0.78)",
+                        marginTop: 2,
+                      }}
+                    >
                       {tile.sub}
                     </Text>
                   </View>
@@ -172,7 +357,14 @@ export default function HomeScreen() {
             })}
           </View>
 
-          <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginTop: compact ? 14 : 18 }}>
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 10,
+              paddingHorizontal: 20,
+              marginTop: compact ? 14 : 18,
+            }}
+          >
             <Button
               variant="cta"
               label="Plan my full trip with AI"
@@ -186,7 +378,7 @@ export default function HomeScreen() {
               fontSize={13}
             />
             <Pressable
-              onPress={() => router.push('/tools/translator')}
+              onPress={() => router.push("/tools/translator")}
               accessibilityRole="button"
               style={({ pressed }) => ({
                 width: 54,
@@ -195,12 +387,16 @@ export default function HomeScreen() {
                 backgroundColor: colors.surface.card,
                 borderWidth: 1,
                 borderColor: colors.border.divider,
-                alignItems: 'center',
-                justifyContent: 'center',
+                alignItems: "center",
+                justifyContent: "center",
                 opacity: pressed ? 0.75 : 1,
               })}
             >
-              <Languages size={22} color={colors.brand.primary} strokeWidth={1.8} />
+              <Languages
+                size={22}
+                color={colors.brand.primary}
+                strokeWidth={1.8}
+              />
             </Pressable>
           </View>
 
@@ -234,55 +430,165 @@ export default function HomeScreen() {
             </Pressable>
           )}
 
-          <View style={{ marginTop: compact ? 12 : 18 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 }}>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text.primary }}>
-                {strings.home.sectionTrending}
-              </Text>
-              <Pressable onPress={() => router.push('/(tabs)/map')} accessibilityRole="button">
-                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.brand.primary }}>
-                  {strings.home.seeAll}
+          {(homeLoading || trending.length > 0) && (
+            <View style={{ marginTop: compact ? 12 : 18 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 }}>
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text.primary }}>
+                  {strings.home.sectionTrending}
                 </Text>
-              </Pressable>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}>
-              {trending.map((card, index) => (
                 <Pressable
-                  key={card.id}
-                  onPress={() => router.push({ pathname: '/(tabs)/map', params: { q: card.name } } as never)}
+                  onPress={() => router.push("/(tabs)/map")}
                   accessibilityRole="button"
-                  style={({ pressed }) => ({
-                    width: 170,
+                >
+                  <Text
+                    style={{
+                      fontFamily: "Inter_700Bold",
+                      fontSize: 12,
+                      color: colors.brand.primary,
+                    }}
+                  >
+                    {strings.home.seeAll}
+                  </Text>
+                </Pressable>
+              </View>
+              {homeLoading ? (
+                <View
+                  style={{
+                    marginHorizontal: 20,
                     height: compact ? 86 : 102,
                     borderRadius: 16,
-                    backgroundColor: card.bgTint,
-                    padding: 12,
-                    opacity: pressed ? 0.85 : 1,
-                  })}
+                    backgroundColor: colors.surface.card,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: colors.border.divider,
+                    gap: 8,
+                  }}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <MapPin size={15} color="#fff" strokeWidth={2} />
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                      <Star size={11} color="#F8D18A" fill="#F8D18A" strokeWidth={0} />
-                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: '#fff' }}>
-                        4.{index + 5}
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-                    <Text numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>
-                      {card.name}
-                    </Text>
-                    <Text numberOfLines={1} style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: 'rgba(255,255,255,0.78)', marginTop: 2 }}>
-                      {card.region}
-                    </Text>
-                  </View>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </SafeAreaView>
+                  <ActivityIndicator
+                    color={colors.brand.primary}
+                    size="small"
+                  />
+                  <Text
+                    style={{
+                      fontFamily: "Inter_500Medium",
+                      fontSize: 12,
+                      color: colors.text.secondary,
+                    }}
+                  >
+                    {strings.map.loadingPlaces}
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+                >
+                  {trending.map((card) => (
+                    <Pressable
+                      key={card.id}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(tabs)/map",
+                          params: { q: card.name },
+                        } as never)
+                      }
+                      accessibilityRole="button"
+                      style={({ pressed }) => ({
+                        width: 170,
+                        height: compact ? 86 : 102,
+                        borderRadius: 16,
+                        backgroundColor: card.bgTint,
+                        overflow: "hidden",
+                        opacity: pressed ? 0.85 : 1,
+                      })}
+                    >
+                      <PlacePhoto
+                        width="100%"
+                        height={compact ? 86 : 102}
+                        radius={16}
+                        tint={card.bgTint}
+                        imageUrl={card.imageUrl}
+                      />
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 12,
+                          left: 12,
+                          right: 12,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <MapPin size={15} color="#fff" strokeWidth={2} />
+                        {typeof card.rating === "number" ? (
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            <Star
+                              size={11}
+                              color="#F8D18A"
+                              fill="#F8D18A"
+                              strokeWidth={0}
+                            />
+                            <Text
+                              style={{
+                                fontFamily: "Inter_700Bold",
+                                fontSize: 11,
+                                color: "#fff",
+                              }}
+                            >
+                              {card.rating.toFixed(1)}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Text
+                            style={{
+                              fontFamily: "Inter_700Bold",
+                              fontSize: 11,
+                              color: "rgba(255,255,255,0.78)",
+                            }}
+                          >
+                            2GIS
+                          </Text>
+                        )}
+                      </View>
+                      <View style={{ position: "absolute", left: 12, right: 12, bottom: 10 }}>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontFamily: "Inter_700Bold",
+                            fontSize: 14,
+                            color: "#fff",
+                          }}
+                        >
+                          {card.name}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            fontFamily: "Inter_500Medium",
+                            fontSize: 11,
+                            color: "rgba(255,255,255,0.78)",
+                            marginTop: 2,
+                          }}
+                        >
+                          {card.description ?? card.subtitle}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
+        </ScrollView>
     </View>
   );
 }
