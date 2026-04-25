@@ -9,10 +9,10 @@ module.exports = {
   theme: {
     extend: {
       // ── Colors ──────────────────────────────────────────────
-      // Usage: bg-surface-primary, text-text-secondary, border-border-divider, etc.
+      // Synced with constants/colors.ts and design/Tabylga Parts 1-2.html
       colors: {
         surface: {
-          primary: '#FAFAF7',
+          primary: '#F7F6F2',
           card: '#FFFFFF',
           inverse: '#1A1A1A',
           canvas: '#EFEFEA',
@@ -27,15 +27,19 @@ module.exports = {
         },
         status: {
           success: '#7A9B6E',
+          'success-text': '#4a6b40',
           'success-light': '#EDF2EA',
           warning: '#D4A574',
+          'warning-text': '#8a6530',
+          'warning-dark': '#5a3a00',
           'warning-light': '#FAF4EA',
           error: '#B84A3E',
+          'error-text': '#8a3a30',
           'error-light': '#F8EAE8',
         },
         text: {
-          primary: '#1A1A1A',
-          secondary: '#6B6B65',
+          primary: '#2A2922',
+          secondary: '#7A7A6E',
           tertiary: '#9B9B95',
           'on-dark': '#FAFAF7',
           'on-primary': '#FFFFFF',
@@ -48,8 +52,6 @@ module.exports = {
       },
 
       // ── Font families ────────────────────────────────────────
-      // Usage: font-sans (Inter 400), font-sans-semibold (Inter 600), font-display-semibold (Fraunces 600)
-      // Names must match exactly what @expo-google-fonts loads — native uses the string literally.
       fontFamily: {
         'sans':             ['Inter_400Regular'],
         'sans-medium':      ['Inter_500Medium'],
@@ -60,7 +62,6 @@ module.exports = {
       },
 
       // ── Font sizes ───────────────────────────────────────────
-      // Usage: text-xs (11), text-sm (12), text-body (15), text-lg (16), etc.
       fontSize: {
         xs: ['11px', { lineHeight: '14.3px' }],
         sm: ['12px', { lineHeight: '15.6px' }],
@@ -76,8 +77,6 @@ module.exports = {
       },
 
       // ── Spacing scale ────────────────────────────────────────
-      // Extends (not replaces) Tailwind defaults.
-      // Usage: p-4 = 16px, p-5 = 20px, p-6 = 24px, etc.
       spacing: {
         1: '4px',
         2: '8px',
@@ -92,28 +91,25 @@ module.exports = {
         8: '32px',
         10: '40px',
         12: '48px',
-        14: '56px',   // input / button height
+        14: '56px',
         16: '64px',
-        20: '80px',   // bottom nav height
+        20: '80px',
       },
 
       // ── Border radii ─────────────────────────────────────────
-      // Usage: rounded-sm, rounded-md, rounded-card, rounded-modal, rounded-pill
       borderRadius: {
         none: '0px',
         sm: '8px',
         md: '12px',
         lg: '16px',
-        card: '16px',      // alias — primary card radius
+        card: '16px',
         xl: '24px',
-        modal: '24px',     // alias — bottom sheet / modal top corners
+        modal: '24px',
         pill: '999px',
         full: '9999px',
       },
 
       // ── Box shadows (web-side, for NativeWind web target) ────
-      // On native, use the shadow objects from constants/shadows.ts directly.
-      // Usage: shadow-card, shadow-card-elevated, shadow-floating, shadow-modal
       boxShadow: {
         card: '0 2px 8px rgba(26, 26, 26, 0.04)',
         'card-elevated': '0 8px 24px rgba(26, 26, 26, 0.08)',

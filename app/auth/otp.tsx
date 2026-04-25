@@ -16,6 +16,7 @@ import { ArrowLeft, Bell } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
 
 const OTP_RESEND_SECONDS = 58;
 
@@ -294,54 +295,20 @@ export default function OtpScreen() {
             </View>
 
             {/* Verify CTA */}
-            <Pressable
+            <Button
+              label={strings.auth.otpVerify}
               onPress={() => handleVerify()}
               disabled={!canSubmit}
-              accessibilityLabel={strings.auth.otpVerify}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                height: 56,
-                borderRadius: 16,
-                backgroundColor: colors.brand.primary,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 32,
-                opacity: !canSubmit ? 0.4 : pressed ? 0.85 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  fontFamily: 'Inter_600SemiBold',
-                  fontSize: 16,
-                  color: '#fff',
-                }}
-              >
-                {strings.auth.otpVerify}
-              </Text>
-            </Pressable>
+              style={{ marginTop: 32 }}
+            />
 
             {/* Change number */}
-            <Pressable
+            <Button
+              variant="ghost"
+              label={strings.auth.otpChangeNumber}
               onPress={() => router.back()}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                height: 52,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginTop: 4,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  fontFamily: 'Inter_500Medium',
-                  fontSize: 15,
-                  color: colors.brand.primary,
-                }}
-              >
-                {strings.auth.otpChangeNumber}
-              </Text>
-            </Pressable>
+              style={{ marginTop: 4, height: 52 }}
+            />
 
             {/* Auto-fill hint card */}
             <View

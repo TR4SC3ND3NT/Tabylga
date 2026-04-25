@@ -7,6 +7,9 @@ import { ArrowLeft, Star, AlertTriangle } from 'lucide-react-native';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { Chip } from '../../components/Chip';
+import { Card } from '../../components/Card';
+import { Button } from '../../components/Button';
 
 const FILTERS = ['All','Price','Rating','Hotel','Hostel','Yurt','Guesthouse'];
 
@@ -38,15 +41,20 @@ export default function HotelsScreen() {
 
       <ScrollView showsHorizontalScrollIndicator={false} style={{ borderBottomWidth:1, borderBottomColor:colors.border.divider, maxHeight:52 }} horizontal contentContainerStyle={{ paddingHorizontal:16, gap:8, alignItems:'center' }}>
         {FILTERS.map(f => (
-          <Pressable key={f} onPress={() => setFilter(f)} accessibilityRole="radio" accessibilityState={{ selected: filter===f }} style={({ pressed }) => ({ height:34, paddingHorizontal:14, borderRadius:999, backgroundColor: filter===f ? colors.brand.primary : colors.surface.card, borderWidth:1, borderColor: filter===f ? colors.brand.primary : colors.border.input, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.8 : 1 })}>
-            <Text style={{ fontFamily:'Inter_500Medium', fontSize:13, color: filter===f ? '#fff' : colors.text.primary }}>{f}</Text>
-          </Pressable>
+          <Chip
+            key={f}
+            label={f}
+            selected={filter === f}
+            onPress={() => setFilter(f)}
+            height={34}
+            fontSize={13}
+          />
         ))}
       </ScrollView>
 
       <ScrollView contentContainerStyle={{ padding:16, gap:12 }} showsVerticalScrollIndicator={false}>
         {HOTELS.map(h => (
-          <View key={h.id} style={[{ borderRadius:16, backgroundColor:colors.surface.card, overflow:'hidden' }, shadows.card]}>
+          <Card key={h.id}>
             <View style={{ flexDirection:'row' }}>
               <View style={{ width:120, height:120, backgroundColor: BG_TINTS[h.type] ?? '#3d6479' }} />
               <View style={{ flex:1, padding:12, justifyContent:'space-between' }}>
@@ -67,13 +75,19 @@ export default function HotelsScreen() {
                 </View>
                 <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
                   <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.brand.primary }}>${h.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>/night</Text></Text>
-                  <Pressable accessibilityRole="button" style={({ pressed }) => ({ paddingHorizontal:14, height:32, borderRadius:8, borderWidth:1.5, borderColor:colors.brand.primary, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.7 : 1 })}>
-                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:13, color:colors.brand.primary }}>{strings.services.book}</Text>
-                  </Pressable>
+                  <View style={{ width: 80 }}>
+                    <Button
+                      variant="secondary"
+                      label={strings.services.book}
+                      height={32}
+                      fontSize={13}
+                      style={{ borderRadius: 8, borderWidth: 1.5 }}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
+          </Card>
         ))}
       </ScrollView>
     </SafeAreaView>

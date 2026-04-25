@@ -1,11 +1,15 @@
+import { useState } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { Plus, QrCode, ArrowDownLeft, ArrowUpRight } from 'lucide-react-native';
+import { Plus, QrCode, ArrowDownLeft, ArrowUpRight, AlertTriangle, ChevronRight, Clock } from 'lucide-react-native';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { Pill } from '../../components/Pill';
+import { Button } from '../../components/Button';
+import { Card } from '../../components/Card';
 
 const TRANSACTIONS = [
   { id: '1', name: 'Faiza Restaurant',    type: 'debit',  amount: 12.50,  date: 'Today, 13:22' },
@@ -23,23 +27,35 @@ export default function WalletScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const [isOffline, setIsOffline] = useState(false);
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
+      {/* Hidden toggle for testing offline state */}
+      <Pressable onPress={() => setIsOffline(!isOffline)} style={{ position:'absolute', top: 50, right: 20, zIndex: 10, padding: 8, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 8 }}>
+        <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 10 }}>Toggle Offline</Text>
+      </Pressable>
+      
+      {isOffline && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.status.warningLight, borderBottomWidth: 1, borderBottomColor: '#EBD6B4' }}>
+          <AlertTriangle size={18} color="#8a6530" />
+          <Text style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 13, color: '#5a3a00' }}>
+            You're offline — wallet works for <Text style={{ fontFamily: 'Inter_700Bold' }}>$150 more</Text>
+          </Text>
+          <ChevronRight size={16} color="#8a6530" />
+        </View>
+      )}
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {/* ── Status badge ── */}
         <View className="items-center pt-4 pb-2">
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 6,
-            paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999,
-            backgroundColor: colors.status.successLight,
-          }}>
-            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.status.success }} />
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.status.success }}>
-              {strings.walletExtra.statusOnline}
-            </Text>
-          </View>
+          <Pill
+            variant={isOffline ? "offline" : "online"}
+            label={isOffline ? "Offline ready · $150 available" : strings.walletExtra.statusOnline}
+            showDot={true}
+          />
         </View>
 
         {/* ── Balance ── */}
@@ -47,76 +63,62 @@ export default function WalletScreen() {
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.tertiary, marginBottom: 4, letterSpacing: 0.12 * 13, textTransform: 'uppercase' }}>
             {strings.walletExtra.balance}
           </Text>
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 48, lineHeight: 54, color: colors.text.primary }}>
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 48, lineHeight: 54, color: isOffline ? colors.text.secondary : colors.text.primary }}>
             $1,247.00
           </Text>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: colors.text.secondary, marginTop: 4 }}>
-            ≈ 108,489 KGS
+            {isOffline ? 'Last synced 2 hours ago' : '≈ 108,489 KGS'}
           </Text>
-          <Pressable style={{ marginTop: 6 }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.brand.primary }}>
-              {strings.walletExtra.rateLink}
-            </Text>
-          </Pressable>
+          {!isOffline && (
+            <Pressable style={{ marginTop: 6 }}>
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.brand.primary }}>
+                {strings.walletExtra.rateLink}
+              </Text>
+            </Pressable>
+          )}
         </View>
 
         {/* ── Action buttons ── */}
         <View style={{ flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginBottom: 24 }}>
           {/* Top up */}
-          <Pressable
+          <Button
+            variant="primary"
+            label={strings.walletExtra.actionTopUp}
             onPress={() => router.push('/wallet/topup')}
-            accessibilityLabel={strings.walletExtra.actionTopUp}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              flex: 1, height: 56, borderRadius: 14,
-              backgroundColor: colors.brand.primary,
-              alignItems: 'center', justifyContent: 'center', gap: 6,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <Plus size={18} color="#fff" strokeWidth={2} />
-            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#fff' }}>
-              {strings.walletExtra.actionTopUp}
-            </Text>
-          </Pressable>
+            icon={<Plus size={18} color="#fff" strokeWidth={2} />}
+            style={{ flex: 1, ...(isOffline && { backgroundColor: colors.border.divider, opacity: 0.6 }) }}
+            disabled={isOffline}
+            fontSize={12}
+          />
 
           {/* Pay */}
-          <Pressable
+          <Button
+            variant="cta"
+            label={strings.walletExtra.actionPay}
             onPress={() => router.push('/wallet/pay')}
-            accessibilityLabel={strings.walletExtra.actionPay}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              flex: 1, height: 56, borderRadius: 14,
-              backgroundColor: colors.brand.cta,
-              alignItems: 'center', justifyContent: 'center', gap: 6,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <QrCode size={18} color="#fff" strokeWidth={2} />
-            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#fff' }}>
-              {strings.walletExtra.actionPay}
-            </Text>
-          </Pressable>
+            icon={<QrCode size={18} color="#fff" strokeWidth={2} />}
+            style={{ flex: 1 }}
+            fontSize={12}
+          />
 
           {/* Receive */}
-          <Pressable
+          <Button
+            variant="secondary"
+            label={strings.walletExtra.actionReceive}
             onPress={() => router.push('/wallet/receive')}
-            accessibilityLabel={strings.walletExtra.actionReceive}
-            accessibilityRole="button"
-            style={({ pressed }) => ({
-              flex: 1, height: 56, borderRadius: 14,
-              backgroundColor: colors.surface.card,
-              borderWidth: 1.5, borderColor: colors.brand.primary,
-              alignItems: 'center', justifyContent: 'center', gap: 6,
-              opacity: pressed ? 0.85 : 1,
-            })}
-          >
-            <ArrowDownLeft size={18} color={colors.brand.primary} strokeWidth={2} />
-            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.brand.primary }}>
-              {strings.walletExtra.actionReceive}
-            </Text>
-          </Pressable>
+            icon={<ArrowDownLeft size={18} color={colors.brand.primary} strokeWidth={2} />}
+            style={{ flex: 1 }}
+            fontSize={12}
+          />
         </View>
+
+        {isOffline && (
+          <View style={{ marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.status.warningLight, borderRadius: 10 }}>
+            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 15.6, color: '#5a3a00', textAlign: 'center' }}>
+              Pay offline with up to $150 · syncs automatically when back online
+            </Text>
+          </View>
+        )}
 
         {/* ── Recent transactions ── */}
         <View style={{ paddingHorizontal: 20 }}>
@@ -124,7 +126,20 @@ export default function WalletScreen() {
             {strings.walletExtra.recentTitle}
           </Text>
 
-          <View style={[{ borderRadius: 16, backgroundColor: colors.surface.card, overflow: 'hidden' }, shadows.card]}>
+          {isOffline && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.status.warningLight, borderRadius: 12, borderWidth: 1, borderColor: '#EBD6B4', marginBottom: 12 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#EBD6B4', alignItems: 'center', justifyContent: 'center' }}>
+                <Clock size={18} color="#8a6530" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>Nomad's Yurt Camp</Text>
+                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: '#8a6530', marginTop: 2 }}>⏳ Pending sync</Text>
+              </View>
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.secondary }}>-$65.00</Text>
+            </View>
+          )}
+
+          <Card>
             {TRANSACTIONS.map((tx, i) => {
               const isCredit = tx.type === 'credit';
               const isLast = i === TRANSACTIONS.length - 1;
@@ -171,7 +186,7 @@ export default function WalletScreen() {
                 </View>
               );
             })}
-          </View>
+          </Card>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -18,6 +18,10 @@ import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { getDb } from '../../lib/db/client';
+import { Button } from '../../components/Button';
+import { SectionHeader } from '../../components/SectionHeader';
+import { Pill } from '../../components/Pill';
+import { Card } from '../../components/Card';
 
 interface PlaceCard {
   id: string;
@@ -180,18 +184,12 @@ export default function HomeScreen() {
               </View>
 
               {/* Countryside tag */}
-              <View
-                style={{
-                  position: 'absolute', top: 12, left: 12,
-                  flexDirection: 'row', alignItems: 'center', gap: 4,
-                  paddingHorizontal: 10, paddingVertical: 4,
-                  borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.92)',
-                }}
-              >
-                <TreePine size={12} color={colors.brand.primary} strokeWidth={2} />
-                <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 11, color: colors.brand.primary }}>
-                  {strings.home.countrysideTag}
-                </Text>
+              <View style={{ position: 'absolute', top: 12, left: 12 }}>
+                <Pill
+                  variant="countryside"
+                  label={strings.home.countrysideTag}
+                  icon={<TreePine size={12} color={colors.brand.primary} strokeWidth={2} />}
+                />
               </View>
 
               {/* Bottom content */}
@@ -256,27 +254,13 @@ export default function HomeScreen() {
         </View>
 
         {/* ── AI CTA ── */}
-        <Pressable
+        <Button
+          variant="cta"
+          label={strings.home.aiCtaTitle}
+          icon={<Sparkles size={22} color="#fff" strokeWidth={2} />}
           onPress={() => router.push('/trip/purpose')}
-          accessibilityLabel={strings.home.aiCtaTitle}
-          accessibilityRole="button"
-          style={({ pressed }) => ([
-            {
-              marginHorizontal: 20, marginTop: 24,
-              height: 64, borderRadius: 16,
-              backgroundColor: colors.brand.cta,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              gap: 10,
-              opacity: pressed ? 0.85 : 1,
-            },
-            shadows.floating,
-          ])}
-        >
-          <Sparkles size={22} color="#fff" strokeWidth={2} />
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: '#fff' }}>
-            {strings.home.aiCtaTitle}
-          </Text>
-        </Pressable>
+          style={{ marginHorizontal: 20, marginTop: 24 }}
+        />
 
         {/* ── Trending now ── */}
         <SectionHeader title={strings.home.sectionTrending} onSeeAll={() => console.log('See all trending')} />
@@ -292,12 +276,11 @@ export default function HomeScreen() {
               accessibilityLabel={card.name}
               accessibilityRole="button"
               style={({ pressed }) => ({
-                width: 180, height: 220, borderRadius: 16,
-                backgroundColor: colors.surface.card,
-                overflow: 'hidden',
+                width: 180, height: 220,
                 opacity: pressed ? 0.85 : 1,
               })}
             >
+              <Card style={{ flex: 1 }}>
               {/* Image placeholder */}
               <View style={{ height: 130, backgroundColor: card.bgTint, position: 'relative' }}>
                 <View
@@ -334,6 +317,7 @@ export default function HomeScreen() {
                   {strings.home.fromPrice} ${20 + Math.floor(Math.random() * 80)}
                 </Text>
               </View>
+              </Card>
             </Pressable>
           ))}
         </ScrollView>
@@ -342,17 +326,3 @@ export default function HomeScreen() {
   );
 }
 
-function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
-  return (
-    <View className="flex-row items-baseline justify-between px-5 mt-7">
-      <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary }}>
-        {title}
-      </Text>
-      <Pressable onPress={onSeeAll} accessibilityRole="link">
-        <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.brand.primary }}>
-          {strings.home.seeAll}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
