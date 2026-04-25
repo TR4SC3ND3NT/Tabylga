@@ -13,9 +13,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, ChevronDown, Minus, Plus, Users } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
-import { strings } from '../../lib/strings';
+import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 
@@ -30,7 +31,16 @@ function formatPhoneDisplay(raw: string): string {
 export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const { startPhoneAuth, loading, error } = useAuthStore();
+  const peopleCount = useTravelPreferencesStore((s) => s.peopleCount);
+  const preferredTourPeople = useTravelPreferencesStore((s) => s.preferredTourPeople);
+  const age = useTravelPreferencesStore((s) => s.age);
+  const wantsStrangerMatch = useTravelPreferencesStore((s) => s.wantsStrangerMatch);
+  const setPeopleCount = useTravelPreferencesStore((s) => s.setPeopleCount);
+  const setPreferredTourPeople = useTravelPreferencesStore((s) => s.setPreferredTourPeople);
+  const setAge = useTravelPreferencesStore((s) => s.setAge);
+  const setWantsStrangerMatch = useTravelPreferencesStore((s) => s.setWantsStrangerMatch);
 
   const [phoneDigits, setPhoneDigits] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -239,6 +249,117 @@ export default function PhoneScreen() {
                 {strings.auth.phoneHelper}
               </Text>
             )}
+
+            <View style={{ marginTop: 22, borderRadius: 18, backgroundColor: colors.surface.card, borderWidth: 1, borderColor: colors.border.divider, padding: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: colors.brand.primaryLight, alignItems: 'center', justifyContent: 'center' }}>
+                  <Users size={18} color={colors.brand.primary} strokeWidth={2} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
+                    {strings.preferences.title}
+                  </Text>
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 2 }}>
+                    {strings.preferences.subtitle}
+                  </Text>
+                </View>
+              </View>
+
+              {[
+                {
+                  label: strings.preferences.peopleCount,
+                  value: peopleCount,
+                  min: 1,
+                  max: 20,
+                  onChange: setPeopleCount,
+                },
+                {
+                  label: strings.preferences.preferredTourPeople,
+                  value: preferredTourPeople,
+                  min: 2,
+                  max: 30,
+                  onChange: setPreferredTourPeople,
+                },
+                {
+                  label: strings.preferences.age,
+                  value: age,
+                  min: 18,
+                  max: 80,
+                  onChange: setAge,
+                },
+              ].map((item, index) => (
+                <View
+                  key={item.label}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 12,
+                    borderTopWidth: index === 0 ? 0 : 1,
+                    borderTopColor: colors.border.divider,
+                  }}
+                >
+                  <Text style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.primary, marginRight: 12 }}>
+                    {item.label}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Pressable
+                      onPress={() => item.onChange(item.value - 1)}
+                      disabled={item.value <= item.min}
+                      accessibilityRole="button"
+                      style={({ pressed }) => ({
+                        width: 30, height: 30, borderRadius: 15,
+                        backgroundColor: colors.brand.primaryLight,
+                        alignItems: 'center', justifyContent: 'center',
+                        opacity: item.value <= item.min ? 0.4 : pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Minus size={15} color={colors.brand.primary} strokeWidth={2} />
+                    </Pressable>
+                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary, minWidth: 26, textAlign: 'center' }}>
+                      {item.value}
+                    </Text>
+                    <Pressable
+                      onPress={() => item.onChange(item.value + 1)}
+                      disabled={item.value >= item.max}
+                      accessibilityRole="button"
+                      style={({ pressed }) => ({
+                        width: 30, height: 30, borderRadius: 15,
+                        backgroundColor: colors.brand.primaryLight,
+                        alignItems: 'center', justifyContent: 'center',
+                        opacity: item.value >= item.max ? 0.4 : pressed ? 0.7 : 1,
+                      })}
+                    >
+                      <Plus size={15} color={colors.brand.primary} strokeWidth={2} />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+
+              <Pressable
+                onPress={() => setWantsStrangerMatch(!wantsStrangerMatch)}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: wantsStrangerMatch }}
+                style={({ pressed }) => ({
+                  marginTop: 8,
+                  minHeight: 42,
+                  borderRadius: 12,
+                  backgroundColor: wantsStrangerMatch ? colors.brand.primaryLight : '#F4F1EA',
+                  paddingHorizontal: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text style={{ flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>
+                  {strings.preferences.strangerMatch}
+                </Text>
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: wantsStrangerMatch ? colors.brand.primary : colors.text.tertiary }}>
+                  {wantsStrangerMatch ? strings.preferences.enabled : strings.preferences.disabled}
+                </Text>
+              </Pressable>
+            </View>
 
             {/* Continue CTA */}
             <View style={{ marginTop: 28 }}>

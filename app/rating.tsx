@@ -5,11 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { X, Star, Plus } from 'lucide-react-native';
 import { colors } from '../constants/colors';
+import { useStrings } from '../lib/i18n';
 import { Button } from '../components/Button';
 
 export default function RatingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const [rating, setRating] = useState(0);
   const [subRatings, setSubRatings] = useState({
     cleanliness: 0,
@@ -63,30 +65,30 @@ export default function RatingScreen() {
         {/* Identity */}
         <View style={{ alignItems: 'center', marginBottom: 20 }}>
           <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#4a7289', marginBottom: 10, borderWidth: 3, borderColor: colors.brand.primaryLight }} />
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary }}>Nomad's Yurt Camp</Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 3 }}>Song-Kul, Naryn region</Text>
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, color: colors.text.primary, marginTop: 14 }}>How was your stay?</Text>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary }}>{strings.rating.targetName}</Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 3 }}>{strings.rating.targetRegion}</Text>
+          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 22, color: colors.text.primary, marginTop: 14 }}>{strings.rating.title}</Text>
         </View>
 
         {/* Main Rating */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
           {renderStars(rating, setRating, 42)}
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.tertiary, marginTop: 4 }}>Tap to rate</Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.tertiary, marginTop: 4 }}>{strings.rating.tapToRate}</Text>
         </View>
 
         {/* Sub Ratings */}
         <View style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.border.divider, marginBottom: 14, overflow: 'hidden' }}>
-          {renderSubRating('cleanliness', 'Cleanliness')}
-          {renderSubRating('staff', 'Staff')}
-          {renderSubRating('location', 'Location')}
-          {renderSubRating('value', 'Value for money')}
+          {renderSubRating('cleanliness', strings.rating.cleanliness)}
+          {renderSubRating('staff', strings.rating.staff)}
+          {renderSubRating('location', strings.rating.location)}
+          {renderSubRating('value', strings.rating.value)}
         </View>
 
         {/* Text Area */}
         <View style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.border.divider, padding: 12, marginBottom: 10, minHeight: 100 }}>
           <TextInput
             multiline
-            placeholder="Share details of your experience (optional)"
+            placeholder={strings.rating.reviewPlaceholder}
             placeholderTextColor={colors.text.tertiary}
             value={reviewText}
             onChangeText={setReviewText}
@@ -106,7 +108,7 @@ export default function RatingScreen() {
             </View>
           ))}
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginLeft: 4, flex: 1 }}>
-            Add up to 3 photos
+            {strings.rating.addPhotos}
           </Text>
         </View>
 
@@ -114,12 +116,12 @@ export default function RatingScreen() {
         <View style={{ gap: 10 }}>
           <Button
             variant="primary"
-            label="Submit review"
+            label={strings.rating.submit}
             onPress={() => router.back()}
           />
           <Button
             variant="secondary"
-            label="Maybe later"
+            label={strings.rating.maybeLater}
             onPress={() => router.back()}
             style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}
           />

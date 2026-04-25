@@ -4,7 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { X, Flashlight, Check } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 
 type Stage = 'scanning' | 'confirming' | 'loading' | 'success';
@@ -14,6 +14,7 @@ const MOCK_MERCHANT = { name: 'Supara Ethno Restaurant', amount: 18.50 };
 export default function PayScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const [stage, setStage] = useState<Stage>('scanning');
   const [flashOn, setFlashOn] = useState(false);
 
@@ -38,7 +39,7 @@ export default function PayScreen() {
         <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.status.success, alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <Check size={40} color="#fff" strokeWidth={2.5} />
         </View>
-        <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff' }}>Payment sent!</Text>
+        <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff' }}>{strings.walletExtra.paymentSent}</Text>
         <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: 'rgba(255,255,255,0.7)', marginTop: 8 }}>
           ${MOCK_MERCHANT.amount.toFixed(2)} to {MOCK_MERCHANT.name}
         </Text>

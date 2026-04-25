@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Share2, Download, User } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 
 const QR_VALUE = JSON.stringify({ type: 'tabylga_pay', userId: 'user_demo_001', currency: 'KGS' });
@@ -12,6 +12,7 @@ const QR_VALUE = JSON.stringify({ type: 'tabylga_pay', userId: 'user_demo_001', 
 export default function ReceiveScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
@@ -33,7 +34,7 @@ export default function ReceiveScreen() {
           <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: colors.brand.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
             <User size={32} color={colors.brand.primary} strokeWidth={1.5} />
           </View>
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 20, color: colors.text.primary }}>Traveler</Text>
+          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 20, color: colors.text.primary }}>{strings.walletExtra.traveler}</Text>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, color: colors.text.secondary, marginTop: 4 }}>$1,247.00 · 108,489 KGS</Text>
         </View>
 

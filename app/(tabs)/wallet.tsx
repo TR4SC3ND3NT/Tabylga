@@ -3,8 +3,9 @@ import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { Plus, QrCode, ArrowDownLeft, ArrowUpRight, AlertTriangle, ChevronRight, Clock } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { Plus, QrCode, ArrowDownLeft, ArrowUpRight, AlertTriangle, ChevronRight, Clock, Bluetooth } from 'lucide-react-native';
+import { formatString } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Pill } from '../../components/Pill';
@@ -26,6 +27,7 @@ const AVATAR_COLORS: Record<string, string> = {
 export default function WalletScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
 
   const [isOffline, setIsOffline] = useState(false);
 
@@ -33,15 +35,15 @@ export default function WalletScreen() {
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
       {/* Hidden toggle for testing offline state */}
-      <Pressable onPress={() => setIsOffline(!isOffline)} style={{ position:'absolute', top: 50, right: 20, zIndex: 10, padding: 8, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 8 }}>
-        <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 10 }}>Toggle Offline</Text>
+      <Pressable onPress={() => setIsOffline(!isOffline)} accessibilityLabel={strings.walletExtra.toggleOffline} style={{ position:'absolute', top: 50, right: 20, zIndex: 10, padding: 8, backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 8 }}>
+        <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 10 }}>{strings.walletExtra.toggleOffline}</Text>
       </Pressable>
       
       {isOffline && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: colors.status.warningLight, borderBottomWidth: 1, borderBottomColor: '#EBD6B4' }}>
           <AlertTriangle size={18} color="#8a6530" />
           <Text style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 13, color: '#5a3a00' }}>
-            You're offline — wallet works for <Text style={{ fontFamily: 'Inter_700Bold' }}>$150 more</Text>
+            {formatString(strings.walletExtra.offlineBanner, { amount: '$150' })}
           </Text>
           <ChevronRight size={16} color="#8a6530" />
         </View>
@@ -53,7 +55,7 @@ export default function WalletScreen() {
         <View className="items-center pt-4 pb-2">
           <Pill
             variant={isOffline ? "offline" : "online"}
-            label={isOffline ? "Offline ready · $150 available" : strings.walletExtra.statusOnline}
+            label={isOffline ? formatString(strings.walletExtra.offlineStatus, { amount: '$150' }) : strings.walletExtra.statusOnline}
             showDot={true}
           />
         </View>
@@ -67,7 +69,7 @@ export default function WalletScreen() {
             $1,247.00
           </Text>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, color: colors.text.secondary, marginTop: 4 }}>
-            {isOffline ? 'Last synced 2 hours ago' : '≈ 108,489 KGS'}
+            {isOffline ? strings.walletExtra.lastSynced : '≈ 108,489 KGS'}
           </Text>
           {!isOffline && (
             <Pressable style={{ marginTop: 6 }}>
@@ -112,10 +114,37 @@ export default function WalletScreen() {
           />
         </View>
 
+        <View style={{ paddingHorizontal:20, marginBottom:20 }}>
+          <Card style={{ padding:16, backgroundColor:colors.status.warningLight }}>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:12 }}>
+              <View style={{ width:42, height:42, borderRadius:14, backgroundColor:'#fff', alignItems:'center', justifyContent:'center' }}>
+                <Bluetooth size={20} color={colors.brand.cta} strokeWidth={2} />
+              </View>
+              <View style={{ flex:1 }}>
+                <Text style={{ fontFamily:'Inter_700Bold', fontSize:15, color:colors.text.primary }}>
+                  {strings.bluetoothPay.title}
+                </Text>
+                <Text numberOfLines={2} style={{ fontFamily:'Inter_400Regular', fontSize:12, lineHeight:16, color:colors.text.secondary, marginTop:2 }}>
+                  {strings.bluetoothPay.subtitle}
+                </Text>
+              </View>
+            </View>
+            <Button
+              variant="secondary"
+              label={strings.bluetoothPay.sign}
+              onPress={() => router.push('/wallet/bluetooth')}
+              icon={<Bluetooth size={18} color={colors.brand.primary} strokeWidth={2} />}
+              style={{ marginTop:12 }}
+              height={44}
+              fontSize={13}
+            />
+          </Card>
+        </View>
+
         {isOffline && (
           <View style={{ marginHorizontal: 20, marginBottom: 20, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: colors.status.warningLight, borderRadius: 10 }}>
             <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 15.6, color: '#5a3a00', textAlign: 'center' }}>
-              Pay offline with up to $150 · syncs automatically when back online
+              {formatString(strings.walletExtra.offlineHint, { amount: '$150' })}
             </Text>
           </View>
         )}
@@ -133,7 +162,7 @@ export default function WalletScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>Nomad's Yurt Camp</Text>
-                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: '#8a6530', marginTop: 2 }}>⏳ Pending sync</Text>
+                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: '#8a6530', marginTop: 2 }}>{strings.walletExtra.pendingSync}</Text>
               </View>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.secondary }}>-$65.00</Text>
             </View>

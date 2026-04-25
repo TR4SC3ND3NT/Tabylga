@@ -7,39 +7,39 @@ import {
   X, Minus, Plus,
   TreePalm, Mountain, Users, Briefcase,
   Heart, Landmark, Laptop, Star,
+  MessageCircle,
 } from 'lucide-react-native';
 import { useTripStore, type Purpose, type Companions } from '../../stores/tripStore';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 
-const PURPOSES: { key: Purpose; icon: any; label: string; desc: string }[] = [
-  { key: 'leisure',       icon: TreePalm,  label: strings.planner.purposeLeisure,    desc: strings.planner.purposeLeisureDesc },
-  { key: 'adventure',     icon: Mountain,  label: strings.planner.purposeAdventure,  desc: strings.planner.purposeAdventureDesc },
-  { key: 'family',        icon: Users,     label: strings.planner.purposeFamily,     desc: strings.planner.purposeFamilyDesc },
-  { key: 'business',      icon: Briefcase, label: strings.planner.purposeBusiness,   desc: strings.planner.purposeBusinessDesc },
-  { key: 'romantic',      icon: Heart,     label: strings.planner.purposeRomantic,   desc: strings.planner.purposeRomanticDesc },
-  { key: 'cultural',      icon: Landmark,  label: strings.planner.purposeCultural,   desc: strings.planner.purposeCulturalDesc },
-  { key: 'digital_nomad', icon: Laptop,    label: strings.planner.purposeNomad,      desc: strings.planner.purposeNomadDesc },
-  { key: 'pilgrimage',    icon: Star,      label: strings.planner.purposePilgrimage, desc: strings.planner.purposePilgrimageDesc },
-];
-
-const COMPANIONS: { key: Companions; label: string }[] = [
-  { key: 'solo',       label: strings.planner.companionSolo },
-  { key: 'couple',     label: strings.planner.companionCouple },
-  { key: 'family',     label: strings.planner.companionFamily },
-  { key: 'friends',    label: strings.planner.companionFriends },
-  { key: 'colleagues', label: strings.planner.companionColleagues },
-];
-
 export default function PurposeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const {
     purpose, companions, companionCount,
     setPurpose, setCompanions, setCompanionCount,
   } = useTripStore();
+  const purposes: { key: Purpose; icon: any; label: string; desc: string }[] = [
+    { key: 'leisure',       icon: TreePalm,  label: strings.planner.purposeLeisure,    desc: strings.planner.purposeLeisureDesc },
+    { key: 'adventure',     icon: Mountain,  label: strings.planner.purposeAdventure,  desc: strings.planner.purposeAdventureDesc },
+    { key: 'family',        icon: Users,     label: strings.planner.purposeFamily,     desc: strings.planner.purposeFamilyDesc },
+    { key: 'business',      icon: Briefcase, label: strings.planner.purposeBusiness,   desc: strings.planner.purposeBusinessDesc },
+    { key: 'romantic',      icon: Heart,     label: strings.planner.purposeRomantic,   desc: strings.planner.purposeRomanticDesc },
+    { key: 'cultural',      icon: Landmark,  label: strings.planner.purposeCultural,   desc: strings.planner.purposeCulturalDesc },
+    { key: 'digital_nomad', icon: Laptop,    label: strings.planner.purposeNomad,      desc: strings.planner.purposeNomadDesc },
+    { key: 'pilgrimage',    icon: Star,      label: strings.planner.purposePilgrimage, desc: strings.planner.purposePilgrimageDesc },
+  ];
+  const companionOptions: { key: Companions; label: string }[] = [
+    { key: 'solo',       label: strings.planner.companionSolo },
+    { key: 'couple',     label: strings.planner.companionCouple },
+    { key: 'family',     label: strings.planner.companionFamily },
+    { key: 'friends',    label: strings.planner.companionFriends },
+    { key: 'colleagues', label: strings.planner.companionColleagues },
+  ];
 
   const showGroupSize = companions === 'family' || companions === 'friends' || companions === 'colleagues';
   const canContinue = !!purpose && !!companions;
@@ -88,7 +88,7 @@ export default function PurposeScreen() {
 
         {/* Purpose grid 2×4 */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-          {PURPOSES.map((p) => {
+          {purposes.map((p) => {
             const Icon = p.icon;
             const isSelected = purpose === p.key;
             return (
@@ -152,7 +152,7 @@ export default function PurposeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: 8, paddingRight: 20 }}
         >
-          {COMPANIONS.map((c) => (
+          {companionOptions.map((c) => (
             <Chip
               key={c.key}
               label={c.label}
@@ -195,7 +195,7 @@ export default function PurposeScreen() {
               <Pressable
                 onPress={() => setCompanionCount(Math.max(2, companionCount - 1))}
                 disabled={companionCount <= 2}
-                accessibilityLabel="Decrease group size"
+                accessibilityLabel={strings.planner.decreaseGroupSize}
                 style={({ pressed }) => ({
                   width: 32, height: 32, borderRadius: 16,
                   backgroundColor: colors.brand.primaryLight,
@@ -211,7 +211,7 @@ export default function PurposeScreen() {
               <Pressable
                 onPress={() => setCompanionCount(Math.min(10, companionCount + 1))}
                 disabled={companionCount >= 10}
-                accessibilityLabel="Increase group size"
+                accessibilityLabel={strings.planner.increaseGroupSize}
                 style={({ pressed }) => ({
                   width: 32, height: 32, borderRadius: 16,
                   backgroundColor: colors.brand.primaryLight,
@@ -224,6 +224,33 @@ export default function PurposeScreen() {
             </View>
           </View>
         )}
+
+        <Pressable
+          onPress={() => router.push('/trip/group-match')}
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            marginTop: 18,
+            borderRadius: 16,
+            backgroundColor: colors.brand.primaryLight,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <View style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: colors.surface.card, alignItems: 'center', justifyContent: 'center' }}>
+            <MessageCircle size={20} color={colors.brand.primary} strokeWidth={2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
+              {strings.groupPlanner.title}
+            </Text>
+            <Text numberOfLines={2} style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 3 }}>
+              {strings.groupPlanner.subtitle}
+            </Text>
+          </View>
+        </Pressable>
       </ScrollView>
 
       {/* Sticky bottom CTA */}

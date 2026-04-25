@@ -1,10 +1,13 @@
 import { Tabs } from 'expo-router';
 import { House, Map, Route, CreditCard, User } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { useStrings } from '../../lib/i18n';
 
 const TAB_ICON_SIZE = 22;
 
 export default function TabsLayout() {
+  const strings = useStrings();
+
   return (
     <Tabs
       screenOptions={{
@@ -28,7 +31,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: strings.tabs.home,
           tabBarIcon: ({ color }) => (
             <House size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
           ),
@@ -37,7 +40,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="map"
         options={{
-          title: 'Map',
+          title: strings.tabs.map,
           tabBarIcon: ({ color }) => (
             <Map size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
           ),
@@ -46,7 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="trips"
         options={{
-          title: 'Trips',
+          title: strings.tabs.trips,
           tabBarIcon: ({ color }) => (
             <Route size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
           ),
@@ -55,7 +58,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="wallet"
         options={{
-          title: 'Wallet',
+          title: strings.tabs.wallet,
           tabBarIcon: ({ color }) => (
             <CreditCard size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
           ),
@@ -64,7 +67,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: strings.tabs.profile,
           tabBarIcon: ({ color }) => (
             <User size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
           ),

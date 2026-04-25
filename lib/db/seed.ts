@@ -14,7 +14,7 @@ interface Place {
   photo_url: string | null;
 }
 
-const PLACES: Place[] = [
+export const SEED_PLACES: Place[] = [
   // ── Bishkek ───────────────────────────────────────────────
   {
     id: 'place_001', osm_id: 1001,
@@ -248,7 +248,7 @@ export async function seedDevData(): Promise<void> {
   );
 
   try {
-    for (const place of PLACES) {
+    for (const place of SEED_PLACES) {
       await stmt.executeAsync({
         $id: place.id, $osm_id: place.osm_id,
         $name: place.name, $name_en: place.name_en, $name_ky: place.name_ky,
@@ -261,5 +261,5 @@ export async function seedDevData(): Promise<void> {
     await stmt.finalizeAsync();
   }
 
-  console.log(`[db] Seeded ${PLACES.length} dev places`);
+  console.log(`[db] Seeded ${SEED_PLACES.length} dev places`);
 }

@@ -11,7 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Sparkles, CreditCard, WifiOff, ChevronRight } from 'lucide-react-native';
 import { useOnboardingStore } from '../stores/onboardingStore';
-import { strings } from '../lib/strings';
+import { useStrings } from '../lib/i18n';
 import { colors } from '../constants/colors';
 import { Button } from '../components/Button';
 
@@ -25,39 +25,39 @@ interface Slide {
   subtitle: string;
 }
 
-const SLIDES: Slide[] = [
-  {
-    key: 'ai',
-    icon: <Sparkles size={32} color={colors.brand.primary} strokeWidth={1.5} />,
-    iconBg: colors.brand.primaryLight,
-    title: strings.welcome.slide1.title,
-    subtitle: strings.welcome.slide1.body,
-  },
-  {
-    key: 'wallet',
-    icon: <CreditCard size={32} color={colors.brand.cta} strokeWidth={1.5} />,
-    iconBg: colors.brand.ctaLight,
-    title: strings.welcome.slide2.title,
-    subtitle: strings.welcome.slide2.body,
-  },
-  {
-    key: 'offline',
-    icon: <WifiOff size={32} color={colors.surface.card} strokeWidth={1.5} />,
-    iconBg: colors.brand.primary,
-    title: strings.welcome.slide3.title,
-    subtitle: strings.welcome.slide3.body,
-  },
-];
-
 export default function WelcomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const scrollRef = useRef<ScrollView>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const completeWelcome = useOnboardingStore((s) => s.completeWelcome);
+  const slides: Slide[] = [
+    {
+      key: 'ai',
+      icon: <Sparkles size={32} color={colors.brand.primary} strokeWidth={1.5} />,
+      iconBg: colors.brand.primaryLight,
+      title: strings.welcome.slide1.title,
+      subtitle: strings.welcome.slide1.body,
+    },
+    {
+      key: 'wallet',
+      icon: <CreditCard size={32} color={colors.brand.cta} strokeWidth={1.5} />,
+      iconBg: colors.brand.ctaLight,
+      title: strings.welcome.slide2.title,
+      subtitle: strings.welcome.slide2.body,
+    },
+    {
+      key: 'offline',
+      icon: <WifiOff size={32} color={colors.surface.card} strokeWidth={1.5} />,
+      iconBg: colors.brand.primary,
+      title: strings.welcome.slide3.title,
+      subtitle: strings.welcome.slide3.body,
+    },
+  ];
 
   function handleNext() {
-    if (currentSlide < SLIDES.length - 1) {
+    if (currentSlide < slides.length - 1) {
       const next = currentSlide + 1;
       scrollRef.current?.scrollTo({ x: SCREEN_WIDTH * next, animated: true });
       setCurrentSlide(next);
@@ -76,7 +76,7 @@ export default function WelcomeScreen() {
     setCurrentSlide(page);
   }
 
-  const isLast = currentSlide === SLIDES.length - 1;
+  const isLast = currentSlide === slides.length - 1;
 
   return (
     <View className="flex-1 bg-surface-primary">
@@ -117,7 +117,7 @@ export default function WelcomeScreen() {
         scrollEventThrottle={16}
         style={{ flex: 1 }}
       >
-        {SLIDES.map((slide) => (
+        {slides.map((slide) => (
           <View
             key={slide.key}
             style={{ width: SCREEN_WIDTH }}
@@ -182,7 +182,7 @@ export default function WelcomeScreen() {
       >
         {/* Dots */}
         <View className="flex-row items-center" style={{ gap: 6 }}>
-          {SLIDES.map((slide, index) => (
+          {slides.map((slide, index) => (
             <View
               key={slide.key}
               style={{

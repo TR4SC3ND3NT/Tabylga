@@ -3,7 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Luggage, ChevronRight, Sparkles } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { formatString } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { useTripStore } from '../../stores/tripStore';
@@ -13,6 +14,7 @@ import { Button } from '../../components/Button';
 
 export default function TripsScreen() {
   const router = useRouter();
+  const strings = useStrings();
   const itinerary = useTripStore(s => s.generatedItinerary);
 
   return (
@@ -41,14 +43,14 @@ export default function TripsScreen() {
                 {itinerary.title}
               </Text>
               <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, color:colors.text.secondary, marginBottom:14 }}>
-                {itinerary.days.length} days · {itinerary.regionsCovered.slice(0,3).join(', ')}
+                {formatString(strings.itinerary.daysCount, { count: itinerary.days.length })} · {itinerary.regionsCovered.slice(0,3).join(', ')}
               </Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
                 <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.brand.primary }}>
                   {formatUSD(itinerary.totalCostUsd)}
                 </Text>
                 <View style={{ flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:14, height:36, borderRadius:10, backgroundColor:colors.brand.primary }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:'#fff' }}>View trip</Text>
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:'#fff' }}>{strings.common.viewDetails}</Text>
                   <ChevronRight size={16} color="#fff" strokeWidth={2} />
                 </View>
               </View>

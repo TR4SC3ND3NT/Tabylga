@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, Clock, Users } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Card } from '../../components/Card';
@@ -19,6 +19,7 @@ const DIFF_COLORS: Record<string, string> = { Easy: colors.status.success, Moder
 
 export default function ActivitiesScreen() {
   const router = useRouter();
+  const strings = useStrings();
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
@@ -54,7 +55,7 @@ export default function ActivitiesScreen() {
                     <Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{a.group}</Text>
                   </View>
                   <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
-                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.brand.primary }}>${a.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>/person</Text></Text>
+                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.brand.primary }}>${a.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{strings.common.perPerson}</Text></Text>
                     <View style={{ paddingHorizontal:7, paddingVertical:3, borderRadius:6, backgroundColor: `${DIFF_COLORS[a.difficulty]}22` }}>
                       <Text style={{ fontFamily:'Inter_500Medium', fontSize:10, color: DIFF_COLORS[a.difficulty] }}>{a.difficulty}</Text>
                     </View>

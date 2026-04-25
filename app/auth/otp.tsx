@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Bell } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 
@@ -33,6 +33,7 @@ function maskPhone(phone: string | null): string {
 export default function OtpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const { verifyOtp, loading, error, _pendingPhone } = useAuthStore();
 
   const [code, setCode] = useState('');
@@ -235,7 +236,7 @@ export default function OtpScreen() {
                 keyboardType="number-pad"
                 maxLength={6}
                 caretHidden
-                accessibilityLabel="Enter 6-digit verification code"
+                accessibilityLabel={strings.auth.otpCodeLabel}
                 style={{
                   position: 'absolute',
                   opacity: 0,
@@ -288,7 +289,7 @@ export default function OtpScreen() {
                   }}
                 >
                   {canResend
-                    ? 'Resend now'
+                    ? strings.auth.otpResendNow
                     : `${strings.auth.otpResendTimer} ${countdownLabel}`}
                 </Text>
               </Pressable>

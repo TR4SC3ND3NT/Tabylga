@@ -11,32 +11,23 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Check } from 'lucide-react-native';
 import { useAuthStore, type Language } from '../stores/authStore';
-import { strings } from '../lib/strings';
+import { useTravelPreferencesStore } from '../stores/travelPreferencesStore';
+import { LANGUAGE_OPTIONS } from '../lib/strings';
+import { useStrings } from '../lib/i18n';
+import { ESIM_PLANS } from '../lib/backend/demoBackend';
 import { colors } from '../constants/colors';
 import { shadows } from '../constants/shadows';
 import { Button } from '../components/Button';
 
-interface LangOption {
-  code: Language;
-  label: string;
-  native: string;
-  flag: string;
-}
-
-const LANGUAGES: LangOption[] = [
-  { code: 'en', label: 'English',  native: 'English',    flag: '🇬🇧' },
-  { code: 'ru', label: 'Russian',  native: 'Русский',    flag: '🇷🇺' },
-  { code: 'ky', label: 'Kyrgyz',   native: 'Кыргызча',  flag: '🇰🇬' },
-  { code: 'zh', label: 'Chinese',  native: '中文',        flag: '🇨🇳' },
-  { code: 'ar', label: 'Arabic',   native: 'العربية',    flag: '🇸🇦' },
-  { code: 'de', label: 'German',   native: 'Deutsch',    flag: '🇩🇪' },
-];
-
 export default function SplashScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
+  const language = useAuthStore((s) => s.language);
   const setLanguage = useAuthStore((s) => s.setLanguage);
-  const [selected, setSelected] = useState<Language | null>(null);
+  const esimChoice = useTravelPreferencesStore((s) => s.esimChoice);
+  const setEsimChoice = useTravelPreferencesStore((s) => s.setEsimChoice);
+  const [selected, setSelected] = useState<Language>(language);
 
   function handleSelect(code: Language) {
     setSelected(code);
@@ -44,7 +35,6 @@ export default function SplashScreen() {
   }
 
   function handleContinue() {
-    if (!selected) return;
     router.replace('/welcome');
   }
 
@@ -154,9 +144,9 @@ export default function SplashScreen() {
         </Text>
 
         {/* Language rows */}
-        {LANGUAGES.map((lang, index) => {
+        {LANGUAGE_OPTIONS.map((lang, index) => {
           const isSelected = selected === lang.code;
-          const isLast = index === LANGUAGES.length - 1;
+          const isLast = index === LANGUAGE_OPTIONS.length - 1;
 
           return (
             <Pressable
@@ -179,7 +169,9 @@ export default function SplashScreen() {
               ]}
             >
               {/* Flag */}
-              <Text style={{ fontSize: 22, lineHeight: 26 }}>{lang.flag}</Text>
+              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, lineHeight: 18, color: colors.text.secondary, width: 28 }}>
+                {lang.flag}
+              </Text>
 
               {/* Labels */}
               <View className="flex-1">
@@ -227,11 +219,77 @@ export default function SplashScreen() {
           );
         })}
 
+        <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border.divider }}>
+          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: colors.text.primary }}>
+            {strings.esim.title}
+          </Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 3, marginBottom: 10 }}>
+            {strings.esim.subtitle}
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {ESIM_PLANS.map((plan) => {
+              const selectedPlan = esimChoice === plan.id.replace('esim_7_5', 'starter').replace('esim_14_15', 'traveler').replace('esim_30_30', 'nomad');
+              const choice = plan.id === 'esim_7_5' ? 'starter' : plan.id === 'esim_14_15' ? 'traveler' : 'nomad';
+              return (
+                <Pressable
+                  key={plan.id}
+                  onPress={() => setEsimChoice(choice)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: selectedPlan }}
+                  style={({ pressed }) => ({
+                    width: 132,
+                    borderRadius: 12,
+                    borderWidth: selectedPlan ? 2 : 1,
+                    borderColor: selectedPlan ? colors.brand.primary : colors.border.divider,
+                    backgroundColor: selectedPlan ? colors.brand.primaryLight : colors.surface.card,
+                    padding: 10,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  {plan.recommended && (
+                    <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 10, color: colors.brand.cta, marginBottom: 4 }}>
+                      {strings.esim.recommended}
+                    </Text>
+                  )}
+                  <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>{plan.title}</Text>
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: colors.text.secondary, marginTop: 3 }}>
+                    {strings.esim.data.replace('{count}', String(plan.dataGb))} · {strings.esim.days.replace('{count}', String(plan.durationDays))}
+                  </Text>
+                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.brand.primary, marginTop: 6 }}>${plan.priceUsd}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+            <Pressable
+              onPress={() => setEsimChoice('later')}
+              style={({ pressed }) => ({
+                flex: 1, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: esimChoice === 'later' ? colors.brand.primaryLight : colors.surface.card,
+                borderWidth: 1, borderColor: colors.border.divider,
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.primary }}>{strings.esim.later}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setEsimChoice('skip')}
+              style={({ pressed }) => ({
+                flex: 1, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: esimChoice === 'skip' ? colors.brand.primaryLight : colors.surface.card,
+                borderWidth: 1, borderColor: colors.border.divider,
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.primary }}>{strings.esim.skip}</Text>
+            </Pressable>
+          </View>
+        </View>
+
         {/* Continue button */}
         <Button
           label={strings.splash.continueButton}
           onPress={handleContinue}
-          disabled={!selected}
           style={{ marginTop: 16 }}
         />
       </View>

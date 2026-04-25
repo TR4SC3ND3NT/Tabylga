@@ -5,7 +5,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Share2, Sparkles, X, Plus, MapPin } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
-import { strings } from '../../lib/strings';
+import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
+import { formatString } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
+import { TOUR_TRANSPORT_QUOTES } from '../../lib/backend/demoBackend';
 import { colors } from '../../constants/colors';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
@@ -23,7 +26,10 @@ const REGION_TINTS: Record<string, string> = {
 export default function ItineraryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const { generatedItinerary, companionCount } = useTripStore();
+  const peopleCount = useTravelPreferencesStore((s) => s.peopleCount);
+  const preferredTourPeople = useTravelPreferencesStore((s) => s.preferredTourPeople);
   const [activeDay, setActiveDay] = useState(1);
   const [showInsight, setShowInsight] = useState(true);
 
@@ -31,14 +37,14 @@ export default function ItineraryScreen() {
     return (
       <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center">
         <Text style={{ fontFamily: 'Inter_500Medium', color: colors.text.secondary }}>
-          No itinerary loaded.
+          {strings.itinerary.noItinerary}
         </Text>
         <Pressable
           onPress={() => router.replace('/(tabs)')}
           style={{ marginTop: 16, padding: 12 }}
         >
           <Text style={{ fontFamily: 'Inter_600SemiBold', color: colors.brand.primary }}>
-            Back to home
+            {strings.itinerary.backHome}
           </Text>
         </Pressable>
       </SafeAreaView>
@@ -47,6 +53,7 @@ export default function ItineraryScreen() {
 
   const trip = generatedItinerary;
   const currentDay = trip.days.find((d) => d.day === activeDay) || trip.days[0];
+  const transportQuote = preferredTourPeople >= 10 ? TOUR_TRANSPORT_QUOTES[1] : TOUR_TRANSPORT_QUOTES[0];
 
   return (
     <View className="flex-1 bg-surface-primary">
@@ -76,7 +83,7 @@ export default function ItineraryScreen() {
           {strings.itinerary.headerTitle}
         </Text>
         <Pressable
-          accessibilityLabel="Share trip"
+          accessibilityLabel={strings.itinerary.shareTrip}
           accessibilityRole="button"
           style={({ pressed }) => ({
             width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
@@ -108,7 +115,7 @@ export default function ItineraryScreen() {
             {trip.title}
           </Text>
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary, marginBottom: 14 }}>
-            {trip.days.length} days · {companionCount} {companionCount === 1 ? 'traveler' : 'travelers'} · {trip.regionsCovered.slice(0, 3).join(', ')}
+            {formatString(strings.itinerary.daysCount, { count: trip.days.length })} · {companionCount} {companionCount === 1 ? strings.itinerary.traveler : strings.itinerary.travelers} · {trip.regionsCovered.slice(0, 3).join(', ')}
           </Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -124,11 +131,45 @@ export default function ItineraryScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <MapPin size={12} color={colors.brand.primary} strokeWidth={2} />
                 <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.brand.primary }}>
-                  {trip.regionsCovered.length} regions
+                  {formatString(strings.itinerary.regions, { count: trip.regionsCovered.length })}
                 </Text>
               </View>
             </View>
           </View>
+        </View>
+
+        <View
+          style={{
+            marginHorizontal: 20,
+            marginTop: -6,
+            marginBottom: 18,
+            padding: 16,
+            borderRadius: 16,
+            backgroundColor: colors.status.warningLight,
+          }}
+        >
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
+            {strings.taxi.sharedTourTitle}
+          </Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 18, color: colors.text.secondary, marginTop: 5 }}>
+            {transportQuote.title} · {transportQuote.route}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 12 }}>
+            <View>
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>
+                {strings.taxi.depositPerPerson}
+              </Text>
+              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.brand.cta, marginTop: 2 }}>
+                {formatUSD(transportQuote.pricePerPersonUsd)}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.text.primary }}>
+              {formatString(strings.taxi.peopleWant, { count: Math.max(peopleCount, preferredTourPeople) })}
+            </Text>
+          </View>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 8 }}>
+            {strings.preferences.transportDeposit}
+          </Text>
         </View>
 
         {/* ── Day tabs ── */}
@@ -143,7 +184,7 @@ export default function ItineraryScreen() {
               <Pressable
                 key={d.day}
                 onPress={() => setActiveDay(d.day)}
-                accessibilityLabel={`Day ${d.day}`}
+                accessibilityLabel={strings.itinerary.dayLabel.replace('{n}', String(d.day))}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isActive }}
                 style={({ pressed }) => ({
@@ -232,7 +273,7 @@ export default function ItineraryScreen() {
                     </View>
                   </View>
                   <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.brand.primary, alignSelf: 'flex-end' }}>
-                    {activity.costUsd > 0 ? formatUSD(activity.costUsd) : 'Free'}
+                    {activity.costUsd > 0 ? formatUSD(activity.costUsd) : strings.itinerary.free}
                   </Text>
                 </View>
               </View>
