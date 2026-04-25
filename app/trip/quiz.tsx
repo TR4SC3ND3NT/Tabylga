@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import {
   X, Sun, Mountain, Zap, Cloud,
-  TreePine, Landmark, Utensils, Camera, ShoppingBag, Lotus, Moon,
+  TreePine, Landmark, Utensils, Camera, ShoppingBag, Moon,
 } from 'lucide-react-native';
 import { useTripStore, type Interest, type Dietary, type ActivityLevel, type BudgetRange } from '../../stores/tripStore';
 import { strings } from '../../lib/strings';

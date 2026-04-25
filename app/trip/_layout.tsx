@@ -7,6 +7,7 @@ export default function TripLayout() {
       <Stack.Screen name="quiz" />
       <Stack.Screen name="generating" options={{ gestureEnabled: false }} />
       <Stack.Screen name="itinerary" />
+      <Stack.Screen name="voice" />
     </Stack>
   );
 }

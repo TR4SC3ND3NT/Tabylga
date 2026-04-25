@@ -34,10 +34,10 @@ const COUNTRYSIDE_CARDS = [
 ];
 
 const SERVICE_TILES = [
-  { key: 'hotels',    icon: Bed,       label: strings.home.serviceHotels,     sub: strings.home.serviceHotelsSub,     bg: '#3d6479' },
-  { key: 'food',      icon: Utensils,  label: strings.home.serviceFood,       sub: strings.home.serviceFoodSub,       bg: '#5a4f3d' },
-  { key: 'transport', icon: Car,       label: strings.home.serviceTransport,  sub: strings.home.serviceTransportSub,  bg: '#4a5e40' },
-  { key: 'activities', icon: Mountain, label: strings.home.serviceActivities, sub: strings.home.serviceActivitiesSub, bg: '#56473d' },
+  { key: 'hotels',    icon: Bed,       label: strings.home.serviceHotels,     sub: strings.home.serviceHotelsSub,     bg: '#3d6479', route: '/services/hotels' },
+  { key: 'food',      icon: Utensils,  label: strings.home.serviceFood,       sub: strings.home.serviceFoodSub,       bg: '#5a4f3d', route: '/services/food' },
+  { key: 'transport', icon: Car,       label: strings.home.serviceTransport,  sub: strings.home.serviceTransportSub,  bg: '#4a5e40', route: '/services/transport' },
+  { key: 'activities', icon: Mountain, label: strings.home.serviceActivities, sub: strings.home.serviceActivitiesSub, bg: '#56473d', route: '/services/activities' },
 ];
 
 export default function HomeScreen() {
@@ -130,7 +130,7 @@ export default function HomeScreen() {
               color: colors.text.primary,
             }}
           />
-          <Pressable accessibilityLabel="Voice search" accessibilityRole="button">
+          <Pressable accessibilityLabel="Voice search" accessibilityRole="button" onPress={() => router.push('/trip/voice')}>
             <Mic size={20} color={colors.brand.primary} strokeWidth={1.5} />
           </Pressable>
         </View>
@@ -224,7 +224,7 @@ export default function HomeScreen() {
             return (
               <Pressable
                 key={tile.key}
-                onPress={() => console.log('tap service', tile.key)}
+                onPress={() => router.push(tile.route as any)}
                 accessibilityLabel={tile.label}
                 accessibilityRole="button"
                 style={({ pressed }) => ({

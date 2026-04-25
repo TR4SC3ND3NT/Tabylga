@@ -72,6 +72,9 @@ export default function RootLayout() {
           <Stack.Screen name="auth/otp" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="trip" />
+          <Stack.Screen name="wallet" />
+          <Stack.Screen name="merchant" />
+          <Stack.Screen name="services" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
