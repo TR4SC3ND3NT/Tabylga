@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDb } from '../lib/db/client';
+import { getStrings, type Language } from '../lib/strings';
 
-export type Language = 'en' | 'ru' | 'ky' | 'zh' | 'ar' | 'de';
+export type { Language };
 
 export interface AuthUser {
   id: string;
@@ -46,8 +47,20 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   _pendingPhone: null,
 
   setLanguage: (lang) => {
-    set({ language: lang });
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ ...get(), language: lang })).catch(() => null);
+    const current = get();
+    const user = current.user ? { ...current.user, language: lang } : null;
+    set({ language: lang, user });
+
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ userId: user?.id, language: lang })
+    ).catch(() => null);
+
+    if (user) {
+      getDb()
+        .then((db) => db.runAsync('UPDATE users SET language = ? WHERE id = ?', lang, user.id))
+        .catch(() => null);
+    }
   },
 
   startPhoneAuth: async (phone) => {
@@ -59,11 +72,11 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   verifyOtp: async (code) => {
     const { _pendingPhone, language } = get();
     if (!_pendingPhone) {
-      set({ error: 'No phone number pending. Please restart.' });
+      set({ error: getStrings(language).auth.genericError });
       return;
     }
     if (code !== DEMO_OTP) {
-      set({ error: 'Invalid code. Use 000000 for the demo.' });
+      set({ error: getStrings(language).auth.invalidCode });
       return;
     }
 
@@ -92,12 +105,13 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
 
       set({ user, isAuthenticated: true, language: user.language, loading: false, _pendingPhone: null });
     } catch (e) {
-      set({ error: 'Something went wrong. Please try again.', loading: false });
+      set({ error: getStrings(language).auth.genericError, loading: false });
     }
   },
 
   signOut: async () => {
-    await AsyncStorage.removeItem(STORAGE_KEY);
+    const { language } = get();
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ language }));
     set({ user: null, isAuthenticated: false, _pendingPhone: null, error: null });
   },
 
@@ -109,7 +123,12 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
         return;
       }
 
-      const { userId, language } = JSON.parse(raw) as { userId: string; language: Language };
+      const { userId, language } = JSON.parse(raw) as { userId?: string; language?: Language };
+      if (!userId) {
+        set({ language: language ?? 'en', _hydrated: true });
+        return;
+      }
+
       const db = await getDb();
       const user = await db.getFirstAsync<AuthUser>(
         'SELECT id, phone, name, language FROM users WHERE id = ?',
@@ -117,10 +136,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
       );
 
       if (user) {
-        set({ user, isAuthenticated: true, language: user.language ?? language, _hydrated: true });
+        set({ user, isAuthenticated: true, language: user.language ?? language ?? 'en', _hydrated: true });
       } else {
-        await AsyncStorage.removeItem(STORAGE_KEY);
-        set({ _hydrated: true });
+        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ language: language ?? 'en' }));
+        set({ language: language ?? 'en', _hydrated: true });
       }
     } catch {
       set({ _hydrated: true });

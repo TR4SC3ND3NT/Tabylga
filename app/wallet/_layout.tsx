@@ -6,6 +6,7 @@ export default function WalletLayout() {
       <Stack.Screen name="topup" />
       <Stack.Screen name="pay" />
       <Stack.Screen name="receive" />
+      <Stack.Screen name="bluetooth" />
     </Stack>
   );
 }

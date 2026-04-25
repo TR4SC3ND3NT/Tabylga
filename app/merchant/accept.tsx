@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Delete } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 
@@ -21,6 +21,7 @@ function formatCountdown(s: number): string {
 export default function AcceptScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const [currency, setCurrency] = useState<'KGS'|'USD'>('KGS');
   const [amountStr, setAmountStr] = useState('0');
   const [note, setNote] = useState('');
@@ -141,7 +142,7 @@ export default function AcceptScreen() {
             <Pressable
               key={k}
               onPress={() => handleKey(k)}
-              accessibilityLabel={k === '⌫' ? 'Delete' : k}
+              accessibilityLabel={k === '⌫' ? strings.common.close : k}
               accessibilityRole="button"
               style={({ pressed }) => ({
                 width: '30.5%', height: 72, borderRadius: 12,

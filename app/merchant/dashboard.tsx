@@ -3,7 +3,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, CheckCircle, ArrowDownLeft, CreditCard } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { formatString } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
@@ -29,6 +30,7 @@ const RECENT = [
 export default function MerchantDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
@@ -73,7 +75,7 @@ export default function MerchantDashboard() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
               <Star size={13} color={colors.status.warning} strokeWidth={0} fill={colors.status.warning} />
               <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>4.9</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary }}>(34 reviews)</Text>
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.reviewsCount, { count: 34 })}</Text>
             </View>
           </View>
         </View>
@@ -90,14 +92,14 @@ export default function MerchantDashboard() {
             ≈ $143
           </Text>
           <View style={{ flexDirection: 'row', gap: 16, marginTop: 12 }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>23 transactions</Text>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>Avg $6.21</Text>
+            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.transactionsCount, { n: 23 })}</Text>
+            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.avgTransaction, { amount: '$6.21' })}</Text>
           </View>
         </View>
 
         {/* Weekly chart */}
         <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 14 }}>
-          This week
+          {strings.merchantExtra.thisWeek}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: BAR_HEIGHT + 30, marginBottom: 20 }}>
           {WEEKLY.map((d) => {
@@ -115,7 +117,7 @@ export default function MerchantDashboard() {
 
         {/* Recent incoming */}
         <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
-          Recent payments
+          {strings.merchantExtra.recentPayments}
         </Text>
         <View style={[{ borderRadius: 14, backgroundColor: colors.surface.card, overflow: 'hidden', marginBottom: 20 }, shadows.card]}>
           {RECENT.map((r, i) => (

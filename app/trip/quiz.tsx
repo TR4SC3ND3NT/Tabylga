@@ -8,36 +8,43 @@ import {
   TreePine, Landmark, Utensils, Camera, ShoppingBag, Moon,
 } from 'lucide-react-native';
 import { useTripStore, type Interest, type Dietary, type ActivityLevel, type BudgetRange } from '../../stores/tripStore';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 
 const TOTAL_STEPS = 5;
 
-const DAY_OPTIONS = [
+function getDayOptions(strings: ReturnType<typeof useStrings>) {
+  return [
   { value: 3,  label: strings.planner.days3 },
   { value: 5,  label: strings.planner.days5 },
   { value: 7,  label: strings.planner.days7 },
   { value: 10, label: strings.planner.days10 },
   { value: 14, label: strings.planner.days14 },
-];
+  ];
+}
 
-const BUDGET_OPTIONS: { value: BudgetRange; label: string }[] = [
+function getBudgetOptions(strings: ReturnType<typeof useStrings>): { value: BudgetRange; label: string }[] {
+  return [
   { value: '100-300',  label: strings.planner.budget100 },
   { value: '300-600',  label: strings.planner.budget300 },
   { value: '600-1200', label: strings.planner.budget600 },
   { value: '1200+',    label: strings.planner.budget1200 },
-];
+  ];
+}
 
-const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string; icon: any }[] = [
+function getActivityOptions(strings: ReturnType<typeof useStrings>): { value: ActivityLevel; label: string; desc: string; icon: any }[] {
+  return [
   { value: 'chill',    label: strings.planner.activityChill,    desc: strings.planner.activityChillDesc,    icon: Sun },
   { value: 'moderate', label: strings.planner.activityModerate, desc: strings.planner.activityModerateDesc, icon: Cloud },
   { value: 'active',   label: strings.planner.activityActive,   desc: strings.planner.activityActiveDesc,   icon: Mountain },
   { value: 'extreme',  label: strings.planner.activityExtreme,  desc: strings.planner.activityExtremeDesc,  icon: Zap },
-];
+  ];
+}
 
-const INTEREST_OPTIONS: { value: Interest; label: string; icon: any }[] = [
+function getInterestOptions(strings: ReturnType<typeof useStrings>): { value: Interest; label: string; icon: any }[] {
+  return [
   { value: 'nature',         label: strings.planner.interestNature,    icon: TreePine },
   { value: 'culture',        label: strings.planner.interestCulture,   icon: Landmark },
   { value: 'food',           label: strings.planner.interestFood,      icon: Utensils },
@@ -46,20 +53,24 @@ const INTEREST_OPTIONS: { value: Interest; label: string; icon: any }[] = [
   { value: 'shopping',       label: strings.planner.interestShopping,  icon: ShoppingBag },
   { value: 'wellness',       label: strings.planner.interestWellness,  icon: Sun },
   { value: 'nightlife',      label: strings.planner.interestNightlife, icon: Moon },
-];
+  ];
+}
 
-const DIETARY_OPTIONS: { value: Dietary; label: string }[] = [
+function getDietaryOptions(strings: ReturnType<typeof useStrings>): { value: Dietary; label: string }[] {
+  return [
   { value: 'vegetarian',     label: strings.planner.dietaryVegetarian },
   { value: 'halal',          label: strings.planner.dietaryHalal },
   { value: 'vegan',          label: strings.planner.dietaryVegan },
   { value: 'wheelchair',     label: strings.planner.dietaryWheelchair },
   { value: 'family_friendly', label: strings.planner.dietaryFamily },
   { value: 'none',           label: strings.planner.dietaryNone },
-];
+  ];
+}
 
 export default function QuizScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const [step, setStep] = useState(0);
   const {
     days, budget, activityLevel, interests, dietaryNeeds,
@@ -262,10 +273,13 @@ function OptionCard({
 }
 
 function DaysStep({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+  const strings = useStrings();
+  const dayOptions = getDayOptions(strings);
+
   return (
     <View>
       <StepHeader title={strings.planner.stepDurationQuestion} />
-      {DAY_OPTIONS.map((o) => (
+      {dayOptions.map((o) => (
         <OptionCard key={o.value} selected={value === o.value} onPress={() => onChange(o.value)} label={o.label} large />
       ))}
     </View>
@@ -273,10 +287,13 @@ function DaysStep({ value, onChange }: { value: number | null; onChange: (n: num
 }
 
 function BudgetStep({ value, onChange }: { value: BudgetRange | null; onChange: (b: BudgetRange) => void }) {
+  const strings = useStrings();
+  const budgetOptions = getBudgetOptions(strings);
+
   return (
     <View>
       <StepHeader title={strings.planner.stepBudgetQuestion} />
-      {BUDGET_OPTIONS.map((o) => (
+      {budgetOptions.map((o) => (
         <OptionCard key={o.value} selected={value === o.value} onPress={() => onChange(o.value)} label={o.label} large />
       ))}
     </View>
@@ -284,10 +301,13 @@ function BudgetStep({ value, onChange }: { value: BudgetRange | null; onChange: 
 }
 
 function ActivityStep({ value, onChange }: { value: ActivityLevel | null; onChange: (a: ActivityLevel) => void }) {
+  const strings = useStrings();
+  const activityOptions = getActivityOptions(strings);
+
   return (
     <View>
       <StepHeader title={strings.planner.stepActivityQuestion} />
-      {ACTIVITY_OPTIONS.map((o) => {
+      {activityOptions.map((o) => {
         const Icon = o.icon;
         const isSelected = value === o.value;
         return (
@@ -331,11 +351,14 @@ function ActivityStep({ value, onChange }: { value: ActivityLevel | null; onChan
 }
 
 function InterestsStep({ selected, onToggle }: { selected: Interest[]; onToggle: (i: Interest) => void }) {
+  const strings = useStrings();
+  const interestOptions = getInterestOptions(strings);
+
   return (
     <View>
       <StepHeader title={strings.planner.stepInterestsQuestion} subtitle={strings.planner.stepInterestsSubtitle} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {INTEREST_OPTIONS.map((o) => {
+        {interestOptions.map((o) => {
           const Icon = o.icon;
           const isSelected = selected.includes(o.value);
           return (
@@ -372,11 +395,14 @@ function InterestsStep({ selected, onToggle }: { selected: Interest[]; onToggle:
 }
 
 function DietaryStep({ selected, onToggle }: { selected: Dietary[]; onToggle: (d: Dietary) => void }) {
+  const strings = useStrings();
+  const dietaryOptions = getDietaryOptions(strings);
+
   return (
     <View>
       <StepHeader title={strings.planner.stepDietaryQuestion} subtitle={strings.planner.stepDietarySubtitle} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {DIETARY_OPTIONS.map((o) => {
+        {dietaryOptions.map((o) => {
           const isSelected = selected.includes(o.value);
           return (
             <Chip

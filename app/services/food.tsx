@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Star } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
 import { Chip } from '../../components/Chip';
@@ -22,6 +22,7 @@ const RESTAURANTS = [
 
 export default function FoodScreen() {
   const router = useRouter();
+  const strings = useStrings();
   const [tab, setTab] = useState<Tab>('restaurants');
 
   return (
@@ -60,7 +61,7 @@ export default function FoodScreen() {
                   <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }}>{r.name}</Text>
                   <Pill
                     variant="custom"
-                    label={r.open ? 'Open' : 'Closed'}
+                    label={r.open ? strings.services.open : strings.services.closed}
                     backgroundColor={r.open ? colors.status.successLight : colors.status.errorLight}
                     textColor={r.open ? (colors.status as any).successText : (colors.status as any).errorText}
                     height={22}

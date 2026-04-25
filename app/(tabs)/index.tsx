@@ -14,10 +14,11 @@ import {
   Bed, Utensils, Car, Mountain,
   Sparkles, TreePine, Star,
 } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
-import { getDb } from '../../lib/db/client';
+import { useAuthStore } from '../../stores/authStore';
+import { getPlacesByCategories } from '../../lib/api/places';
 import { Button } from '../../components/Button';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Pill } from '../../components/Pill';
@@ -37,27 +38,24 @@ const COUNTRYSIDE_CARDS = [
   { id: 'place_029', name: 'Arslanbob Forest',      region: 'Jalal-Abad region', price: 38, bgTint: '#6a5a4b', discount: '-25%' },
 ];
 
-const SERVICE_TILES = [
-  { key: 'hotels',    icon: Bed,       label: strings.home.serviceHotels,     sub: strings.home.serviceHotelsSub,     bg: '#3d6479', route: '/services/hotels' },
-  { key: 'food',      icon: Utensils,  label: strings.home.serviceFood,       sub: strings.home.serviceFoodSub,       bg: '#5a4f3d', route: '/services/food' },
-  { key: 'transport', icon: Car,       label: strings.home.serviceTransport,  sub: strings.home.serviceTransportSub,  bg: '#4a5e40', route: '/services/transport' },
-  { key: 'activities', icon: Mountain, label: strings.home.serviceActivities, sub: strings.home.serviceActivitiesSub, bg: '#56473d', route: '/services/activities' },
-];
-
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
+  const language = useAuthStore((s) => s.language);
   const [trending, setTrending] = useState<PlaceCard[]>([]);
+  const serviceTiles = [
+    { key: 'hotels',    icon: Bed,       label: strings.home.serviceHotels,     sub: strings.home.serviceHotelsSub,     bg: '#3d6479', route: '/services/hotels' },
+    { key: 'food',      icon: Utensils,  label: strings.home.serviceFood,       sub: strings.home.serviceFoodSub,       bg: '#5a4f3d', route: '/services/food' },
+    { key: 'transport', icon: Car,       label: strings.home.serviceTransport,  sub: strings.home.serviceTransportSub,  bg: '#4a5e40', route: '/services/transport' },
+    { key: 'activities', icon: Mountain, label: strings.home.serviceActivities, sub: strings.home.serviceActivitiesSub, bg: '#56473d', route: '/services/activities' },
+  ];
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const db = await getDb();
-        const rows = await db.getAllAsync<{ id: string; name: string; region: string; category: string }>(
-          `SELECT id, name, region, category FROM places
-           WHERE category IN ('hotel','attraction','nature') ORDER BY RANDOM() LIMIT 4`
-        );
+        const rows = await getPlacesByCategories(['hotel', 'attraction', 'nature'], language, 4);
         if (active) {
           const tints = ['#3d6479', '#4a5d68', '#5a6f4d', '#6a5a4b'];
           setTrending(rows.map((r, i) => ({ ...r, bgTint: tints[i % tints.length] })));
@@ -67,7 +65,7 @@ export default function HomeScreen() {
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [language]);
 
   return (
     <View className="flex-1 bg-surface-primary">
@@ -98,7 +96,7 @@ export default function HomeScreen() {
             {strings.home.greeting}
           </Text>
           <Pressable
-            accessibilityLabel="Notifications"
+            accessibilityLabel={strings.home.notifications}
             accessibilityRole="button"
             style={({ pressed }) => ({
               width: 40, height: 40, alignItems: 'center', justifyContent: 'center',
@@ -134,7 +132,7 @@ export default function HomeScreen() {
               color: colors.text.primary,
             }}
           />
-          <Pressable accessibilityLabel="Voice search" accessibilityRole="button" onPress={() => router.push('/trip/voice')}>
+          <Pressable accessibilityLabel={strings.home.voiceSearch} accessibilityRole="button" onPress={() => router.push('/trip/voice')}>
             <Mic size={20} color={colors.brand.primary} strokeWidth={1.5} />
           </Pressable>
         </View>
@@ -142,7 +140,8 @@ export default function HomeScreen() {
         {/* ── Countryside escapes ── */}
         <SectionHeader
           title={strings.home.sectionRetreat}
-          onSeeAll={() => console.log('See all countryside')}
+          actionLabel={strings.home.seeAll}
+          onAction={() => console.log('See all countryside')}
         />
         <ScrollView
           horizontal
@@ -217,7 +216,7 @@ export default function HomeScreen() {
 
         {/* ── Service tiles 2×2 ── */}
         <View className="px-5 mt-7" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-          {SERVICE_TILES.map((tile) => {
+          {serviceTiles.map((tile) => {
             const Icon = tile.icon;
             return (
               <Pressable
@@ -263,7 +262,7 @@ export default function HomeScreen() {
         />
 
         {/* ── Trending now ── */}
-        <SectionHeader title={strings.home.sectionTrending} onSeeAll={() => console.log('See all trending')} />
+        <SectionHeader title={strings.home.sectionTrending} actionLabel={strings.home.seeAll} onAction={() => console.log('See all trending')} />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -325,4 +324,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-

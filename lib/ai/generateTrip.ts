@@ -1,5 +1,6 @@
 import { env } from '../env';
 import { getDb } from '../db/client';
+import { SEED_PLACES } from '../db/seed';
 import type {
   Purpose, Companions, ActivityLevel, BudgetRange, Interest, Dietary,
 } from '../../stores/tripStore';
@@ -89,9 +90,19 @@ const RESPONSE_SCHEMA = {
 
 async function fetchAvailablePlaces(): Promise<PlaceRow[]> {
   const db = await getDb();
-  return db.getAllAsync<PlaceRow>(
+  const rows = await db.getAllAsync<PlaceRow>(
     `SELECT id, name, lat, lon, category, region, tags FROM places LIMIT 60`
   );
+  if (rows.length > 0) return rows;
+  return SEED_PLACES.slice(0, 60).map((place) => ({
+    id: place.id,
+    name: place.name,
+    lat: place.lat,
+    lon: place.lon,
+    category: place.category,
+    region: place.region,
+    tags: place.tags,
+  }));
 }
 
 function buildPrompt(input: GenerateTripInput, places: PlaceRow[]): string {
@@ -133,25 +144,36 @@ export async function generateTrip(input: GenerateTripInput): Promise<Itinerary>
     throw new Error('No places in database. Restart the app to seed.');
   }
 
+  if (!env.gemini.apiKey) {
+    return buildFallbackItinerary(input, places);
+  }
+
   const prompt = buildPrompt(input, places);
 
-  const response = await fetch(`${GEMINI_URL}?key=${env.gemini.apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.7,
-        maxOutputTokens: 4096,
-      },
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${GEMINI_URL}?key=${env.gemini.apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          responseSchema: RESPONSE_SCHEMA,
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+        },
+      }),
+    });
+  } catch (error) {
+    console.warn('[ai] Gemini request failed, using fallback itinerary', error);
+    return buildFallbackItinerary(input, places);
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
-    throw new Error(`Gemini API ${response.status}: ${errText.slice(0, 120) || 'request failed'}`);
+    console.warn(`[ai] Gemini API ${response.status}: ${errText.slice(0, 120) || 'request failed'}`);
+    return buildFallbackItinerary(input, places);
   }
 
   const data = await response.json();
@@ -171,6 +193,78 @@ export async function generateTrip(input: GenerateTripInput): Promise<Itinerary>
     throw new Error('AI response did not match expected itinerary shape.');
   }
   return parsed;
+}
+
+function buildFallbackItinerary(input: GenerateTripInput, places: PlaceRow[]): Itinerary {
+  const preferred = places.filter((place) => {
+    if (input.interests.includes('food') && ['restaurant', 'cafe', 'market'].includes(place.category)) return true;
+    if (input.interests.includes('nature') && place.category === 'nature') return true;
+    if (input.interests.includes('culture') && ['attraction', 'market'].includes(place.category)) return true;
+    if (input.interests.includes('extreme_sports') && place.category === 'activity') return true;
+    return ['nature', 'attraction', 'activity', 'restaurant', 'hotel', 'yurt'].includes(place.category);
+  });
+  const pool = preferred.length >= input.days * 3 ? preferred : places;
+  const perDay = Math.min(4, Math.max(3, Math.ceil(pool.length / input.days)));
+  const days: ItineraryDay[] = [];
+  let totalCostUsd = 0;
+
+  for (let day = 1; day <= input.days; day += 1) {
+    const dayPlaces = Array.from({ length: perDay }, (_, index) =>
+      pool[((day - 1) * perDay + index) % pool.length]
+    );
+    const activities = dayPlaces
+      .map((place, index) => {
+        const tags = safeParseTags(place.tags);
+        const costUsd =
+          numberTag(tags.price_usd) ??
+          numberTag(tags.entry_fee_usd) ??
+          (place.category === 'restaurant' || place.category === 'cafe' ? 14 : 0);
+
+        totalCostUsd += costUsd;
+        return {
+          time: ['09:00', '12:30', '15:30', '19:00'][index] ?? '10:00',
+          placeId: place.id,
+          placeName: place.name,
+          duration: place.category === 'restaurant' || place.category === 'cafe' ? '1.5h' : '2h',
+          description: `${place.category} in ${place.region}`,
+          costUsd,
+        };
+      });
+
+    days.push({ day, activities });
+  }
+
+  const regionsCovered = [...new Set(days.flatMap((day) =>
+    day.activities
+      .map((activity) => places.find((place) => place.id === activity.placeId)?.region)
+      .filter((region): region is string => !!region)
+  ))];
+
+  return {
+    title: `${input.days} Days Across Kyrgyzstan`,
+    days,
+    totalCostUsd: Math.max(totalCostUsd, input.days * 45),
+    regionsCovered,
+    tips: [
+      'Carry some cash for remote valleys while keeping offline wallet enabled.',
+      'Mountain weather changes quickly, so pack layers even in summer.',
+      'Book transport between regions early; distances are longer than they look on the map.',
+    ],
+  };
+}
+
+function safeParseTags(raw: string | null): Record<string, unknown> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function numberTag(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function isValidItinerary(x: unknown): x is Itinerary {

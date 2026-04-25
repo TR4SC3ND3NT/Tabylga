@@ -19,6 +19,7 @@ import { runMigrations } from '../lib/db/migrations';
 import { seedDevData } from '../lib/db/seed';
 import { useAuthStore } from '../stores/authStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
+import { useTravelPreferencesStore } from '../stores/travelPreferencesStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,6 +27,7 @@ export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateOnboarding = useOnboardingStore((s) => s.hydrate);
+  const hydrateTravelPreferences = useTravelPreferencesStore((s) => s.hydrate);
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -43,6 +45,7 @@ export default function RootLayout() {
         await seedDevData();
         await hydrateAuth();
         await hydrateOnboarding();
+        await hydrateTravelPreferences();
       } catch (e) {
         console.error('[init] Bootstrap error:', e);
       } finally {
@@ -76,6 +79,7 @@ export default function RootLayout() {
           <Stack.Screen name="wallet" />
           <Stack.Screen name="merchant" />
           <Stack.Screen name="services" />
+          <Stack.Screen name="tools" />
           <Stack.Screen name="rating" options={{ presentation: 'modal' }} />
         </Stack>
       </SafeAreaProvider>

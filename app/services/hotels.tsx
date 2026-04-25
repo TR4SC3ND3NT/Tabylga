@@ -4,28 +4,42 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, AlertTriangle } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
+import { formatString } from '../../lib/strings';
+import { HOTEL_LISTINGS } from '../../lib/backend/demoBackend';
 import { colors } from '../../constants/colors';
-import { shadows } from '../../constants/shadows';
 import { Chip } from '../../components/Chip';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
-
-const FILTERS = ['All','Price','Rating','Hotel','Hostel','Yurt','Guesthouse'];
-
-const HOTELS = [
-  { id:'1', name:'Hyatt Regency Bishkek',      stars:5, region:'Bishkek',       price:180, rating:4.8, reviews:312, type:'hotel',  limited:false },
-  { id:'2', name:'Shepherd\'s Life Yurt Camp', stars:0, region:'Song-Kül',      price:45,  rating:4.9, reviews:87,  type:'yurt',   limited:true  },
-  { id:'3', name:'Navigator Guesthouse',       stars:0, region:'Bishkek',       price:12,  rating:4.5, reviews:214, type:'hostel', limited:false },
-  { id:'4', name:'Tamga Yurt Camp',            stars:0, region:'Issyk-Kül',     price:35,  rating:4.7, reviews:63,  type:'yurt',   limited:false },
-  { id:'5', name:'Trekking Union Guesthouse',  stars:0, region:'Karakol',       price:25,  rating:4.6, reviews:98,  type:'hostel', limited:false },
-];
 
 const BG_TINTS: Record<string, string> = { hotel:'#3d6479', yurt:'#6a5a4b', hostel:'#4a5e40' };
 
 export default function HotelsScreen() {
   const router = useRouter();
-  const [filter, setFilter] = useState('All');
+  const strings = useStrings();
+  const filters = [
+    strings.services.filterAll,
+    strings.services.filterPrice,
+    strings.services.filterRating,
+    strings.services.filterHotel,
+    strings.services.filterHostel,
+    strings.services.filterYurt,
+    strings.services.filterGuesthouse,
+  ];
+  const [filter, setFilter] = useState(filters[0]);
+  const hotels = [...HOTEL_LISTINGS]
+    .filter((hotel) => {
+      if (filter === strings.services.filterHotel) return hotel.type === 'hotel';
+      if (filter === strings.services.filterHostel) return hotel.type === 'hostel';
+      if (filter === strings.services.filterYurt) return hotel.type === 'yurt';
+      if (filter === strings.services.filterGuesthouse) return hotel.type === 'guesthouse';
+      return true;
+    })
+    .sort((a, b) => {
+      if (filter === strings.services.filterPrice) return a.priceUsd - b.priceUsd;
+      if (filter === strings.services.filterRating) return b.rating - a.rating;
+      return b.rating - a.rating;
+    });
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
@@ -40,7 +54,7 @@ export default function HotelsScreen() {
       </View>
 
       <ScrollView showsHorizontalScrollIndicator={false} style={{ borderBottomWidth:1, borderBottomColor:colors.border.divider, maxHeight:52 }} horizontal contentContainerStyle={{ paddingHorizontal:16, gap:8, alignItems:'center' }}>
-        {FILTERS.map(f => (
+        {filters.map(f => (
           <Chip
             key={f}
             label={f}
@@ -53,7 +67,7 @@ export default function HotelsScreen() {
       </ScrollView>
 
       <ScrollView contentContainerStyle={{ padding:16, gap:12 }} showsVerticalScrollIndicator={false}>
-        {HOTELS.map(h => (
+        {hotels.map(h => (
           <Card key={h.id}>
             <View style={{ flexDirection:'row' }}>
               <View style={{ width:120, height:120, backgroundColor: BG_TINTS[h.type] ?? '#3d6479' }} />
@@ -64,8 +78,17 @@ export default function HotelsScreen() {
                   <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:4 }}>
                     <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
                     <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>{h.rating}</Text>
-                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>({h.reviews})</Text>
+                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>
+                      {formatString(strings.merchantExtra.reviewsCount, { count: h.reviewCount })}
+                    </Text>
                   </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap:6, marginTop:7 }}>
+                    {h.amenities.slice(0, 3).map((amenity) => (
+                      <View key={amenity} style={{ paddingHorizontal:8, height:24, borderRadius:999, backgroundColor:colors.brand.primaryLight, alignItems:'center', justifyContent:'center' }}>
+                        <Text style={{ fontFamily:'Inter_500Medium', fontSize:11, color:colors.brand.primary }}>{amenity}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
                   {h.limited && (
                     <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:6 }}>
                       <AlertTriangle size={12} color={colors.status.warning} strokeWidth={2} />
@@ -74,7 +97,7 @@ export default function HotelsScreen() {
                   )}
                 </View>
                 <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.brand.primary }}>${h.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>/night</Text></Text>
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.brand.primary }}>${h.priceUsd}<Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>{strings.common.perNight}</Text></Text>
                   <View style={{ width: 80 }}>
                     <Button
                       variant="secondary"
@@ -86,6 +109,18 @@ export default function HotelsScreen() {
                   </View>
                 </View>
               </View>
+            </View>
+            <View style={{ paddingHorizontal:12, paddingBottom:12 }}>
+              {h.reviews.slice(0, 1).map((review) => (
+                <View key={review.id} style={{ borderTopWidth:1, borderTopColor:colors.border.divider, paddingTop:10, marginTop:2 }}>
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>
+                    {review.author} · {review.rating}
+                  </Text>
+                  <Text numberOfLines={2} style={{ fontFamily:'Inter_400Regular', fontSize:12, lineHeight:16, color:colors.text.secondary, marginTop:3 }}>
+                    {review.text}
+                  </Text>
+                </View>
+              ))}
             </View>
           </Card>
         ))}

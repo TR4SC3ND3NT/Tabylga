@@ -4,7 +4,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Check } from 'lucide-react-native';
-import { strings } from '../../lib/strings';
+import { formatString } from '../../lib/strings';
+import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 
 const AMOUNTS = [50, 100, 200, 500];
@@ -21,6 +22,7 @@ function formatCard(raw: string): string {
 export default function TopUpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const strings = useStrings();
   const [amount, setAmount] = useState(100);
   const [method, setMethod] = useState<Method>('mbank');
   const [cardNum, setCardNum] = useState('');
@@ -41,7 +43,7 @@ export default function TopUpScreen() {
       <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center">
         <ActivityIndicator size="large" color={colors.brand.primary} />
         <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.text.secondary, marginTop: 16 }}>
-          Processing payment…
+          {strings.walletExtra.processingPayment}
         </Text>
       </SafeAreaView>
     );
@@ -58,7 +60,7 @@ export default function TopUpScreen() {
           <Check size={40} color={colors.status.success} strokeWidth={2.5} />
         </View>
         <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.text.primary }}>
-          ${amount} added!
+          {formatString(strings.walletExtra.topUpSuccess, { amount })}
         </Text>
       </SafeAreaView>
     );
@@ -116,12 +118,12 @@ export default function TopUpScreen() {
           })}
         </View>
         <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary, marginBottom: 24 }}>
-          = {(amount * RATE).toLocaleString('ru-RU')} KGS at {RATE.toFixed(2)} rate
+          {formatString(strings.walletExtra.convertedRate, { kgs: (amount * RATE).toLocaleString('ru-RU'), rate: RATE.toFixed(2) })}
         </Text>
 
         {/* Payment methods */}
         <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text.secondary, marginBottom: 10, letterSpacing: 0.08 * 14, textTransform: 'uppercase' }}>
-          Payment method
+          {strings.walletExtra.paymentMethod}
         </Text>
 
         {([
@@ -216,7 +218,7 @@ export default function TopUpScreen() {
           style={({ pressed }) => ({ height: 56, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.85 : 1 })}
         >
           <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
-            Pay ${amount}
+            {formatString(strings.walletExtra.payAmount, { amount })}
           </Text>
         </Pressable>
       </View>

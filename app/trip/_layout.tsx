@@ -8,6 +8,7 @@ export default function TripLayout() {
       <Stack.Screen name="generating" options={{ gestureEnabled: false }} />
       <Stack.Screen name="itinerary" />
       <Stack.Screen name="voice" />
+      <Stack.Screen name="group-match" />
     </Stack>
   );
 }
