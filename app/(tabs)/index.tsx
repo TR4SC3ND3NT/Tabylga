@@ -21,7 +21,9 @@ import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { useAuthStore } from '../../stores/authStore';
 import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
+import { useTripStore } from '../../stores/tripStore';
 import { getPlacesByCategories } from '../../lib/api/places';
+import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
 import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
 
@@ -38,6 +40,11 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const strings = useStrings();
   const language = useAuthStore((s) => s.language);
+  const user = useAuthStore((s) => s.user);
+  const guestSessionId = useAuthStore((s) => s.guestSessionId);
+  const startGuestSession = useAuthStore((s) => s.startGuestSession);
+  const currentTrip = useTripStore((s) => s.generatedItinerary);
+  const setEntryMode = useTripStore((s) => s.setEntryMode);
   const peopleCount = useTravelPreferencesStore((s) => s.peopleCount);
   const age = useTravelPreferencesStore((s) => s.age);
   const { height } = useWindowDimensions();
@@ -81,7 +88,7 @@ export default function HomeScreen() {
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>
-                {strings.home.greeting}
+                {user?.name ? `Hi, ${user.name}` : guestSessionId ? 'Hi, traveler' : strings.home.greeting}
               </Text>
               <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, marginTop: 1 }}>
                 {peopleCount} travelers · age {age}
@@ -101,7 +108,7 @@ export default function HomeScreen() {
               Kyrgyzstan routes that actually work
             </Text>
             <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20, color: colors.text.secondary, marginTop: 8, maxWidth: 310 }}>
-              Hotels, food, taxi, payments and AI route planning in one tourist flow.
+              Hotels, food, transport and activities connected into one personalized trip plan.
             </Text>
           </View>
 
@@ -168,9 +175,13 @@ export default function HomeScreen() {
           <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginTop: compact ? 14 : 18 }}>
             <Button
               variant="cta"
-              label={strings.home.aiCtaTitle}
+              label="Plan my full trip with AI"
               icon={<Sparkles size={20} color="#fff" strokeWidth={2} />}
-              onPress={() => router.push('/trip/purpose')}
+              onPress={async () => {
+                await startGuestSession();
+                setEntryMode('ai');
+                router.push('/trip/quiz');
+              }}
               style={{ flex: 1 }}
               fontSize={13}
             />
@@ -192,6 +203,36 @@ export default function HomeScreen() {
               <Languages size={22} color={colors.brand.primary} strokeWidth={1.8} />
             </Pressable>
           </View>
+
+          {currentTrip && (
+            <Pressable
+              onPress={() => router.push('/trip/itinerary')}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                marginHorizontal: 20,
+                marginTop: compact ? 12 : 16,
+                borderRadius: 18,
+                padding: 14,
+                backgroundColor: colors.brand.primaryLight,
+                borderWidth: 1,
+                borderColor: colors.border.divider,
+                opacity: pressed ? 0.85 : 1,
+              })}
+            >
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>
+                Continue your trip
+              </Text>
+              <Text numberOfLines={1} style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 20, color: colors.text.primary, marginTop: 4 }}>
+                {currentTrip.title}
+              </Text>
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, marginTop: 4 }}>
+                {currentTrip.days} days - {currentTrip.travelerCount} {currentTrip.travelerCount === 1 ? 'traveler' : 'travelers'} - {formatUSD(currentTrip.totalCost)} total estimate
+              </Text>
+              <View style={{ alignSelf: 'flex-start', marginTop: 10, height: 32, paddingHorizontal: 12, borderRadius: 999, backgroundColor: colors.brand.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: '#fff' }}>View trip</Text>
+              </View>
+            </Pressable>
+          )}
 
           <View style={{ marginTop: compact ? 12 : 18 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 10 }}>

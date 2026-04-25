@@ -125,7 +125,7 @@ export default function MapScreen() {
 
   const routePlaceIds = useMemo(() => {
     if (!generatedItinerary) return [];
-    const ids = generatedItinerary.days.flatMap((day) => day.activities.map((activity) => activity.placeId));
+    const ids = generatedItinerary.dailyPlans.flatMap((day) => day.activities.map((activity) => activity.id));
     return [...new Set(ids)];
   }, [generatedItinerary]);
 

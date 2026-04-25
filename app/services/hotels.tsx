@@ -1,139 +1,172 @@
-import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMemo, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Star, AlertTriangle } from 'lucide-react-native';
-import { useStrings } from '../../lib/i18n';
-import { formatString } from '../../lib/strings';
-import { HOTEL_LISTINGS } from '../../lib/backend/demoBackend';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft, Star, Wifi, WifiOff } from 'lucide-react-native';
+import { STAYS } from '../../lib/data/stays';
+import type { Stay } from '../../lib/data/tripPlaces';
 import { colors } from '../../constants/colors';
 import { Chip } from '../../components/Chip';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { formatUSD } from '../../lib/format';
+import { useTripStore } from '../../stores/tripStore';
 
-const BG_TINTS: Record<string, string> = { hotel:'#3d6479', yurt:'#6a5a4b', hostel:'#4a5e40' };
+const FILTERS = ['All', 'Price', 'Rating', 'Hotel', 'Hostel', 'Yurt', 'Wi-Fi', 'Family', 'Offline pay', 'QR pay'];
+const BG_TINTS: Record<string, string> = { hotel: '#3d6479', yurt: '#6a5a4b', hostel: '#4a5e40', guesthouse: '#4a7289' };
 
 export default function HotelsScreen() {
   const router = useRouter();
-  const strings = useStrings();
-  const filters = [
-    strings.services.filterAll,
-    strings.services.filterPrice,
-    strings.services.filterRating,
-    strings.services.filterHotel,
-    strings.services.filterHostel,
-    strings.services.filterYurt,
-    strings.services.filterGuesthouse,
-  ];
-  const [filter, setFilter] = useState(filters[0]);
-  const hotels = [...HOTEL_LISTINGS]
-    .filter((hotel) => {
-      if (filter === strings.services.filterHotel) return hotel.type === 'hotel';
-      if (filter === strings.services.filterHostel) return hotel.type === 'hostel';
-      if (filter === strings.services.filterYurt) return hotel.type === 'yurt';
-      if (filter === strings.services.filterGuesthouse) return hotel.type === 'guesthouse';
-      return true;
-    })
-    .sort((a, b) => {
-      if (filter === strings.services.filterPrice) return a.priceUsd - b.priceUsd;
-      if (filter === strings.services.filterRating) return b.rating - a.rating;
-      return b.rating - a.rating;
-    });
+  const params = useLocalSearchParams<{ mode?: string; day?: string; region?: string }>();
+  const updateStay = useTripStore((state) => state.updateStay);
+  const preferences = useTripStore((state) => state.preferences);
+  const [filter, setFilter] = useState(FILTERS[0]);
+  const [details, setDetails] = useState<Stay | null>(null);
+
+  const dayNumber = Number(params.day ?? 0);
+  const routeRegion = typeof params.region === 'string' ? params.region : null;
+  const fromTrip = params.mode === 'change_stay' && dayNumber > 0;
+
+  const stays = useMemo(() => {
+    const routeFiltered = routeRegion
+      ? STAYS.filter((stay) => stay.region === routeRegion || (routeRegion === 'Cholpon-Ata' && stay.region === 'Issyk-Kul') || (routeRegion === 'Jeti-Oguz' && stay.region === 'Karakol'))
+      : STAYS;
+    const base = routeFiltered.length ? routeFiltered : STAYS;
+    return base
+      .filter((stay) => {
+        if (filter === 'Hotel') return stay.type === 'hotel';
+        if (filter === 'Hostel') return stay.type === 'hostel';
+        if (filter === 'Yurt') return stay.type === 'yurt';
+        if (filter === 'Wi-Fi') return stay.wifi;
+        if (filter === 'Family') return stay.familyFriendly;
+        if (filter === 'Offline pay') return stay.offlinePaymentSupported;
+        if (filter === 'QR pay') return stay.paymentOptions.includes('qr');
+        return true;
+      })
+      .sort((a, b) => {
+        if (filter === 'Price') return a.pricePerNight - b.pricePerNight;
+        if (filter === 'Rating') return b.rating - a.rating;
+        if (fromTrip) return scoreForTrip(b) - scoreForTrip(a);
+        return b.rating - a.rating;
+      });
+  }, [filter, fromTrip, preferences, routeRegion]);
+
+  function scoreForTrip(stay: Stay) {
+    let score = 0;
+    if (stay.tier === preferences.budgetTier) score += 20;
+    if (preferences.stayPreference === 'hotels_only' && stay.type === 'hotel') score += 30;
+    if (preferences.stayPreference === 'guesthouse_ok' && stay.type !== 'yurt') score += 14;
+    if (preferences.stayPreference === 'yurt_ok' && ['hotel', 'guesthouse', 'yurt'].includes(stay.type)) score += 10;
+    if (preferences.internetComfort === 'prefer_internet' && stay.wifi) score += 20;
+    if (preferences.travelStyles.includes('business') && stay.businessFriendly) score += 24;
+    if ((preferences.travelersType === 'family' || preferences.travelStyles.includes('family_trip')) && stay.familyFriendly) score += 24;
+    if (preferences.budgetTier === 'budget' && stay.tier === 'premium') score -= 40;
+    return score;
+  }
+
+  function selectStay(stay: Stay) {
+    if (!fromTrip) {
+      setDetails(stay);
+      return;
+    }
+    updateStay(dayNumber, stay.id);
+    Alert.alert('Stay updated in your trip', `${stay.name} was added to Day ${dayNumber}.`, [
+      { text: 'View trip', onPress: () => router.replace('/trip/itinerary') },
+    ]);
+  }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
-      <View style={{ flexDirection:'row', alignItems:'center', paddingHorizontal:12, paddingTop:8, paddingBottom:12, borderBottomWidth:1, borderBottomColor:colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
           <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
-        <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:17, color:colors.text.primary, flex:1, textAlign:'center', marginRight:44 }}>
-          {strings.services.hotelsTitle}
-        </Text>
+        <View style={{ flex: 1, marginRight: 44 }}>
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text.primary, textAlign: 'center' }}>
+            {fromTrip ? `Best matches for Day ${dayNumber}` : 'Hotels'}
+          </Text>
+          {fromTrip ? (
+            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, textAlign: 'center', marginTop: 2 }}>
+              {routeRegion}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
-      <ScrollView showsHorizontalScrollIndicator={false} style={{ borderBottomWidth:1, borderBottomColor:colors.border.divider, maxHeight:52 }} horizontal contentContainerStyle={{ paddingHorizontal:16, gap:8, alignItems:'center' }}>
-        {filters.map(f => (
-          <Chip
-            key={f}
-            label={f}
-            selected={filter === f}
-            onPress={() => setFilter(f)}
-            height={34}
-            fontSize={13}
-          />
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ borderBottomWidth: 1, borderBottomColor: colors.border.divider, maxHeight: 52 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center' }}>
+        {FILTERS.map((item) => <Chip key={item} label={item} selected={filter === item} onPress={() => setFilter(item)} height={34} fontSize={13} />)}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={{ padding:16, gap:12 }} showsVerticalScrollIndicator={false}>
-        {hotels.map(h => (
-          <Card key={h.id}>
-            <View style={{ flexDirection:'row' }}>
-              <View style={{ width:120, height:120, backgroundColor: BG_TINTS[h.type] ?? '#3d6479' }} />
-              <View style={{ flex:1, padding:12, justifyContent:'space-between' }}>
-                <View>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }} numberOfLines={2}>{h.name}</Text>
-                  <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary, marginTop:2 }}>{h.region}</Text>
-                  <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:4 }}>
-                    <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
-                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>{h.rating}</Text>
-                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>
-                      {formatString(strings.merchantExtra.reviewsCount, { count: h.reviewCount })}
-                    </Text>
-                  </View>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap:6, marginTop:7 }}>
-                    {h.amenities.slice(0, 3).map((amenity) => (
-                      <View key={amenity} style={{ paddingHorizontal:8, height:24, borderRadius:999, backgroundColor:colors.brand.primaryLight, alignItems:'center', justifyContent:'center' }}>
-                        <Text style={{ fontFamily:'Inter_500Medium', fontSize:11, color:colors.brand.primary }}>{amenity}</Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                  {h.limited && (
-                    <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:6 }}>
-                      <AlertTriangle size={12} color={colors.status.warning} strokeWidth={2} />
-                      <Text style={{ fontFamily:'Inter_500Medium', fontSize:11, color:colors.status.warning }}>{strings.services.limitedAvailability}</Text>
-                    </View>
-                  )}
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} showsVerticalScrollIndicator={false}>
+        {stays.map((stay) => (
+          <Card key={stay.id}>
+            <View style={{ flexDirection: 'row' }}>
+              <View style={{ width: 112, minHeight: 136, backgroundColor: BG_TINTS[stay.type] ?? '#3d6479', alignItems: 'center', justifyContent: 'center' }}>
+                {stay.wifi ? <Wifi size={28} color="#fff" strokeWidth={1.6} /> : <WifiOff size={28} color="#fff" strokeWidth={1.6} />}
+              </View>
+              <View style={{ flex: 1, padding: 12 }}>
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }} numberOfLines={2}>{stay.name}</Text>
+                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>{stay.city}, {stay.region}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                  <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
+                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.text.primary }}>{stay.rating}</Text>
+                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}>{stay.reviewCount} reviews</Text>
                 </View>
-                <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.brand.primary }}>${h.priceUsd}<Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>{strings.common.perNight}</Text></Text>
-                  <View style={{ width: 86, gap: 6 }}>
-                    <Button
-                      variant="secondary"
-                      label={strings.services.book}
-                      onPress={() => router.push({ pathname: '/rating', params: { name: h.name, region: h.region } } as never)}
-                      height={32}
-                      fontSize={13}
-                      style={{ borderRadius: 8, borderWidth: 1.5 }}
-                    />
-                    <Button
-                      variant="primary"
-                      label="Review"
-                      onPress={() => router.push({ pathname: '/rating', params: { name: h.name, region: h.region } } as never)}
-                      height={30}
-                      fontSize={12}
-                      style={{ borderRadius: 8 }}
-                    />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, marginTop: 8 }}>
+                  {stay.tags.slice(0, 4).map((tag) => <Chip key={tag} label={tag.replace(/_/g, ' ')} height={24} fontSize={11} />)}
+                </ScrollView>
+                <Text numberOfLines={2} style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 8 }}>{stay.reviews[0]?.text ?? stay.description}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.brand.primary }}>{formatUSD(stay.pricePerNight)}<Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}> / night</Text></Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Button variant="secondary" label="Details" onPress={() => setDetails(stay)} height={34} fontSize={12} style={{ width: 78, borderRadius: 9 }} />
+                    <Button label={fromTrip ? 'Add' : 'Book'} onPress={() => selectStay(stay)} height={34} fontSize={12} style={{ width: 72, borderRadius: 9 }} />
                   </View>
                 </View>
               </View>
             </View>
-            <View style={{ paddingHorizontal:12, paddingBottom:12 }}>
-              {h.reviews.slice(0, 1).map((review) => (
-                <View key={review.id} style={{ borderTopWidth:1, borderTopColor:colors.border.divider, paddingTop:10, marginTop:2 }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>
-                    {review.author} · {review.rating}
-                  </Text>
-                  <Text numberOfLines={2} style={{ fontFamily:'Inter_400Regular', fontSize:12, lineHeight:16, color:colors.text.secondary, marginTop:3 }}>
-                    {review.text}
-                  </Text>
-                </View>
-              ))}
-            </View>
           </Card>
         ))}
       </ScrollView>
+
+      <StayDetails stay={details} fromTrip={fromTrip} onClose={() => setDetails(null)} onAdd={(stay) => selectStay(stay)} />
     </SafeAreaView>
   );
+}
+
+function StayDetails({ stay, fromTrip, onClose, onAdd }: { stay: Stay | null; fromTrip: boolean; onClose: () => void; onAdd: (stay: Stay) => void }) {
+  if (!stay) return null;
+  return (
+    <Modal visible transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.32)', justifyContent: 'center', padding: 20 }}>
+        <View style={{ borderRadius: 22, padding: 18, backgroundColor: colors.surface.card }}>
+          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: colors.text.primary }}>{stay.name}</Text>
+          <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.brand.primary, marginTop: 4 }}>{stay.city}, {stay.region} - {stay.rating} rating</Text>
+          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20, color: colors.text.secondary, marginTop: 10 }}>{stay.description}</Text>
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text.primary, marginTop: 14 }}>Amenities</Text>
+          <TagList tags={stay.amenities} />
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text.primary, marginTop: 14 }}>Room types</Text>
+          {stay.roomTypes.map((room) => (
+            <Text key={room.id} style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary, marginTop: 5 }}>{room.title} - {formatUSD(room.pricePerNight)} - sleeps {room.sleeps}</Text>
+          ))}
+          {fromTrip ? (
+            <View style={{ marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: colors.brand.primaryLight }}>
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>Why it fits your trip</Text>
+              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 4 }}>This stay matches the selected route region and will update your trip total immediately.</Text>
+            </View>
+          ) : null}
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+            <Button variant="secondary" label="Close" onPress={onClose} style={{ flex: 1 }} height={46} fontSize={13} />
+            <Button label={fromTrip ? 'Add to trip' : 'Book demo'} onPress={() => { onClose(); onAdd(stay); }} style={{ flex: 1 }} height={46} fontSize={13} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function TagList({ tags }: { tags: string[] }) {
+  return <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>{tags.map((tag) => <Chip key={tag} label={tag} height={28} fontSize={11} />)}</View>;
 }

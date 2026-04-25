@@ -20,6 +20,7 @@ import { seedDevData } from '../lib/db/seed';
 import { useAuthStore } from '../stores/authStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
 import { useTravelPreferencesStore } from '../stores/travelPreferencesStore';
+import { useTripStore } from '../stores/tripStore';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +29,7 @@ export default function RootLayout() {
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateOnboarding = useOnboardingStore((s) => s.hydrate);
   const hydrateTravelPreferences = useTravelPreferencesStore((s) => s.hydrate);
+  const hydrateTrip = useTripStore((s) => s.hydrate);
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -46,6 +48,7 @@ export default function RootLayout() {
         await hydrateAuth();
         await hydrateOnboarding();
         await hydrateTravelPreferences();
+        await hydrateTrip();
       } catch (e) {
         console.error('[init] Bootstrap error:', e);
       } finally {

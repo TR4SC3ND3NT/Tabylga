@@ -1,122 +1,446 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { generateTrip as callGemini, type Itinerary } from '../lib/ai/generateTrip';
+import {
+  DEFAULT_TRIP_PREFERENCES,
+  STORAGE_KEYS,
+  STORAGE_VERSION,
+  normalizeTravelerCount,
+  type BudgetTier,
+  type ExperienceKey,
+  type PlannerActivityLevel,
+  type ReadyTrip,
+  type RequirementKey,
+  type StartPoint,
+  type Stay,
+  type StayPreference,
+  type TravelersType,
+  type TravelStyle,
+  type TripDays,
+  type TripPreferences,
+} from '../lib/data/tripPlaces';
+import {
+  changeFood as generatorChangeFood,
+  changeStay as generatorChangeStay,
+  changeTransport as generatorChangeTransport,
+  generateTrip as buildTrip,
+  lockTripDemo as generatorLockTrip,
+  makeTripCheaper,
+  makeTripMoreActive,
+  makeTripMoreComfortable,
+  regenerateDay as generatorRegenerateDay,
+  replaceActivity as generatorReplaceActivity,
+  updateActivity as generatorUpdateActivity,
+  updateFood as generatorUpdateFood,
+  updateStay as generatorUpdateStay,
+  updateTransport as generatorUpdateTransport,
+  type GeneratedTrip,
+} from '../lib/trip/tripGenerator';
 
-export type Purpose =
-  | 'leisure' | 'adventure' | 'family' | 'business'
-  | 'romantic' | 'cultural' | 'digital_nomad' | 'pilgrimage';
+export type Purpose = TravelStyle;
+export type Companions = TravelersType;
+export type ActivityLevel = PlannerActivityLevel;
+export type BudgetRange = BudgetTier;
+export type Interest = string;
+export type Dietary = RequirementKey;
+export type Itinerary = GeneratedTrip;
+export type EntryMode = 'ai' | 'ready' | null;
 
-export type Companions = 'solo' | 'couple' | 'family' | 'friends' | 'colleagues';
-export type ActivityLevel = 'chill' | 'moderate' | 'active' | 'extreme';
-export type BudgetRange = '100-300' | '300-600' | '600-1200' | '1200+';
-
-export type Interest =
-  | 'nature' | 'culture' | 'food' | 'extreme_sports'
-  | 'photography' | 'shopping' | 'wellness' | 'nightlife';
-
-export type Dietary =
-  | 'vegetarian' | 'halal' | 'vegan' | 'wheelchair' | 'family_friendly' | 'none';
-
-export type { Itinerary };
+interface OfflinePack {
+  id: string;
+  tripId: string;
+  createdAt: number;
+  checklist: string[];
+}
 
 interface TripState {
-  // Purpose step
+  entryMode: EntryMode;
+  selectedPresetId: string | null;
+  preferences: TripPreferences;
+  generatedItinerary: GeneratedTrip | null;
+  undoTrip: GeneratedTrip | null;
+  lastEditLabel: string | null;
+  offlinePack: OfflinePack | null;
+  isGenerating: boolean;
+  error: string | null;
+  hydrated: boolean;
+
   purpose: Purpose | null;
   companions: Companions | null;
   companionCount: number;
   kidsAgeRange: string | null;
-
-  // Quiz steps
-  days: number | null;
-  budget: BudgetRange | null;
-  activityLevel: ActivityLevel | null;
+  days: TripDays;
+  budget: BudgetRange;
+  activityLevel: ActivityLevel;
   interests: Interest[];
   dietaryNeeds: Dietary[];
-
-  // AI output
-  generatedItinerary: Itinerary | null;
-  isGenerating: boolean;
-  error: string | null;
 }
 
 interface TripActions {
-  setPurpose: (p: Purpose) => void;
-  setCompanions: (c: Companions) => void;
-  setCompanionCount: (n: number) => void;
-  setKidsAgeRange: (r: string | null) => void;
-  setQuizAnswer: <K extends keyof TripState>(key: K, value: TripState[K]) => void;
+  hydrate: () => Promise<void>;
+  setEntryMode: (mode: EntryMode) => void;
+  setPreferences: (preferences: TripPreferences) => void;
+  patchPreferences: (patch: Partial<TripPreferences>) => void;
+  applyPreset: (preset: ReadyTrip | TripPreferences, mode?: EntryMode) => void;
+  toggleTravelStyle: (style: TravelStyle) => void;
+  setTravelersType: (type: TravelersType) => void;
+  setTravelerCount: (count: number) => void;
+  toggleExperience: (experience: ExperienceKey) => void;
+  toggleRequirement: (requirement: RequirementKey) => void;
+  generateTrip: () => Promise<void>;
+  changeStay: (dayNumber: number) => void;
+  updateStay: (dayNumber: number, stayId: string) => void;
+  changeTransport: (dayNumber: number) => void;
+  updateTransport: (dayNumber: number, transportId: string) => void;
+  changeFood: (dayNumber: number) => void;
+  updateFood: (dayNumber: number, foodId: string) => void;
+  replaceActivity: (dayNumber: number, activityId: string) => void;
+  updateActivity: (dayNumber: number, currentActivityId: string, nextActivityId: string) => void;
+  regenerateDay: (dayNumber: number) => void;
+  makeCheaper: () => void;
+  makeMoreActive: () => void;
+  makeMoreComfortable: () => void;
+  undoLastEdit: () => void;
+  clearUndo: () => void;
+  saveOfflinePack: () => Promise<OfflinePack | null>;
+  lockTripDemo: () => Promise<void>;
+  resetTrip: () => void;
+  resetGeneratedTrip: () => void;
+
+  setPurpose: (purpose: Purpose) => void;
+  setCompanions: (companions: Companions) => void;
+  setCompanionCount: (count: number) => void;
+  setKidsAgeRange: (range: string | null) => void;
+  setQuizAnswer: (key: keyof TripState, value: TripState[keyof TripState]) => void;
   toggleInterest: (interest: Interest) => void;
   toggleDietary: (dietary: Dietary) => void;
-  generateTrip: () => Promise<void>;
-  resetTrip: () => void;
 }
 
-const INITIAL: TripState = {
-  purpose: null,
-  companions: null,
-  companionCount: 2,
-  kidsAgeRange: null,
-  days: null,
-  budget: null,
-  activityLevel: null,
-  interests: [],
-  dietaryNeeds: [],
-  generatedItinerary: null,
-  isGenerating: false,
-  error: null,
-};
+function validTrip(value: unknown): value is GeneratedTrip {
+  return !!value && typeof value === 'object' && Array.isArray((value as GeneratedTrip).dailyPlans);
+}
 
-export const useTripStore = create<TripState & TripActions>((set, get) => ({
-  ...INITIAL,
+function normalizePreferences(preferences: TripPreferences): TripPreferences {
+  return {
+    ...DEFAULT_TRIP_PREFERENCES,
+    ...preferences,
+    travelerCount: normalizeTravelerCount(preferences.travelersType ?? DEFAULT_TRIP_PREFERENCES.travelersType, preferences.travelerCount),
+    travelStyles: preferences.travelStyles ?? [],
+    experiences: preferences.experiences ?? [],
+    requirements: preferences.requirements?.length ? preferences.requirements : ['none'],
+  };
+}
 
-  setPurpose: (purpose) => set({ purpose }),
-  setCompanions: (companions) => set({ companions }),
-  setCompanionCount: (companionCount) => set({ companionCount }),
-  setKidsAgeRange: (kidsAgeRange) => set({ kidsAgeRange }),
+function aliases(preferences: TripPreferences): Pick<
+  TripState,
+  'purpose' | 'companions' | 'companionCount' | 'kidsAgeRange' | 'days' | 'budget' | 'activityLevel' | 'interests' | 'dietaryNeeds'
+> {
+  return {
+    purpose: preferences.travelStyles[0] ?? null,
+    companions: preferences.travelersType,
+    companionCount: preferences.travelerCount,
+    kidsAgeRange: null,
+    days: preferences.days,
+    budget: preferences.budgetTier,
+    activityLevel: preferences.activityLevel,
+    interests: preferences.experiences,
+    dietaryNeeds: preferences.requirements,
+  };
+}
 
-  setQuizAnswer: (key, value) => set({ [key]: value } as Partial<TripState>),
+function baseState(preferences: TripPreferences = DEFAULT_TRIP_PREFERENCES): TripState {
+  const normalized = normalizePreferences(preferences);
+  return {
+    entryMode: null,
+    selectedPresetId: null,
+    preferences: normalized,
+    generatedItinerary: null,
+    undoTrip: null,
+    lastEditLabel: null,
+    offlinePack: null,
+    isGenerating: false,
+    error: null,
+    hydrated: false,
+    ...aliases(normalized),
+  };
+}
 
-  toggleInterest: (interest) => {
-    const { interests } = get();
-    const next = interests.includes(interest)
-      ? interests.filter((i) => i !== interest)
-      : [...interests, interest];
-    set({ interests: next });
-  },
+async function getCurrentSessionId() {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.session);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { id?: string };
+    return parsed.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
-  toggleDietary: (dietary) => {
-    const { dietaryNeeds } = get();
-    if (dietary === 'none') {
-      set({ dietaryNeeds: dietaryNeeds.includes('none') ? [] : ['none'] });
-      return;
-    }
-    const filtered = dietaryNeeds.filter((d) => d !== 'none');
-    const next = filtered.includes(dietary)
-      ? filtered.filter((d) => d !== dietary)
-      : [...filtered, dietary];
-    set({ dietaryNeeds: next });
-  },
+async function ensureStorageVersion() {
+  const version = await AsyncStorage.getItem(STORAGE_KEYS.version);
+  if (version === STORAGE_VERSION) return;
+  await AsyncStorage.multiRemove([
+    '@tabylga/trip_planner_v2',
+    STORAGE_KEYS.preferences,
+    STORAGE_KEYS.currentTrip,
+    STORAGE_KEYS.bookings,
+    STORAGE_KEYS.offlinePack,
+    STORAGE_KEYS.selectedPreset,
+  ]);
+  await AsyncStorage.setItem(STORAGE_KEYS.version, STORAGE_VERSION);
+}
 
-  generateTrip: async () => {
-    set({ isGenerating: true, error: null });
-    try {
-      const state = get();
-      const itinerary = await callGemini({
-        purpose: state.purpose!,
-        companions: state.companions!,
-        companionCount: state.companionCount,
-        kidsAgeRange: state.kidsAgeRange,
-        days: state.days!,
-        budget: state.budget!,
-        activityLevel: state.activityLevel!,
-        interests: state.interests,
-        dietaryNeeds: state.dietaryNeeds,
+async function persistPreferences(preferences: TripPreferences) {
+  await AsyncStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(preferences));
+}
+
+async function persistTrip(trip: GeneratedTrip | null) {
+  if (!trip) {
+    await AsyncStorage.removeItem(STORAGE_KEYS.currentTrip);
+    return;
+  }
+  await AsyncStorage.setItem(STORAGE_KEYS.currentTrip, JSON.stringify(trip));
+}
+
+function isReadyTrip(value: ReadyTrip | TripPreferences): value is ReadyTrip {
+  return 'preferences' in value && 'title' in value;
+}
+
+export const useTripStore = create<TripState & TripActions>((set, get) => {
+  function commitPreferences(next: TripPreferences, extra: Partial<TripState> = {}) {
+    const preferences = normalizePreferences(next);
+    set({ preferences, ...aliases(preferences), ...extra });
+    void persistPreferences(preferences);
+    if (extra.generatedItinerary !== undefined) void persistTrip(extra.generatedItinerary ?? null);
+  }
+
+  function edit(label: string, updater: (trip: GeneratedTrip, preferences: TripPreferences) => GeneratedTrip) {
+    const { generatedItinerary, preferences } = get();
+    if (!generatedItinerary) return;
+    const next = updater(generatedItinerary, preferences);
+    set({ generatedItinerary: next, undoTrip: generatedItinerary, lastEditLabel: label });
+    void persistTrip(next);
+  }
+
+  return {
+    ...baseState(),
+
+    hydrate: async () => {
+      try {
+        await ensureStorageVersion();
+        const [prefsRaw, tripRaw, offlineRaw, presetRaw] = await AsyncStorage.multiGet([
+          STORAGE_KEYS.preferences,
+          STORAGE_KEYS.currentTrip,
+          STORAGE_KEYS.offlinePack,
+          STORAGE_KEYS.selectedPreset,
+        ]);
+        const sessionId = await getCurrentSessionId();
+        const preferences = prefsRaw[1] ? normalizePreferences(JSON.parse(prefsRaw[1]) as TripPreferences) : DEFAULT_TRIP_PREFERENCES;
+        let generatedItinerary: GeneratedTrip | null = null;
+        if (tripRaw[1]) {
+          const parsed = JSON.parse(tripRaw[1]);
+          if (validTrip(parsed) && parsed.sessionId && parsed.sessionId === sessionId) generatedItinerary = parsed;
+        }
+        const offlinePack = offlineRaw[1] ? JSON.parse(offlineRaw[1]) as OfflinePack : null;
+        set({
+          entryMode: null,
+          selectedPresetId: presetRaw[1] ?? null,
+          preferences,
+          generatedItinerary,
+          offlinePack,
+          isGenerating: false,
+          error: null,
+          hydrated: true,
+          ...aliases(preferences),
+        });
+      } catch (error) {
+        console.warn('[tripStore] hydrate failed', error);
+        set({ hydrated: true });
+      }
+    },
+
+    setEntryMode: (entryMode) => set({ entryMode }),
+
+    setPreferences: (preferences) => commitPreferences(preferences),
+
+    patchPreferences: (patch) => {
+      const preferences = normalizePreferences({ ...get().preferences, ...patch });
+      commitPreferences(preferences);
+    },
+
+    applyPreset: (preset, mode = 'ready') => {
+      const ready = isReadyTrip(preset) ? preset : null;
+      const preferences: TripPreferences = ready ? ready.preferences : (preset as TripPreferences);
+      set({ entryMode: mode, selectedPresetId: ready?.id ?? null, generatedItinerary: null, undoTrip: null, lastEditLabel: null });
+      void AsyncStorage.setItem(STORAGE_KEYS.selectedPreset, ready?.id ?? '');
+      void persistTrip(null);
+      commitPreferences(preferences);
+    },
+
+    toggleTravelStyle: (style) => {
+      const { preferences } = get();
+      const travelStyles = preferences.travelStyles.includes(style)
+        ? preferences.travelStyles.filter((item) => item !== style)
+        : [...preferences.travelStyles, style];
+      commitPreferences({ ...preferences, travelStyles });
+    },
+
+    setTravelersType: (travelersType) => {
+      const { preferences } = get();
+      commitPreferences({
+        ...preferences,
+        travelersType,
+        travelerCount: normalizeTravelerCount(travelersType, preferences.travelerCount),
       });
-      set({ generatedItinerary: itinerary, isGenerating: false });
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'AI generation failed.';
-      set({ error: msg, isGenerating: false });
-    }
-  },
+    },
 
-  resetTrip: () => set(INITIAL),
-}));
+    setTravelerCount: (travelerCount) => {
+      const { preferences } = get();
+      commitPreferences({ ...preferences, travelerCount: normalizeTravelerCount(preferences.travelersType, travelerCount) });
+    },
+
+    toggleExperience: (experience) => {
+      const { preferences } = get();
+      const experiences = preferences.experiences.includes(experience)
+        ? preferences.experiences.filter((item) => item !== experience)
+        : [...preferences.experiences, experience];
+      commitPreferences({ ...preferences, experiences });
+    },
+
+    toggleRequirement: (requirement) => {
+      const { preferences } = get();
+      if (requirement === 'none') {
+        commitPreferences({ ...preferences, requirements: ['none'] });
+        return;
+      }
+      const withoutNone = preferences.requirements.filter((item) => item !== 'none');
+      const requirements = withoutNone.includes(requirement)
+        ? withoutNone.filter((item) => item !== requirement)
+        : [...withoutNone, requirement];
+      commitPreferences({ ...preferences, requirements: requirements.length ? requirements : ['none'] });
+    },
+
+    generateTrip: async () => {
+      set({ isGenerating: true, error: null, undoTrip: null, lastEditLabel: null });
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        const sessionId = await getCurrentSessionId();
+        const generatedItinerary = buildTrip(get().preferences, sessionId);
+        set({ generatedItinerary, isGenerating: false, error: null });
+        await persistTrip(generatedItinerary);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Trip generation failed.';
+        set({ error: message, isGenerating: false });
+      }
+    },
+
+    changeStay: (dayNumber) => edit('Stay updated in your trip', (trip, preferences) => generatorChangeStay(trip, dayNumber, preferences)),
+    updateStay: (dayNumber, stayId) => edit('Stay updated in your trip', (trip, preferences) => generatorUpdateStay(trip, dayNumber, stayId, preferences)),
+    changeTransport: (dayNumber) => edit('Transport updated in your trip', (trip, preferences) => generatorChangeTransport(trip, dayNumber, preferences)),
+    updateTransport: (dayNumber, transportId) => edit('Transport updated in your trip', (trip, preferences) => generatorUpdateTransport(trip, dayNumber, transportId, preferences)),
+    changeFood: (dayNumber) => edit('Food updated in your trip', (trip, preferences) => generatorChangeFood(trip, dayNumber, preferences)),
+    updateFood: (dayNumber, foodId) => edit('Food updated in your trip', (trip, preferences) => generatorUpdateFood(trip, dayNumber, foodId, preferences)),
+    replaceActivity: (dayNumber, activityId) => edit('Activity replaced', (trip, preferences) => generatorReplaceActivity(trip, dayNumber, activityId, preferences)),
+    updateActivity: (dayNumber, currentActivityId, nextActivityId) => edit('Activity replaced', (trip, preferences) => generatorUpdateActivity(trip, dayNumber, currentActivityId, nextActivityId, preferences)),
+    regenerateDay: (dayNumber) => edit('Day regenerated', (trip, preferences) => generatorRegenerateDay(trip, dayNumber, preferences)),
+    makeCheaper: () => edit('Trip made cheaper', (trip, preferences) => makeTripCheaper(trip, preferences)),
+    makeMoreActive: () => edit('Trip made more active', (trip, preferences) => makeTripMoreActive(trip, preferences)),
+    makeMoreComfortable: () => edit('Trip made more comfortable', (trip, preferences) => makeTripMoreComfortable(trip, preferences)),
+
+    undoLastEdit: () => {
+      const { undoTrip, generatedItinerary } = get();
+      if (!undoTrip) return;
+      set({ generatedItinerary: undoTrip, undoTrip: generatedItinerary, lastEditLabel: 'Undo applied' });
+      void persistTrip(undoTrip);
+    },
+
+    clearUndo: () => set({ undoTrip: null, lastEditLabel: null }),
+
+    saveOfflinePack: async () => {
+      const trip = get().generatedItinerary;
+      if (!trip) return null;
+      const pack: OfflinePack = {
+        id: `offline_${Date.now()}`,
+        tripId: trip.id,
+        createdAt: Date.now(),
+        checklist: [
+          'Itinerary saved',
+          'Stay details saved',
+          'Transport contacts saved',
+          'Food and activity notes saved',
+          'Emergency contacts saved',
+          'Offline map placeholder saved',
+          'Phrasebook saved',
+          'Offline-ready labels prepared',
+        ],
+      };
+      set({ offlinePack: pack });
+      await AsyncStorage.setItem(STORAGE_KEYS.offlinePack, JSON.stringify(pack));
+      return pack;
+    },
+
+    lockTripDemo: async () => {
+      const trip = get().generatedItinerary;
+      if (!trip) return;
+      const next = generatorLockTrip(trip);
+      set({ generatedItinerary: next });
+      await persistTrip(next);
+      await AsyncStorage.setItem(STORAGE_KEYS.bookings, JSON.stringify({ tripId: next.id, status: 'locked_demo', createdAt: Date.now() }));
+    },
+
+    resetTrip: () => {
+      const next = normalizePreferences(DEFAULT_TRIP_PREFERENCES);
+      set({
+        preferences: next,
+        generatedItinerary: null,
+        selectedPresetId: null,
+        undoTrip: null,
+        lastEditLabel: null,
+        entryMode: null,
+        ...aliases(next),
+      });
+      void AsyncStorage.multiRemove([
+        STORAGE_KEYS.currentTrip,
+        STORAGE_KEYS.preferences,
+        STORAGE_KEYS.selectedPreset,
+        STORAGE_KEYS.bookings,
+        STORAGE_KEYS.offlinePack,
+      ]);
+    },
+
+    resetGeneratedTrip: () => {
+      set({ generatedItinerary: null, undoTrip: null, lastEditLabel: null });
+      void persistTrip(null);
+    },
+
+    setPurpose: (purpose) => commitPreferences({ ...get().preferences, travelStyles: [purpose] }),
+    setCompanions: (companions) => get().setTravelersType(companions),
+    setCompanionCount: (count) => get().setTravelerCount(count),
+    setKidsAgeRange: (kidsAgeRange) => set({ kidsAgeRange }),
+    setQuizAnswer: (key, value) => {
+      const preferences = get().preferences;
+      if (key === 'days') commitPreferences({ ...preferences, days: value as TripDays });
+      if (key === 'budget') commitPreferences({ ...preferences, budgetTier: value as BudgetTier });
+      if (key === 'activityLevel') commitPreferences({ ...preferences, activityLevel: value as PlannerActivityLevel });
+      if (key === 'interests') commitPreferences({ ...preferences, experiences: value as ExperienceKey[] });
+      if (key === 'dietaryNeeds') commitPreferences({ ...preferences, requirements: value as RequirementKey[] });
+    },
+    toggleInterest: (interest) => {
+      const mapped = interest as ExperienceKey;
+      if ([
+        'museums_history',
+        'bazaars_local_life',
+        'nomadic_culture',
+        'local_food',
+        'mountain_views',
+        'lakes_canyons',
+        'horse_riding',
+        'hot_springs',
+        'shopping_crafts',
+        'photography_spots',
+        'nightlife',
+        'light_hiking',
+      ].includes(mapped)) get().toggleExperience(mapped);
+    },
+    toggleDietary: (dietary) => get().toggleRequirement(dietary),
+  };
+});
