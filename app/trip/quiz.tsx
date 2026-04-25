@@ -10,6 +10,8 @@ import {
 import { useTripStore, type Interest, type Dietary, type ActivityLevel, type BudgetRange } from '../../stores/tripStore';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
 
 const TOTAL_STEPS = 5;
 
@@ -167,39 +169,19 @@ export default function QuizScreen() {
           flexDirection: 'row', gap: 10,
         }}
       >
-        <Pressable
+        <Button
+          variant="secondary"
+          label={strings.planner.backButton}
           onPress={handleBack}
-          accessibilityLabel={strings.planner.backButton}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            flex: 1, height: 56, borderRadius: 16,
-            backgroundColor: colors.surface.card,
-            borderWidth: 1.5, borderColor: colors.brand.primary,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: colors.brand.primary }}>
-            {strings.planner.backButton}
-          </Text>
-        </Pressable>
+          style={{ flex: 1 }}
+        />
 
-        <Pressable
-          onPress={handleNext}
+        <Button
+          label={isLast ? strings.planner.generateButton : strings.planner.nextButton}
           disabled={!canAdvance()}
-          accessibilityLabel={isLast ? strings.planner.generateButton : strings.planner.nextButton}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            flex: 1, height: 56, borderRadius: 16,
-            backgroundColor: colors.brand.primary,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: !canAdvance() ? 0.4 : pressed ? 0.85 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff' }}>
-            {isLast ? strings.planner.generateButton : strings.planner.nextButton}
-          </Text>
-        </Pressable>
+          onPress={handleNext}
+          style={{ flex: 1 }}
+        />
       </View>
     </SafeAreaView>
   );
@@ -397,30 +379,14 @@ function DietaryStep({ selected, onToggle }: { selected: Dietary[]; onToggle: (d
         {DIETARY_OPTIONS.map((o) => {
           const isSelected = selected.includes(o.value);
           return (
-            <Pressable
+            <Chip
               key={o.value}
+              label={o.label}
+              selected={selected.includes(o.value)}
               onPress={() => onToggle(o.value)}
-              accessibilityLabel={o.label}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: isSelected }}
-              style={({ pressed }) => ({
-                paddingHorizontal: 16, height: 40, borderRadius: 999,
-                borderWidth: 1,
-                borderColor: isSelected ? colors.brand.primary : colors.border.input,
-                backgroundColor: isSelected ? colors.brand.primary : colors.surface.card,
-                alignItems: 'center', justifyContent: 'center',
-                opacity: pressed ? 0.7 : 1,
-              })}
-            >
-              <Text
-                style={{
-                  fontFamily: 'Inter_500Medium', fontSize: 14,
-                  color: isSelected ? '#fff' : colors.text.primary,
-                }}
-              >
-                {o.label}
-              </Text>
-            </Pressable>
+              height={40}
+              fontSize={14}
+            />
           );
         })}
       </View>

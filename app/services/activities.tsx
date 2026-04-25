@@ -6,6 +6,7 @@ import { ArrowLeft, Star, Clock, Users } from 'lucide-react-native';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { Card } from '../../components/Card';
 
 const ACTIVITIES = [
   { id:'1', name:'Ala-Archa Trek',       duration:'6h', difficulty:'Moderate', price:35, rating:4.9, reviews:124, group:'4-12', bg:'#4a5d68' },
@@ -34,30 +35,32 @@ export default function ActivitiesScreen() {
       <ScrollView contentContainerStyle={{ padding:16 }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection:'row', flexWrap:'wrap', gap:12 }}>
           {ACTIVITIES.map(a => (
-            <Pressable key={a.id} accessibilityRole="button" style={({ pressed }) => ([{ width:'48.5%', borderRadius:16, backgroundColor:colors.surface.card, overflow:'hidden' }, shadows.card, { opacity: pressed ? 0.85 : 1 }])}>
-              <View style={{ height:110, backgroundColor: a.bg, position:'relative' }}>
-                <View style={{ position:'absolute', top:8, right:8, flexDirection:'row', alignItems:'center', gap:3, paddingHorizontal:8, paddingVertical:4, borderRadius:999, backgroundColor:'rgba(255,255,255,0.92)' }}>
-                  <Star size={11} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:11, color:colors.text.primary }}>{a.rating}</Text>
-                </View>
-              </View>
-              <View style={{ padding:10 }}>
-                <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.text.primary }} numberOfLines={1}>{a.name}</Text>
-                <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:5 }}>
-                  <Clock size={11} color={colors.text.tertiary} strokeWidth={1.5} />
-                  <Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{a.duration}</Text>
-                </View>
-                <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:3 }}>
-                  <Users size={11} color={colors.text.tertiary} strokeWidth={1.5} />
-                  <Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{a.group}</Text>
-                </View>
-                <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.brand.primary }}>${a.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>/person</Text></Text>
-                  <View style={{ paddingHorizontal:7, paddingVertical:3, borderRadius:6, backgroundColor: `${DIFF_COLORS[a.difficulty]}22` }}>
-                    <Text style={{ fontFamily:'Inter_500Medium', fontSize:10, color: DIFF_COLORS[a.difficulty] }}>{a.difficulty}</Text>
+            <Pressable key={a.id} accessibilityRole="button" style={({ pressed }) => ({ width:'48.5%', opacity: pressed ? 0.85 : 1 })}>
+              <Card style={{ overflow:'hidden' }}>
+                <View style={{ height:110, backgroundColor: a.bg, position:'relative' }}>
+                  <View style={{ position:'absolute', top:8, right:8, flexDirection:'row', alignItems:'center', gap:3, paddingHorizontal:8, paddingVertical:4, borderRadius:999, backgroundColor:'rgba(255,255,255,0.92)' }}>
+                    <Star size={11} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
+                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:11, color:colors.text.primary }}>{a.rating}</Text>
                   </View>
                 </View>
-              </View>
+                <View style={{ padding:10 }}>
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.text.primary }} numberOfLines={1}>{a.name}</Text>
+                  <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:5 }}>
+                    <Clock size={11} color={colors.text.tertiary} strokeWidth={1.5} />
+                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{a.duration}</Text>
+                  </View>
+                  <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:3 }}>
+                    <Users size={11} color={colors.text.tertiary} strokeWidth={1.5} />
+                    <Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>{a.group}</Text>
+                  </View>
+                  <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginTop:8 }}>
+                    <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:colors.brand.primary }}>${a.price}<Text style={{ fontFamily:'Inter_400Regular', fontSize:11, color:colors.text.secondary }}>/person</Text></Text>
+                    <View style={{ paddingHorizontal:7, paddingVertical:3, borderRadius:6, backgroundColor: `${DIFF_COLORS[a.difficulty]}22` }}>
+                      <Text style={{ fontFamily:'Inter_500Medium', fontSize:10, color: DIFF_COLORS[a.difficulty] }}>{a.difficulty}</Text>
+                    </View>
+                  </View>
+                </View>
+              </Card>
             </Pressable>
           ))}
         </View>

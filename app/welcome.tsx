@@ -13,6 +13,7 @@ import { Sparkles, CreditCard, WifiOff, ChevronRight } from 'lucide-react-native
 import { useOnboardingStore } from '../stores/onboardingStore';
 import { strings } from '../lib/strings';
 import { colors } from '../constants/colors';
+import { Button } from '../components/Button';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -196,33 +197,16 @@ export default function WelcomeScreen() {
         </View>
 
         {/* Next / Get Started */}
-        <Pressable
+        <Button
+          label={isLast ? strings.welcome.getStarted : strings.welcome.next}
           onPress={handleNext}
-          accessibilityLabel={isLast ? strings.welcome.getStarted : strings.welcome.next}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            height: 48,
-            paddingHorizontal: 24,
-            borderRadius: 16,
-            backgroundColor: colors.brand.primary,
-            gap: 6,
-            opacity: pressed ? 0.85 : 1,
-            minWidth: isLast ? SCREEN_WIDTH - 40 - (24 + 8 + 8) - 24 : undefined,
-          })}
-        >
-          <Text
-            style={{
-              fontFamily: 'Inter_600SemiBold',
-              fontSize: 15,
-              color: '#fff',
-            }}
-          >
-            {isLast ? strings.welcome.getStarted : strings.welcome.next}
-          </Text>
-          {!isLast && <ChevronRight size={18} color="#fff" strokeWidth={2} />}
-        </Pressable>
+          icon={!isLast ? <ChevronRight size={18} color="#fff" strokeWidth={2} /> : undefined}
+          style={{
+            flex: 1,
+            marginLeft: 20,
+            maxWidth: isLast ? SCREEN_WIDTH - 40 : undefined,
+          }}
+        />
       </View>
     </View>
   );

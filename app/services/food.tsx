@@ -7,6 +7,9 @@ import { ArrowLeft, Star } from 'lucide-react-native';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { Chip } from '../../components/Chip';
+import { Card } from '../../components/Card';
+import { Pill } from '../../components/Pill';
 
 type Tab = 'restaurants' | 'cafes' | 'delivery';
 
@@ -36,32 +39,42 @@ export default function FoodScreen() {
       {/* Tabs */}
       <View style={{ flexDirection:'row', paddingHorizontal:16, paddingVertical:12, gap:8 }}>
         {(['restaurants','cafes','delivery'] as Tab[]).map(t => (
-          <Pressable key={t} onPress={() => setTab(t)} accessibilityRole="tab" accessibilityState={{ selected: tab===t }} style={({ pressed }) => ({ flex:1, height:36, borderRadius:999, backgroundColor: tab===t ? colors.brand.primary : colors.surface.card, borderWidth:1, borderColor: tab===t ? colors.brand.primary : colors.border.input, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.8 : 1 })}>
-            <Text style={{ fontFamily:'Inter_500Medium', fontSize:13, color: tab===t ? '#fff' : colors.text.primary, textTransform:'capitalize' }}>
-              {t === 'restaurants' ? strings.services.tabRestaurants : t === 'cafes' ? strings.services.tabCafes : strings.services.tabDelivery}
-            </Text>
-          </Pressable>
+          <Chip
+            key={t}
+            label={t === 'restaurants' ? strings.services.tabRestaurants : t === 'cafes' ? strings.services.tabCafes : strings.services.tabDelivery}
+            selected={tab === t}
+            onPress={() => setTab(t)}
+            height={36}
+            style={{ flex: 1 }}
+          />
         ))}
       </View>
 
       <ScrollView contentContainerStyle={{ paddingHorizontal:16, gap:12 }} showsVerticalScrollIndicator={false}>
         {RESTAURANTS.map(r => (
-          <Pressable key={r.id} accessibilityRole="button" style={[{ borderRadius:16, backgroundColor:colors.surface.card, overflow:'hidden', flexDirection:'row' }, shadows.card]}>
-            <View style={{ width:90, height:90, backgroundColor: r.bg }} />
-            <View style={{ flex:1, padding:12 }}>
-              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
-                <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }}>{r.name}</Text>
-                <View style={{ paddingHorizontal:8, paddingVertical:3, borderRadius:999, backgroundColor: r.open ? colors.status.successLight : colors.status.errorLight }}>
-                  <Text style={{ fontFamily:'Inter_500Medium', fontSize:11, color: r.open ? colors.status.success : colors.status.error }}>{r.open ? 'Open' : 'Closed'}</Text>
+          <Pressable key={r.id} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+            <Card style={{ flexDirection:'row', overflow:'hidden' }}>
+              <View style={{ width:90, height:90, backgroundColor: r.bg }} />
+              <View style={{ flex:1, padding:12 }}>
+                <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }}>{r.name}</Text>
+                  <Pill
+                    variant="custom"
+                    label={r.open ? 'Open' : 'Closed'}
+                    backgroundColor={r.open ? colors.status.successLight : colors.status.errorLight}
+                    textColor={r.open ? (colors.status as any).successText : (colors.status as any).errorText}
+                    height={22}
+                    fontSize={11}
+                  />
+                </View>
+                <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary, marginTop:2 }}>{r.cuisine} · {r.avgPrice}</Text>
+                <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:6 }}>
+                  <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
+                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>{r.rating}</Text>
+                  <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>({r.reviews})</Text>
                 </View>
               </View>
-              <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary, marginTop:2 }}>{r.cuisine} · {r.avgPrice}</Text>
-              <View style={{ flexDirection:'row', alignItems:'center', gap:4, marginTop:6 }}>
-                <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
-                <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:12, color:colors.text.primary }}>{r.rating}</Text>
-                <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.secondary }}>({r.reviews})</Text>
-              </View>
-            </View>
+            </Card>
           </Pressable>
         ))}
       </ScrollView>

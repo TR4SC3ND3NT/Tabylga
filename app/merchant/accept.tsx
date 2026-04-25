@@ -7,6 +7,7 @@ import { ArrowLeft, Delete } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
+import { Button } from '../../components/Button';
 
 type Stage = 'entry' | 'qr';
 
@@ -77,11 +78,12 @@ export default function AcceptScreen() {
         </View>
 
         <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16) }}>
-          <Pressable onPress={() => { setStage('entry'); setCountdown(TOTAL_SECONDS); }} accessibilityRole="button" style={({ pressed }) => ({ height: 52, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border.divider, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}>
-            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: colors.text.secondary }}>
-              {strings.merchantExtra.cancelPayment}
-            </Text>
-          </Pressable>
+          <Button
+            variant="secondary"
+            label={strings.merchantExtra.cancelPayment}
+            onPress={() => { setStage('entry'); setCountdown(TOTAL_SECONDS); }}
+            style={{ borderColor: colors.border.divider, backgroundColor: 'transparent' }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -160,16 +162,12 @@ export default function AcceptScreen() {
 
       {/* CTA */}
       <View style={{ paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom, 16), paddingTop: 12 }}>
-        <Pressable
+        <Button
+          variant="cta"
+          label={strings.merchantExtra.generateQr}
           onPress={() => { if (amount > 0) setStage('qr'); }}
           disabled={amount <= 0}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ height: 56, borderRadius: 16, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center', opacity: amount <= 0 ? 0.4 : pressed ? 0.85 : 1 })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
-            {strings.merchantExtra.generateQr}
-          </Text>
-        </Pressable>
+        />
       </View>
     </SafeAreaView>
   );

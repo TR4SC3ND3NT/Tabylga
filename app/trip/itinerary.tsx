@@ -8,6 +8,7 @@ import { useTripStore } from '../../stores/tripStore';
 import { strings } from '../../lib/strings';
 import { colors } from '../../constants/colors';
 import { formatUSD } from '../../lib/format';
+import { Button } from '../../components/Button';
 
 const REGION_TINTS: Record<string, string> = {
   'bishkek':   '#3d6479',
@@ -339,21 +340,12 @@ export default function ItineraryScreen() {
             {formatUSD(trip.totalCostUsd)}
           </Text>
         </View>
-        <Pressable
+        <Button
+          variant="cta"
+          label={strings.itinerary.payCta}
           onPress={() => router.replace('/(tabs)/wallet')}
-          accessibilityLabel={strings.itinerary.payCta}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            flex: 1, height: 56, borderRadius: 16,
-            backgroundColor: colors.brand.cta,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 15, color: '#fff' }}>
-            {strings.itinerary.payCta}
-          </Text>
-        </Pressable>
+          style={{ flex: 1 }}
+        />
       </View>
     </View>
   );
