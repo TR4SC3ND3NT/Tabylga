@@ -1,154 +1,813 @@
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, Star, CheckCircle, ArrowDownLeft, CreditCard } from 'lucide-react-native';
-import { formatString } from '../../lib/strings';
-import { useStrings } from '../../lib/i18n';
+import { useFocusEffect, useRouter } from 'expo-router';
+import {
+  ArrowLeft,
+  Bluetooth,
+  CheckCircle2,
+  Clock,
+  QrCode,
+  RefreshCw,
+  ShieldCheck,
+  Store,
+} from 'lucide-react-native';
+
+import { Button } from '../../components/Button';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
-import { Button } from '../../components/Button';
+import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
+import {
+  extractOfflinePayload,
+  getOfflineMerchants,
+  getOfflineTokens,
+  getTransactions,
+  merchantScanOfflineQR,
+  syncOfflinePayments,
+  type OfflineToken,
+  type Transaction,
+} from '../../lib/payments/paymentService';
+import { formatKgs } from '../../lib/payments/paymentStrings';
 
-const WEEKLY = [
-  { day: 'Mon', amount: 8450 },
-  { day: 'Tue', amount: 6200 },
-  { day: 'Wed', amount: 9800 },
-  { day: 'Thu', amount: 7300 },
-  { day: 'Fri', amount: 11200 },
-  { day: 'Sat', amount: 14500 },
-  { day: 'Sun', amount: 12450, isToday: true },
-];
-const MAX_BAR = Math.max(...WEEKLY.map(d => d.amount));
-const BAR_HEIGHT = 56;
-
-const RECENT = [
-  { name: 'Aliya K.', amount: 4500, time: '14:32' },
-  { name: 'Tourist John', amount: 8750, time: '12:15' },
-  { name: 'Sarah M.',  amount: 3200, time: '10:08' },
-];
+function formatTime(value: string | null): string {
+  if (!value) return 'Not set';
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function MerchantDashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const strings = useStrings();
+  const merchants = useMemo(() => getOfflineMerchants(), []);
+  const [selectedMerchantId, setSelectedMerchantId] = useState<string | null>(
+    merchants[0]?.id ?? null,
+  );
+  const [tokens, setTokens] = useState<OfflineToken[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [scanningTokenId, setScanningTokenId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const selectedMerchant =
+    merchants.find((merchant) => merchant.id === selectedMerchantId) ??
+    merchants[0] ??
+    null;
+
+  const refresh = useCallback(async () => {
+    try {
+      const [offlineTokens, transactions] = await Promise.all([
+        getOfflineTokens(),
+        getTransactions(),
+      ]);
+      setTokens(
+        offlineTokens
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ),
+      );
+      setPendingPayments(
+        transactions
+          .filter(
+            (tx) =>
+              tx.status === 'accepted_offline' &&
+              (tx.type === 'offline_qr_payment' ||
+                tx.type === 'offline_bluetooth_payment'),
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.acceptedAt ?? b.createdAt).getTime() -
+              new Date(a.acceptedAt ?? a.createdAt).getTime(),
+          ),
+      );
+    } catch (err) {
+      console.warn('[merchant] failed to load offline payments', err);
+      Alert.alert('Merchant Mode error', 'Failed to load offline payment data.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        if (active) await refresh();
+      })();
+      return () => {
+        active = false;
+      };
+    }, [refresh]),
+  );
+
+  const latestToken = tokens[0] ?? null;
+  const pendingTotal = pendingPayments.reduce((sum, tx) => sum + tx.amount, 0);
+
+  async function scanToken(token: OfflineToken) {
+    if (!selectedMerchant) {
+      Alert.alert('Choose merchant', 'Select a merchant profile first.');
+      return;
+    }
+
+    setScanningTokenId(token.id);
+    try {
+      const offlinePayload = extractOfflinePayload(token.qrDeepLink ?? token.qrPayload);
+      if (!offlinePayload) {
+        router.push({
+          pathname: '/merchant/accept',
+          params: {
+            errorReason: 'invalid_payload',
+            tokenId: token.id,
+            merchantId: selectedMerchant.id,
+          },
+        } as never);
+        return;
+      }
+
+      const verification = await merchantScanOfflineQR(
+        offlinePayload,
+        selectedMerchant.id,
+      );
+      if (!verification.ok || !verification.token) {
+        router.push({
+          pathname: '/merchant/accept',
+          params: {
+            errorReason: verification.reason ?? 'unknown',
+            tokenId: verification.tokenId ?? token.id,
+            merchantId: selectedMerchant.id,
+          },
+        } as never);
+        await refresh();
+        return;
+      }
+
+      router.push({
+        pathname: '/merchant/accept',
+        params: {
+          tokenId: verification.token.id,
+          merchantId: selectedMerchant.id,
+        },
+      } as never);
+    } catch (err) {
+      Alert.alert(
+        'Invalid or expired token.',
+        err instanceof Error ? err.message : 'The QR could not be verified.',
+      );
+    } finally {
+      setScanningTokenId(null);
+    }
+  }
+
+  async function handleSyncPayments() {
+    if (syncing) return;
+    if (pendingPayments.length === 0) {
+      Alert.alert('Nothing to sync', 'No accepted offline payments are waiting for sync.');
+      return;
+    }
+
+    setSyncing(true);
+    try {
+      const result = await syncOfflinePayments();
+      await refresh();
+
+      if (result.syncedCount === 0) {
+        Alert.alert('Nothing to sync', 'No accepted offline payments are waiting for sync.');
+        return;
+      }
+
+      Alert.alert(
+        'Payment synced',
+        `Settlement completed in demo mode.\n\nSynced: ${result.syncedCount}\nAmount: ${formatKgs(result.syncedAmount)}\n\nMerchant will receive the amount through partner settlement.\n\nIn production, settlement would happen through KICB, MBANK / MTravel or another licensed payment partner.`,
+      );
+    } catch (err) {
+      Alert.alert(
+        'Sync failed',
+        err instanceof Error ? err.message : 'Could not sync offline payments.',
+      );
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.brand.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
 
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityLabel={strings.common.back} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+          paddingTop: 8,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border.divider,
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
           <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
-
-        {/* Mode switcher */}
-        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: colors.surface.primary, borderRadius: 10, padding: 3, marginHorizontal: 8, borderWidth: 1, borderColor: colors.border.divider }}>
-          <View style={{ flex: 1, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>
-              {strings.merchantExtra.modeTraverler}
-            </Text>
-          </View>
-          <View style={{ flex: 1, height: 34, borderRadius: 8, backgroundColor: colors.brand.cta, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#fff' }}>
-              {strings.merchantExtra.modeMerchant}
-            </Text>
-          </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontFamily: 'Fraunces_600SemiBold',
+              fontSize: 25,
+              color: colors.text.primary,
+            }}
+          >
+            Merchant Mode
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 18,
+              color: colors.text.secondary,
+              marginTop: 2,
+            }}
+          >
+            Accept KICB Demo offline payments from tourists.
+          </Text>
         </View>
-        <View style={{ width: 44 }} />
+        <Pressable
+          onPress={refresh}
+          accessibilityLabel="Refresh"
+          accessibilityRole="button"
+          style={({ pressed }) => ({
+            width: 44,
+            height: 44,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <RefreshCw size={20} color={colors.brand.primary} strokeWidth={1.8} />
+        </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-
-        {/* Business card */}
-        <View style={[{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 16, backgroundColor: colors.surface.card, marginBottom: 16 }, shadows.card]}>
-          <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: '#6a5a4b', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 28 }}>🏕</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary }}>
-                Nomad's Yurt Camp
-              </Text>
-              <CheckCircle size={16} color={colors.status.success} strokeWidth={2} fill={colors.status.success} />
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-              <Star size={13} color={colors.status.warning} strokeWidth={0} fill={colors.status.warning} />
-              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text.primary }}>4.9</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.reviewsCount, { count: 34 })}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Today stats */}
-        <View style={{ padding: 20, borderRadius: 16, backgroundColor: colors.brand.primaryLight, marginBottom: 20 }}>
-          <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, letterSpacing: 0.12 * 12, textTransform: 'uppercase', marginBottom: 4 }}>
-            {strings.merchantExtra.earningsToday}
-          </Text>
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 36, color: colors.brand.primary }}>
-            12,450 KGS
-          </Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 15, color: colors.text.secondary, marginTop: 2 }}>
-            ≈ $143
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 16, marginTop: 12 }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.transactionsCount, { n: 23 })}</Text>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.text.secondary }}>{formatString(strings.merchantExtra.avgTransaction, { amount: '$6.21' })}</Text>
-          </View>
-        </View>
-
-        {/* Weekly chart */}
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 14 }}>
-          {strings.merchantExtra.thisWeek}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: BAR_HEIGHT + 30, marginBottom: 20 }}>
-          {WEEKLY.map((d) => {
-            const h = Math.round((d.amount / MAX_BAR) * BAR_HEIGHT);
-            return (
-              <View key={d.day} style={{ alignItems: 'center', flex: 1 }}>
-                <View style={{ width: '65%', height: h, borderRadius: 5, backgroundColor: d.isToday ? colors.brand.cta : colors.brand.primaryLight }} />
-                <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: d.isToday ? colors.brand.cta : colors.text.tertiary, marginTop: 6 }}>
-                  {d.day}
-                </Text>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Recent incoming */}
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
-          {strings.merchantExtra.recentPayments}
-        </Text>
-        <View style={[{ borderRadius: 14, backgroundColor: colors.surface.card, overflow: 'hidden', marginBottom: 20 }, shadows.card]}>
-          {RECENT.map((r, i) => (
-            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < RECENT.length - 1 ? 1 : 0, borderBottomColor: colors.border.divider }}>
-              <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colors.status.successLight, alignItems: 'center', justifyContent: 'center' }}>
-                <ArrowDownLeft size={18} color={colors.status.success} strokeWidth={2} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.text.primary }}>{r.name}</Text>
-                <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.tertiary, marginTop: 1 }}>{r.time}</Text>
-              </View>
-              <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.status.success }}>+{r.amount.toLocaleString('ru-RU')} KGS</Text>
-            </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          padding: 20,
+          paddingBottom: Math.max(insets.bottom, 18) + 24,
+        }}
+      >
+        <SectionTitle
+          title="Merchant profile selector"
+          body="Choose the local provider accepting the tourist's offline token."
+        />
+        <View style={{ gap: 10, marginBottom: 22 }}>
+          {merchants.map((merchant) => (
+            <MerchantCard
+              key={merchant.id}
+              merchant={merchant}
+              selected={merchant.id === selectedMerchant?.id}
+              onPress={() => setSelectedMerchantId(merchant.id)}
+            />
           ))}
         </View>
 
-        <Button
-          variant="secondary"
-          label={strings.merchantExtra.withdrawCta}
-          icon={<CreditCard size={18} color={colors.brand.primary} strokeWidth={1.5} />}
+        <SectionTitle
+          title="Scan customer offline QR"
+          body="Camera scan is not wired in this prototype. The demo scan reads the latest saved tourist QR token."
         />
-      </ScrollView>
+        <View
+          style={[
+            {
+              padding: 16,
+              borderRadius: 18,
+              backgroundColor: colors.surface.card,
+              marginBottom: 22,
+            },
+            shadows.card,
+          ]}
+        >
+          <Button
+            variant="secondary"
+            label="Scan QR with camera"
+            icon={<QrCode size={18} color={colors.brand.primary} strokeWidth={2} />}
+            onPress={() =>
+              Alert.alert(
+                'Camera scanner not enabled',
+                'Use Demo scan latest token for this prototype.',
+              )
+            }
+            style={{ marginBottom: 10 }}
+          />
+          <Button
+            variant="cta"
+            label="Demo scan latest token"
+            icon={<ShieldCheck size={18} color="#fff" strokeWidth={2} />}
+            disabled={!latestToken || !!scanningTokenId}
+            onPress={() => latestToken && scanToken(latestToken)}
+          />
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 14,
+              backgroundColor: colors.brand.primaryLight,
+              borderWidth: 1,
+              borderColor: colors.border.divider,
+              marginTop: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 12,
+                color: colors.text.primary,
+                marginBottom: 4,
+              }}
+            >
+              Prototype note
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 12,
+                lineHeight: 18,
+                color: colors.text.secondary,
+              }}
+            >
+              External phone camera opens a Tabylga deep link. Real cross-device
+              verification would require a backend or bank partner infrastructure.
+              This demo stores offline tokens locally.
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 13,
+              color: colors.text.primary,
+              marginTop: 16,
+              marginBottom: 8,
+            }}
+          >
+            Offline QR tokens
+          </Text>
+          {tokens.length === 0 ? (
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 13,
+                lineHeight: 19,
+                color: colors.text.secondary,
+              }}
+            >
+              No waiting offline QR tokens.
+            </Text>
+          ) : (
+            <View style={{ gap: 8 }}>
+              {tokens.map((token) => (
+                <TokenRow
+                  key={token.id}
+                  token={token}
+                  scanning={scanningTokenId === token.id}
+                  onPress={() => scanToken(token)}
+                />
+              ))}
+            </View>
+          )}
+        </View>
 
-      {/* Accept payment CTA */}
-      <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), backgroundColor: colors.surface.primary, borderTopWidth: 1, borderTopColor: colors.border.divider }}>
-        <Button
-          variant="cta"
-          label={strings.merchantExtra.acceptCta}
-          onPress={() => router.push('/merchant/accept')}
+        <SectionTitle
+          title="Pending offline payments"
+          body="Accepted tokens waiting for future settlement sync."
         />
-      </View>
+        {pendingPayments.length === 0 ? (
+          <EmptyCard text="No pending offline payments yet." />
+        ) : (
+          <View style={{ gap: 10, marginBottom: 22 }}>
+            {pendingPayments.map((tx) => (
+              <PendingPaymentCard key={tx.id} tx={tx} />
+            ))}
+          </View>
+        )}
+
+        <SectionTitle
+          title="Sync payments"
+          body="Settle accepted offline payments in demo mode when internet is available."
+        />
+        <View
+          style={{
+            padding: 16,
+            borderRadius: 18,
+            backgroundColor: colors.brand.primaryLight,
+            borderWidth: 1,
+            borderColor: colors.border.divider,
+          }}
+        >
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+            <SyncStat label="Accepted payments" value={String(pendingPayments.length)} />
+            <SyncStat label="Selected merchant" value={selectedMerchant?.name ?? 'None'} />
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 15,
+              color: colors.text.primary,
+              marginBottom: 6,
+            }}
+          >
+            {formatKgs(pendingTotal)} pending sync
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 13,
+              lineHeight: 19,
+              color: colors.text.secondary,
+              marginBottom: 12,
+            }}
+          >
+            Prototype only. In production, settlement would happen through KICB,
+            MBANK / MTravel or another licensed payment partner.
+          </Text>
+          <Button
+            variant="secondary"
+            label={syncing ? 'Syncing...' : 'Sync when online'}
+            disabled={syncing || pendingPayments.length === 0}
+            icon={
+              <RefreshCw
+                size={18}
+                color={colors.brand.primary}
+                strokeWidth={2}
+              />
+            }
+            onPress={handleSyncPayments}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SectionTitle({ title, body }: { title: string; body: string }) {
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <Text
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 17,
+          color: colors.text.primary,
+        }}
+      >
+        {title}
+      </Text>
+      <Text
+        style={{
+          fontFamily: 'Inter_400Regular',
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.text.secondary,
+          marginTop: 3,
+        }}
+      >
+        {body}
+      </Text>
+    </View>
+  );
+}
+
+function MerchantCard({
+  merchant,
+  selected,
+  onPress,
+}: {
+  merchant: PaymentMerchant;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      style={({ pressed }) => [
+        {
+          padding: 14,
+          borderRadius: 18,
+          backgroundColor: selected ? colors.brand.primaryLight : colors.surface.card,
+          borderWidth: 1.5,
+          borderColor: selected ? colors.brand.primary : colors.border.divider,
+          opacity: pressed ? 0.75 : 1,
+        },
+        shadows.card,
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            backgroundColor: selected ? colors.brand.primary : colors.status.warningLight,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Store
+            size={20}
+            color={selected ? '#fff' : colors.brand.primary}
+            strokeWidth={1.8}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 15,
+              color: colors.text.primary,
+            }}
+          >
+            {merchant.name}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_500Medium',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 2,
+            }}
+          >
+            {merchant.type} - {merchant.region}
+          </Text>
+        </View>
+        {selected ? (
+          <CheckCircle2
+            size={20}
+            color={colors.brand.primary}
+            strokeWidth={2}
+          />
+        ) : null}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
+        <Badge label="Offline QR supported" />
+        {merchant.bluetoothDemoSupported ? (
+          <Badge label="Bluetooth demo supported" icon="bluetooth" />
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+function TokenRow({
+  token,
+  scanning,
+  onPress,
+}: {
+  token: OfflineToken;
+  scanning: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      disabled={scanning}
+      style={({ pressed }) => ({
+        padding: 12,
+        borderRadius: 14,
+        backgroundColor: colors.surface.primary,
+        borderWidth: 1,
+        borderColor: colors.border.divider,
+        opacity: scanning ? 0.55 : pressed ? 0.75 : 1,
+      })}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            backgroundColor: colors.status.warningLight,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <QrCode size={18} color={colors.brand.cta} strokeWidth={2} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 14,
+              color: colors.text.primary,
+            }}
+          >
+            {formatKgs(token.amount)}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 2,
+            }}
+          >
+            KICB Demo token - expires {formatTime(token.expiresAt)}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 11,
+              color: token.status === 'created' ? colors.brand.primary : colors.status.warningText,
+              marginTop: 3,
+            }}
+          >
+            Status: {token.status}
+          </Text>
+        </View>
+        <Text
+          style={{
+            fontFamily: 'Inter_700Bold',
+            fontSize: 12,
+            color: colors.brand.primary,
+          }}
+        >
+          {scanning ? 'Scanning...' : 'Scan'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
+function PendingPaymentCard({ tx }: { tx: Transaction }) {
+  return (
+    <View
+      style={[
+        {
+          padding: 14,
+          borderRadius: 18,
+          backgroundColor: colors.surface.card,
+        },
+        shadows.card,
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            backgroundColor: colors.status.successLight,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Clock size={20} color={colors.status.successText} strokeWidth={2} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 15,
+              color: colors.text.primary,
+            }}
+          >
+            {formatKgs(tx.amount)}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              color: colors.text.secondary,
+              marginTop: 2,
+            }}
+          >
+            {tx.merchantName ?? 'Merchant'} - accepted {formatTime(tx.acceptedAt)}
+          </Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
+        <Badge label="accepted_offline / pending sync" />
+        <Badge label={tx.method === 'offline_customer_qr' ? 'offline customer QR' : tx.method} />
+        <Badge label={tx.receiptCode} />
+      </View>
+    </View>
+  );
+}
+
+function EmptyCard({ text }: { text: string }) {
+  return (
+    <View
+      style={[
+        {
+          padding: 16,
+          borderRadius: 18,
+          backgroundColor: colors.surface.card,
+          marginBottom: 22,
+        },
+        shadows.card,
+      ]}
+    >
+      <Text
+        style={{
+          fontFamily: 'Inter_400Regular',
+          fontSize: 13,
+          lineHeight: 19,
+          color: colors.text.secondary,
+          textAlign: 'center',
+        }}
+      >
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+function SyncStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        minHeight: 70,
+        padding: 12,
+        borderRadius: 14,
+        backgroundColor: colors.surface.card,
+        borderWidth: 1,
+        borderColor: colors.border.divider,
+        justifyContent: 'center',
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 11,
+          color: colors.text.tertiary,
+          textTransform: 'uppercase',
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        numberOfLines={2}
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.text.primary,
+        }}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function Badge({ label, icon }: { label: string; icon?: 'bluetooth' }) {
+  return (
+    <View
+      style={{
+        minHeight: 26,
+        paddingHorizontal: 9,
+        borderRadius: 999,
+        backgroundColor: colors.brand.primaryLight,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+      }}
+    >
+      {icon === 'bluetooth' ? (
+        <Bluetooth size={12} color={colors.brand.primary} strokeWidth={2} />
+      ) : null}
+      <Text
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 11,
+          color: colors.brand.primary,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
