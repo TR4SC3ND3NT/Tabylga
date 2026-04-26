@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import {
   Search,
   Mic,
-  Bell,
   User,
   Bed,
   Utensils,
@@ -23,7 +22,6 @@ import {
   Sparkles,
   Star,
   MapPin,
-  Languages,
 } from 'lucide-react-native';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
@@ -227,38 +225,18 @@ export default function HomeScreen() {
                 {peopleCount} travelers · age {age}
               </Text>
             </View>
-            <Pressable
-              accessibilityLabel={strings.home.notifications}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                width: 40,
-                height: 40,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Bell size={23} color={colors.text.primary} strokeWidth={1.7} />
-            </Pressable>
+            <View style={{ width: 40, height: 40 }} />
           </View>
 
           <View
-            style={{ paddingHorizontal: 20, paddingTop: compact ? 14 : 20 }}
-          >
-            <Text
-              style={{
-                fontFamily: "Fraunces_600SemiBold",
-                fontSize: compact ? 30 : 36,
-                lineHeight: compact ? 35 : 41,
-                color: colors.text.primary,
-              }}
-            >
-              Kyrgyzstan routes that actually work
-            </Text>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20, color: colors.text.secondary, marginTop: 8, maxWidth: 310 }}>
-              Hotels, food, transport and activities connected into one personalized trip plan.
-            </Text>
-          </View>
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{
+              height: compact ? 132 : 150,
+              paddingHorizontal: 20,
+              paddingTop: compact ? 14 : 20,
+            }}
+          />
 
           <View
             className="mx-5"
@@ -360,8 +338,6 @@ export default function HomeScreen() {
 
           <View
             style={{
-              flexDirection: "row",
-              gap: 10,
               paddingHorizontal: 20,
               marginTop: compact ? 14 : 18,
             }}
@@ -375,30 +351,8 @@ export default function HomeScreen() {
                 setEntryMode('ai');
                 router.push('/trip/quiz');
               }}
-              style={{ flex: 1 }}
               fontSize={13}
             />
-            <Pressable
-              onPress={() => router.push("/tools/translator")}
-              accessibilityRole="button"
-              style={({ pressed }) => ({
-                width: 54,
-                height: 54,
-                borderRadius: 16,
-                backgroundColor: colors.surface.card,
-                borderWidth: 1,
-                borderColor: colors.border.divider,
-                alignItems: "center",
-                justifyContent: "center",
-                opacity: pressed ? 0.75 : 1,
-              })}
-            >
-              <Languages
-                size={22}
-                color={colors.brand.primary}
-                strokeWidth={1.8}
-              />
-            </Pressable>
           </View>
 
           {currentTrip && (

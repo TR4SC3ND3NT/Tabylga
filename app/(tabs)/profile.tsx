@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 import {
   User, ChevronRight, Globe, CreditCard, Bell, Shield,
   Star, Users, Gift, Headphones, Info, Lock, Store, CheckCircle,
-  Briefcase, Wifi, Languages,
+  Briefcase, Wifi,
 } from 'lucide-react-native';
 import { LANGUAGE_OPTIONS, formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
@@ -38,7 +38,6 @@ export default function ProfileScreen() {
     ],
     [
       { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => {} },
-      { key: 'translator', icon: Languages,   label: strings.profileExtra.settingsTranslator, onPress: () => router.push('/tools/translator') },
       { key: 'about',      icon: Info,        label: strings.profileExtra.settingsAbout,    onPress: () => {} },
       { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => {} },
     ],
