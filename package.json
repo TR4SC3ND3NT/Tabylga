@@ -5,6 +5,7 @@
   "scripts": {
     "setup": "npm ci && cp -n .env.example .env && echo '\\n✓ Done. Fill in your keys in .env, then run: npm start'",
     "start": "expo start",
+    "build": "expo export -p web",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
