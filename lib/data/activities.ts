@@ -1,30 +1,130 @@
-import type { Activity } from './tripPlaces';
+import {
+  getAllActivityOptions,
+  type ActivityOption,
+} from './activityOptions';
+import type { Activity, RequirementKey, RoadTolerance, TravelersType } from './tripPlaces';
 
-export const ACTIVITIES: Activity[] = [
-  { id: 'act_ala_too_square', name: 'Ala-Too Square', city: 'Bishkek', region: 'Bishkek', type: 'city_walk', price: 0, durationHours: 1, difficulty: 1, tags: ['city', 'culture', 'easy', 'photography_spots'], goodFor: ['solo', 'couple', 'family', 'friends', 'colleagues'], badFor: [], requirementsSupported: ['wheelchair', 'family_friendly', 'no_alcohol'], roadIntensity: 'low', internetAvailable: true, offlineReady: true, description: 'Central landmark walk for a soft Bishkek start.' },
-  { id: 'act_oak_park', name: 'Oak Park', city: 'Bishkek', region: 'Bishkek', type: 'park', price: 0, durationHours: 1, difficulty: 1, tags: ['easy', 'family_friendly', 'city', 'relax'], goodFor: ['solo', 'couple', 'family'], badFor: [], requirementsSupported: ['wheelchair', 'family_friendly', 'no_alcohol'], roadIntensity: 'low', internetAvailable: true, offlineReady: true, description: 'Shaded city park for calm walking and flexible rest.' },
-  { id: 'act_history_museum', name: 'Kyrgyz State History Museum', city: 'Bishkek', region: 'Bishkek', type: 'museum', price: 6, durationHours: 2, difficulty: 1, tags: ['museums_history', 'culture', 'easy', 'indoor'], goodFor: ['solo', 'couple', 'family', 'colleagues'], badFor: [], requirementsSupported: ['wheelchair', 'family_friendly', 'english_guide'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Compact cultural context without leaving the city.' },
-  { id: 'act_osh_bazaar_bishkek', name: 'Osh Bazaar', city: 'Bishkek', region: 'Bishkek', type: 'bazaar', price: 5, durationHours: 2, difficulty: 1, tags: ['bazaars_local_life', 'local_food', 'shopping_crafts', 'culture'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: ['wheelchair'], requirementsSupported: ['halal', 'vegetarian', 'prayer_friendly'], roadIntensity: 'low', internetAvailable: true, offlineReady: true, description: 'Spices, dried fruit and local life in Bishkek.' },
-  { id: 'act_burana_tower', name: 'Burana Tower', city: 'Tokmok', region: 'Burana', type: 'heritage', price: 8, durationHours: 2.5, difficulty: 1, tags: ['museums_history', 'cultural_discovery', 'photography_spots', 'short_drive'], goodFor: ['solo', 'couple', 'family', 'friends', 'colleagues'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Silk Road tower and open-air archaeology on an easy day trip.' },
-  { id: 'act_ala_archa_light_walk', name: 'Ala-Archa light walk', city: 'Ala-Archa', region: 'Ala-Archa', type: 'nature_walk', price: 12, durationHours: 4, difficulty: 2, tags: ['mountain_views', 'light_hiking', 'nature', 'short_drive'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Easy mountain valley walk close to Bishkek.' },
-  { id: 'act_ala_archa_viewpoint', name: 'Ala-Archa viewpoint', city: 'Ala-Archa', region: 'Ala-Archa', type: 'viewpoint', price: 10, durationHours: 2.5, difficulty: 1, tags: ['mountain_views', 'photography_spots', 'easy', 'short_drive'], goodFor: ['solo', 'couple', 'family', 'friends', 'colleagues'], badFor: [], requirementsSupported: ['family_friendly'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Scenic viewpoint for travelers avoiding hard hikes.' },
-  { id: 'act_issyk_kul_beach', name: 'Issyk-Kul beach walk', city: 'Cholpon-Ata', region: 'Issyk-Kul', type: 'lake', price: 5, durationHours: 2, difficulty: 1, tags: ['lakes_canyons', 'easy', 'family_friendly', 'photography_spots'], goodFor: ['couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly'], roadIntensity: 'medium', internetAvailable: true, offlineReady: true, description: 'Easy lakefront time on Issyk-Kul.' },
-  { id: 'act_cholpon_ata_petroglyphs', name: 'Cholpon-Ata petroglyphs', city: 'Cholpon-Ata', region: 'Issyk-Kul', type: 'heritage', price: 4, durationHours: 1.5, difficulty: 1, tags: ['museums_history', 'photography_spots', 'culture'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Open-air petroglyph field near the lake.' },
-  { id: 'act_ruh_ordo', name: 'Ruh Ordo', city: 'Cholpon-Ata', region: 'Issyk-Kul', type: 'culture', price: 8, durationHours: 2, difficulty: 1, tags: ['cultural_discovery', 'museums_history', 'lake', 'easy'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: true, offlineReady: false, description: 'Cultural complex by Issyk-Kul with easy walking.' },
-  { id: 'act_skazka_canyon', name: 'Skazka Canyon', city: 'Tosor', region: 'Skazka Canyon', type: 'canyon', price: 10, durationHours: 3, difficulty: 2, tags: ['lakes_canyons', 'photography_spots', 'light_hiking', 'adventure'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: ['business'], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Colorful canyon walk with strong landscape photography value.' },
-  { id: 'act_karakol_city_walk', name: 'Karakol city walk', city: 'Karakol', region: 'Karakol', type: 'city_walk', price: 4, durationHours: 2, difficulty: 1, tags: ['cultural_discovery', 'bazaars_local_life', 'easy'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: true, offlineReady: true, description: 'Local Karakol route with architecture, cafes and market stops.' },
-  { id: 'act_dungan_mosque', name: 'Dungan Mosque', city: 'Karakol', region: 'Karakol', type: 'heritage', price: 2, durationHours: 1, difficulty: 1, tags: ['museums_history', 'cultural_discovery', 'prayer_friendly'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['prayer_friendly', 'family_friendly', 'english_guide'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Historic wooden mosque and calm cultural stop.' },
-  { id: 'act_jeti_oguz_viewpoint', name: 'Jeti-Oguz viewpoint', city: 'Jeti-Oguz', region: 'Jeti-Oguz', type: 'viewpoint', price: 12, durationHours: 3, difficulty: 2, tags: ['mountain_views', 'photography_spots', 'lakes_canyons', 'adventure'], goodFor: ['solo', 'couple', 'friends'], badFor: ['business'], requirementsSupported: ['english_guide'], roadIntensity: 'high', internetAvailable: false, offlineReady: true, description: 'Red rock valley viewpoint near Karakol.' },
-  { id: 'act_karakol_horse', name: 'Horse riding near Karakol', city: 'Karakol', region: 'Karakol', type: 'horse_riding', price: 35, durationHours: 3, difficulty: 3, tags: ['horse_riding', 'mountain_views', 'adventure', 'nomadic_culture'], goodFor: ['solo', 'couple', 'friends'], badFor: ['wheelchair', 'family_friendly'], requirementsSupported: ['english_guide'], roadIntensity: 'high', internetAvailable: false, offlineReady: true, description: 'Guided horse ride in mountain foothills.' },
-  { id: 'act_hot_springs', name: 'Hot springs', city: 'Altyn Arashan', region: 'Karakol', type: 'wellness', price: 28, durationHours: 4, difficulty: 3, tags: ['hot_springs', 'mountain_views', 'remote', 'adventure'], goodFor: ['solo', 'couple', 'friends'], badFor: ['business', 'wheelchair', 'family_friendly'], requirementsSupported: ['english_guide'], roadIntensity: 'high', internetAvailable: false, offlineReady: true, description: 'Remote hot springs for travelers comfortable with rough access.' },
-  { id: 'act_songkul_yurt_experience', name: 'Song-Kul yurt experience', city: 'Song-Kul', region: 'Song-Kul', type: 'nomadic', price: 22, durationHours: 3, difficulty: 2, tags: ['nomadic_culture', 'remote', 'offline_ready', 'mountain_views'], goodFor: ['solo', 'couple', 'friends'], badFor: ['business', 'wheelchair', 'family_friendly'], requirementsSupported: ['halal', 'vegetarian', 'english_guide'], roadIntensity: 'high', internetAvailable: false, offlineReady: true, description: 'Nomadic host visit, tea and pasture life near Song-Kul.' },
-  { id: 'act_songkul_horse', name: 'Song-Kul horse riding', city: 'Song-Kul', region: 'Song-Kul', type: 'horse_riding', price: 35, durationHours: 4, difficulty: 3, tags: ['horse_riding', 'nomadic_culture', 'remote', 'mountain_views'], goodFor: ['solo', 'couple', 'friends'], badFor: ['business', 'wheelchair', 'family_friendly'], requirementsSupported: ['english_guide'], roadIntensity: 'high', internetAvailable: false, offlineReady: true, description: 'Horseback route across high pastures with local guides.' },
-  { id: 'act_craft_shop', name: 'Craft shop', city: 'Bishkek', region: 'Bishkek', type: 'shopping', price: 10, durationHours: 1, difficulty: 1, tags: ['shopping_crafts', 'cultural_discovery', 'nomadic_culture', 'city'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly', 'english_guide'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Curated felt, textiles and handmade souvenirs.' },
-  { id: 'act_cooking_class', name: 'Local cooking class', city: 'Bishkek', region: 'Bishkek', type: 'cooking_class', price: 32, durationHours: 3, difficulty: 1, tags: ['local_food', 'cultural_discovery', 'family_friendly'], goodFor: ['couple', 'family', 'friends'], badFor: [], requirementsSupported: ['halal', 'vegetarian', 'family_friendly', 'english_guide'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Hands-on class around a national dish with local hosts.' },
-  { id: 'act_bishkek_nightlife', name: 'Bishkek nightlife', city: 'Bishkek', region: 'Bishkek', type: 'nightlife', price: 22, durationHours: 2.5, difficulty: 1, tags: ['nightlife', 'social', 'late_activity', 'city'], goodFor: ['solo', 'couple', 'friends'], badFor: ['family', 'family_friendly', 'no_alcohol'], requirementsSupported: ['english_guide'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Social evening stop for food, music and traveler-friendly bars.' },
-  { id: 'act_coworking_cafe', name: 'Coworking cafe', city: 'Bishkek', region: 'Bishkek', type: 'coworking', price: 12, durationHours: 3, difficulty: 1, tags: ['digital_nomad', 'business', 'wifi', 'city'], goodFor: ['solo', 'colleagues'], badFor: [], requirementsSupported: ['english_guide', 'wheelchair'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Wi-Fi stop for remote work, calls and route planning.' },
-  { id: 'act_airport_soft_landing', name: 'Manas airport transfer placeholder', city: 'Bishkek', region: 'Bishkek', type: 'arrival', price: 0, durationHours: 1, difficulty: 1, tags: ['arrival', 'airport_transfer', 'soft_landing', 'business'], goodFor: ['solo', 'couple', 'family', 'friends', 'colleagues'], badFor: [], requirementsSupported: ['english_guide', 'family_friendly'], roadIntensity: 'low', internetAvailable: true, offlineReady: false, description: 'Arrival buffer and hotel check-in time after Manas Airport.' },
-  { id: 'act_local_market_walk', name: 'Local market walk', city: 'Karakol', region: 'Karakol', type: 'market', price: 4, durationHours: 2, difficulty: 1, tags: ['bazaars_local_life', 'local_food', 'photography_spots'], goodFor: ['solo', 'couple', 'friends'], badFor: [], requirementsSupported: ['halal', 'vegetarian'], roadIntensity: 'medium', internetAvailable: true, offlineReady: true, description: 'Local market route for food, photos and daily life.' },
-  { id: 'act_photography_viewpoint', name: 'Photography viewpoint', city: 'Boom Gorge', region: 'Burana', type: 'viewpoint', price: 6, durationHours: 1.5, difficulty: 1, tags: ['photography_spots', 'mountain_views', 'short_drive'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['family_friendly'], roadIntensity: 'medium', internetAvailable: false, offlineReady: true, description: 'Short stop with valley views on the road east.' },
-  { id: 'act_osh_demo_walk', name: 'Osh route demo walk', city: 'Osh', region: 'Osh', type: 'city_walk', price: 5, durationHours: 2, difficulty: 1, tags: ['cultural_discovery', 'bazaars_local_life', 'local_food'], goodFor: ['solo', 'couple', 'family', 'friends'], badFor: [], requirementsSupported: ['halal', 'vegetarian', 'prayer_friendly'], roadIntensity: 'low', internetAvailable: true, offlineReady: true, description: 'Demo southern route around Osh bazaar and old city streets.' },
+const REQUIREMENTS: RequirementKey[] = [
+  'halal',
+  'vegetarian',
+  'vegan',
+  'wheelchair',
+  'family_friendly',
+  'no_alcohol',
+  'prayer_friendly',
+  'english_guide',
+  'chinese_guide',
+  'arabic_guide',
+  'none',
 ];
+
+const TRAVELERS: TravelersType[] = ['solo', 'couple', 'family', 'friends', 'colleagues'];
+
+function normalize(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+}
+
+function unique<T>(items: T[]): T[] {
+  return Array.from(new Set(items));
+}
+
+function mapRequirement(value: string): RequirementKey | undefined {
+  const normalized = normalize(value).replace('family_trip', 'family_friendly');
+  return REQUIREMENTS.includes(normalized as RequirementKey) ? normalized as RequirementKey : undefined;
+}
+
+function mapTraveler(value: string): TravelersType | undefined {
+  if (value === 'family_trip') return 'family';
+  if (value === 'business' || value === 'digital_nomad') return 'colleagues';
+  return TRAVELERS.includes(value as TravelersType) ? value as TravelersType : undefined;
+}
+
+function mapRoadIntensity(activity: ActivityOption): RoadTolerance {
+  if (activity.requiresVerifiedMountainDriver || activity.recommendedTransportType === 'mountain_driver') return 'high';
+  if (activity.recommendedTransportType === 'regional_transfer' || activity.recommendedTransportType === 'shared_minivan') return 'medium';
+  if (activity.requiresTransport && activity.region !== 'Chuy') return 'medium';
+  return 'low';
+}
+
+function mapTags(activity: ActivityOption): string[] {
+  const tags = activity.tags.map(normalize);
+  const mapped = [...tags, normalize(activity.category), normalize(activity.typeLabel)];
+
+  if (activity.category === 'culture') mapped.push('culture', 'cultural_discovery', 'museums_history');
+  if (activity.category === 'nature') mapped.push('nature', 'mountain_views', 'photography_spots');
+  if (activity.category === 'adventure') mapped.push('adventure', 'mountain_views');
+  if (activity.category === 'food_local_life') mapped.push('local_food', 'bazaars_local_life');
+  if (activity.category === 'nomadic_culture') mapped.push('nomadic_culture', 'mountain_views');
+  if (activity.category === 'wellness') mapped.push('hot_springs', 'relax');
+  if (activity.category === 'nightlife') mapped.push('nightlife', 'late_activity');
+  if (activity.category === 'digital_nomad') mapped.push('digital_nomad', 'business', 'wifi', 'city');
+
+  for (const tag of tags) {
+    if (tag.includes('photo') || tag.includes('sunset') || tag.includes('viewpoint')) mapped.push('photography_spots');
+    if (tag.includes('family')) mapped.push('family_friendly');
+    if (tag.includes('easy')) mapped.push('easy');
+    if (tag.includes('short')) mapped.push('short_drive');
+    if (tag.includes('horse')) mapped.push('horse_riding');
+    if (tag.includes('hot_springs')) mapped.push('hot_springs');
+    if (tag.includes('remote')) mapped.push('remote');
+    if (tag.includes('offline')) mapped.push('offline_ready');
+    if (tag.includes('lake') || tag.includes('canyon')) mapped.push('lakes_canyons');
+    if (tag.includes('mountain') || tag.includes('valley')) mapped.push('mountain_views');
+    if (tag.includes('bazaar') || tag.includes('local_life')) mapped.push('bazaars_local_life');
+    if (tag.includes('food') || tag.includes('cooking')) mapped.push('local_food');
+    if (tag.includes('craft') || tag.includes('shopping')) mapped.push('shopping_crafts');
+    if (tag.includes('history') || tag.includes('museum') || tag.includes('petroglyph') || tag.includes('silk')) mapped.push('museums_history', 'cultural_discovery');
+  }
+
+  if (activity.offlineReady) mapped.push('offline_ready');
+  if (activity.requiresVerifiedMountainDriver) mapped.push('remote', 'mountain_driver_required');
+  return unique(mapped);
+}
+
+function mapRequirements(activity: ActivityOption): RequirementKey[] {
+  const fromData = activity.requirementsSupported
+    .map(mapRequirement)
+    .filter((item): item is RequirementKey => Boolean(item));
+  if (activity.familyFriendly) fromData.push('family_friendly');
+  if (activity.guideLanguages.some((language) => language.toLowerCase().includes('english'))) fromData.push('english_guide');
+  return unique(fromData.length > 0 ? fromData : ['none']);
+}
+
+function mapGoodFor(activity: ActivityOption): TravelersType[] {
+  const mapped = activity.goodFor
+    .map(mapTraveler)
+    .filter((item): item is TravelersType => Boolean(item));
+  if (activity.familyFriendly) mapped.push('family');
+  if (activity.businessFriendly) mapped.push('colleagues');
+  return unique(mapped.length > 0 ? mapped : ['solo']);
+}
+
+function mapBadFor(activity: ActivityOption): string[] {
+  const values = activity.badFor ?? [];
+  if (activity.requiresVerifiedMountainDriver) return unique([...values, 'low_road_tolerance']);
+  return values;
+}
+
+export function activityOptionToTripActivity(activity: ActivityOption): Activity {
+  const roadIntensity = mapRoadIntensity(activity);
+  return {
+    id: activity.id,
+    name: activity.name,
+    city: activity.city,
+    region: activity.region,
+    type: normalize(activity.typeLabel || activity.category),
+    price: activity.price,
+    durationHours: activity.durationHours,
+    difficulty: activity.difficulty,
+    tags: mapTags(activity),
+    goodFor: mapGoodFor(activity),
+    badFor: mapBadFor(activity),
+    requirementsSupported: mapRequirements(activity),
+    roadIntensity,
+    internetAvailable: roadIntensity !== 'high' && !activity.requiresVerifiedMountainDriver,
+    offlineReady: activity.offlineReady,
+    description: activity.description,
+  };
+}
+
+export const ACTIVITIES: Activity[] = getAllActivityOptions().map(activityOptionToTripActivity);
