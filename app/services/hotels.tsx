@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, ScrollView, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -88,6 +88,10 @@ export default function HotelsScreen() {
     } as never);
   }
 
+  function openStayInMap(stay: Stay) {
+    router.push({ pathname: '/(tabs)/map', params: { q: stay.name } } as never);
+  }
+
   function selectStandaloneStay(stay: Stay) {
     setSelectedStayId(stay.id);
     setDetails({
@@ -131,34 +135,36 @@ export default function HotelsScreen() {
           const selected = selectedStayId === stay.id;
           return (
             <Card key={stay.id}>
-              <View style={{ flexDirection: 'row' }}>
-                <PlacePhoto width={112} height={156} radius={14} tint={BG_TINTS[stay.type] ?? '#3d6479'} imageUrl={stay.imageUrl} />
-                <View style={{ flex: 1, paddingLeft: 12 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    {stay.wifi ? <Wifi size={13} color={colors.brand.primary} /> : <WifiOff size={13} color={colors.status.warningText} />}
-                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary, flex: 1 }} numberOfLines={2}>{stay.name}</Text>
-                  </View>
-                  <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>{stay.city}, {stay.region}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
-                    <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
-                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.text.primary }}>{stay.rating}</Text>
-                    <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}>{stay.reviewCount} reviews</Text>
-                  </View>
-                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.brand.primary, marginTop: 8 }}>Why it fits</Text>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
-                    {match.reasons.map((reason) => <Chip key={reason} label={reason} height={24} fontSize={10} />)}
-                  </View>
-                  <Text numberOfLines={2} style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 8 }}>{stay.description}</Text>
-                  <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.brand.primary, marginTop: 8 }}>
-                    {formatUSD(stay.pricePerNight)}<Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}> / night</Text>
-                  </Text>
-                  {selected && (
-                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.status.successText, marginTop: 2 }}>
-                      Selected for browsing
+              <Pressable onPress={() => openStayInMap(stay)} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}>
+                <View style={{ flexDirection: 'row' }}>
+                  <PlacePhoto width={112} height={156} radius={14} tint={BG_TINTS[stay.type] ?? '#3d6479'} imageUrl={stay.imageUrl} />
+                  <View style={{ flex: 1, paddingLeft: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {stay.wifi ? <Wifi size={13} color={colors.brand.primary} /> : <WifiOff size={13} color={colors.status.warningText} />}
+                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary, flex: 1 }} numberOfLines={2}>{stay.name}</Text>
+                    </View>
+                    <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>{stay.city}, {stay.region}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                      <Star size={12} color={colors.status.warning} fill={colors.status.warning} strokeWidth={0} />
+                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.text.primary }}>{stay.rating}</Text>
+                      <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}>{stay.reviewCount} reviews</Text>
+                    </View>
+                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.brand.primary, marginTop: 8 }}>Why it fits</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                      {match.reasons.map((reason) => <Chip key={reason} label={reason} height={24} fontSize={10} />)}
+                    </View>
+                    <Text numberOfLines={2} style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 16, color: colors.text.secondary, marginTop: 8 }}>{stay.description}</Text>
+                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.brand.primary, marginTop: 8 }}>
+                      {formatUSD(stay.pricePerNight)}<Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, color: colors.text.secondary }}> / night</Text>
                     </Text>
-                  )}
+                    {selected && (
+                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.status.successText, marginTop: 2 }}>
+                        Selected for browsing
+                      </Text>
+                    )}
+                  </View>
                 </View>
-              </View>
+              </Pressable>
               <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                 <Button variant="secondary" label="Details" onPress={() => setDetails(match)} height={38} fontSize={12} style={{ flex: 1, borderRadius: 10 }} />
                 {fromTrip ? (
