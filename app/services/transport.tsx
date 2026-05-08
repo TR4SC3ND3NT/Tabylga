@@ -16,6 +16,7 @@ import {
 } from '../../lib/api/dgis';
 import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Chip } from '../../components/Chip';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -76,7 +77,7 @@ export default function TransportScreen() {
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
       <View style={{ flexDirection:'row', alignItems:'center', paddingHorizontal:12, paddingTop:8, paddingBottom:12, borderBottomWidth:1, borderBottomColor:colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={strings.common.back} style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
+        <Pressable onPress={() => goBackOrReplace(router, '/(tabs)')} accessibilityRole="button" accessibilityLabel={strings.common.back} style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
           <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
         <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:17, color:colors.text.primary, flex:1, textAlign:'center', marginRight:44 }}>

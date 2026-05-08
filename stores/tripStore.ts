@@ -19,6 +19,10 @@ import {
   type TripPreferences,
 } from '../lib/data/tripPlaces';
 import {
+  runAiPlannerTurn,
+  type AiPlannerMessage,
+} from '../lib/ai/geminiTripPlanner';
+import {
   changeFood as generatorChangeFood,
   changeStay as generatorChangeStay,
   changeTransport as generatorChangeTransport,
@@ -45,6 +49,9 @@ export type Interest = string;
 export type Dietary = RequirementKey;
 export type Itinerary = GeneratedTrip;
 export type EntryMode = 'ai' | 'ready' | null;
+export type { AiPlannerMessage };
+
+const AI_PLANNER_CHAT_KEY = 'tabylga_ai_planner_chat';
 
 interface OfflinePack {
   id: string;
@@ -61,6 +68,8 @@ interface TripState {
   undoTrip: GeneratedTrip | null;
   lastEditLabel: string | null;
   offlinePack: OfflinePack | null;
+  aiPlannerMessages: AiPlannerMessage[];
+  isAiPlannerThinking: boolean;
   isGenerating: boolean;
   error: string | null;
   hydrated: boolean;
@@ -87,6 +96,9 @@ interface TripActions {
   setTravelerCount: (count: number) => void;
   toggleExperience: (experience: ExperienceKey) => void;
   toggleRequirement: (requirement: RequirementKey) => void;
+  sendAiPlannerMessage: (text: string) => Promise<void>;
+  applyAiPlannerPatch: (patch: Partial<TripPreferences>, label: string) => Promise<void>;
+  clearAiPlannerChat: () => Promise<void>;
   generateTrip: () => Promise<void>;
   changeStay: (dayNumber: number) => void;
   updateStay: (dayNumber: number, stayId: string) => void;
@@ -159,6 +171,8 @@ function baseState(preferences: TripPreferences = DEFAULT_TRIP_PREFERENCES): Tri
     undoTrip: null,
     lastEditLabel: null,
     offlinePack: null,
+    aiPlannerMessages: [],
+    isAiPlannerThinking: false,
     isGenerating: false,
     error: null,
     hydrated: false,
@@ -203,6 +217,20 @@ async function persistTrip(trip: GeneratedTrip | null) {
   await AsyncStorage.setItem(STORAGE_KEYS.currentTrip, JSON.stringify(trip));
 }
 
+async function persistAiPlannerMessages(messages: AiPlannerMessage[]) {
+  await AsyncStorage.setItem(AI_PLANNER_CHAT_KEY, JSON.stringify(messages.slice(-30)));
+}
+
+function plannerMessage(role: AiPlannerMessage['role'], text: string, suggestions?: string[]): AiPlannerMessage {
+  return {
+    id: `ai_msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    text,
+    createdAt: Date.now(),
+    suggestions,
+  };
+}
+
 function isReadyTrip(value: ReadyTrip | TripPreferences): value is ReadyTrip {
   return 'preferences' in value && 'title' in value;
 }
@@ -235,8 +263,10 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
           STORAGE_KEYS.offlinePack,
           STORAGE_KEYS.selectedPreset,
         ]);
+        const chatRaw = await AsyncStorage.getItem(AI_PLANNER_CHAT_KEY);
         const sessionId = await getCurrentSessionId();
         const preferences = prefsRaw[1] ? normalizePreferences(JSON.parse(prefsRaw[1]) as TripPreferences) : DEFAULT_TRIP_PREFERENCES;
+        const aiPlannerMessages = chatRaw ? (JSON.parse(chatRaw) as AiPlannerMessage[]).filter((message) => message && (message.role === 'user' || message.role === 'assistant') && typeof message.text === 'string') : [];
         let generatedItinerary: GeneratedTrip | null = null;
         if (tripRaw[1]) {
           const parsed = JSON.parse(tripRaw[1]);
@@ -249,6 +279,8 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
           preferences,
           generatedItinerary,
           offlinePack,
+          aiPlannerMessages,
+          isAiPlannerThinking: false,
           isGenerating: false,
           error: null,
           hydrated: true,
@@ -319,6 +351,75 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
         ? withoutNone.filter((item) => item !== requirement)
         : [...withoutNone, requirement];
       commitPreferences({ ...preferences, requirements: requirements.length ? requirements : ['none'] });
+    },
+
+    sendAiPlannerMessage: async (text) => {
+      const userText = text.trim();
+      if (!userText || get().isAiPlannerThinking) return;
+
+      const userMessage = plannerMessage('user', userText);
+      const messages = [...get().aiPlannerMessages, userMessage].slice(-30);
+      set({ aiPlannerMessages: messages, isAiPlannerThinking: true, error: null });
+      void persistAiPlannerMessages(messages);
+
+      try {
+        const result = await runAiPlannerTurn({
+          userText,
+          messages,
+          preferences: get().preferences,
+          currentTrip: get().generatedItinerary,
+        });
+        const preferences = normalizePreferences({ ...get().preferences, ...result.preferencePatch });
+        const sessionId = await getCurrentSessionId();
+        const shouldGenerate = result.readyToGenerate || !!get().generatedItinerary || Object.keys(result.preferencePatch).length > 0;
+        const generatedItinerary = shouldGenerate ? buildTrip(preferences, sessionId) : get().generatedItinerary;
+        const assistantMessage = plannerMessage('assistant', result.assistantMessage, result.suggestions);
+        const nextMessages = [...messages, assistantMessage].slice(-30);
+
+        set({
+          preferences,
+          generatedItinerary,
+          aiPlannerMessages: nextMessages,
+          isAiPlannerThinking: false,
+          undoTrip: null,
+          lastEditLabel: result.source === 'gemini' ? 'AI planner updated your trip' : 'Planner updated your trip',
+          ...aliases(preferences),
+        });
+        await persistPreferences(preferences);
+        await persistTrip(generatedItinerary);
+        await persistAiPlannerMessages(nextMessages);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'AI planner failed.';
+        const nextMessages = [...messages, plannerMessage('assistant', message)].slice(-30);
+        set({ aiPlannerMessages: nextMessages, isAiPlannerThinking: false, error: message });
+        await persistAiPlannerMessages(nextMessages);
+      }
+    },
+
+    applyAiPlannerPatch: async (patch, label) => {
+      if (get().isAiPlannerThinking) return;
+      const preferences = normalizePreferences({ ...get().preferences, ...patch });
+      const sessionId = await getCurrentSessionId();
+      const generatedItinerary = buildTrip(preferences, sessionId);
+      const text = `${label}. Маршрут и бюджет пересчитаны.`;
+      const nextMessages = [...get().aiPlannerMessages, plannerMessage('assistant', text, ['Открыть маршрут', 'Сделай дешевле', 'Добавь горы'])].slice(-30);
+
+      set({
+        preferences,
+        generatedItinerary,
+        aiPlannerMessages: nextMessages,
+        undoTrip: null,
+        lastEditLabel: 'AI edit applied',
+        ...aliases(preferences),
+      });
+      await persistPreferences(preferences);
+      await persistTrip(generatedItinerary);
+      await persistAiPlannerMessages(nextMessages);
+    },
+
+    clearAiPlannerChat: async () => {
+      set({ aiPlannerMessages: [], isAiPlannerThinking: false });
+      await AsyncStorage.removeItem(AI_PLANNER_CHAT_KEY);
     },
 
     generateTrip: async () => {
@@ -399,6 +500,8 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
         undoTrip: null,
         lastEditLabel: null,
         entryMode: null,
+        aiPlannerMessages: [],
+        isAiPlannerThinking: false,
         ...aliases(next),
       });
       void AsyncStorage.multiRemove([
@@ -407,6 +510,7 @@ export const useTripStore = create<TripState & TripActions>((set, get) => {
         STORAGE_KEYS.selectedPreset,
         STORAGE_KEYS.bookings,
         STORAGE_KEYS.offlinePack,
+        AI_PLANNER_CHAT_KEY,
       ]);
     },
 

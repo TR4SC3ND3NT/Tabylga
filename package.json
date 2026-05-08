@@ -6,6 +6,7 @@
     "setup": "npm ci && cp -n .env.example .env && echo '\\n✓ Done. Fill in your keys in .env, then run: npm start'",
     "start": "expo start",
     "build": "expo export -p web",
+    "serve:ai": "node scripts/serve-ai-planner.mjs",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"

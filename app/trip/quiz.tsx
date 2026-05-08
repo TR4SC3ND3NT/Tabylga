@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Briefcase, Camera, Coffee, Compass, Heart, Landmark, Laptop, Moon, Mountain, Plane, ShoppingBag, Tent, Users, Utensils, X } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { useTripStore } from '../../stores/tripStore';
@@ -142,7 +143,7 @@ export default function QuizScreen() {
   }
 
   function back() {
-    if (step === 0) router.back();
+    if (step === 0) goBackOrReplace(router, '/trip/purpose');
     else setStep((current) => current - 1);
   }
 

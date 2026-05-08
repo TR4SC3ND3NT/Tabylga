@@ -6,6 +6,7 @@ import { ArrowLeft, Share2, Download, User } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 
 const QR_VALUE = JSON.stringify({ type: 'tabylga_pay', userId: 'user_demo_001', currency: 'KGS' });
 
@@ -20,7 +21,7 @@ export default function ReceiveScreen() {
 
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityLabel={strings.common.back} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
+        <Pressable onPress={() => goBackOrReplace(router, '/(tabs)/wallet')} accessibilityLabel={strings.common.back} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}>
           <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
         <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 17, color: colors.text.primary, flex: 1, textAlign: 'center', marginRight: 44 }}>

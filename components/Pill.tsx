@@ -65,7 +65,7 @@ export function Pill({
             : 'Inter_500Medium',
           fontSize,
           lineHeight: fontSize * 1.1,
-          letterSpacing: fontSize * 0.02,
+          letterSpacing: 0,
           color,
         }}
       >

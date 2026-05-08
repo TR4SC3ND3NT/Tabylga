@@ -8,6 +8,7 @@ import { ArrowLeft, Car, Check, Clock, Info, QrCode, Star, Utensils, WalletCards
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { ACTIVITIES } from '../../lib/data/activities';
 import {
   calculateActivityCommission,
@@ -276,7 +277,7 @@ export default function TripItemSelectionScreen() {
       <StatusBar style="dark" />
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 12, paddingBottom: 10, backgroundColor: colors.surface.primary, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Pressable onPress={() => router.back()} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.65 : 1 })}>
+          <Pressable onPress={() => goBackOrReplace(router, '/trip/itinerary')} accessibilityRole="button" style={({ pressed }) => ({ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.65 : 1 })}>
             <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.6} />
           </Pressable>
           <View style={{ flex: 1 }}>

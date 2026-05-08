@@ -17,6 +17,7 @@ import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 
 function formatPhoneDisplay(raw: string): string {
@@ -88,7 +89,7 @@ export default function PhoneScreen() {
           {/* Back button */}
           <View className="px-3 pt-2">
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, '/welcome')}
               accessibilityLabel={strings.common.back}
               accessibilityRole="button"
               style={({ pressed }) => ({

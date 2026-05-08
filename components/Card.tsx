@@ -14,8 +14,10 @@ export function Card({ children, style, elevated = false }: CardProps) {
     <View
       style={[
         {
-          backgroundColor: '#fff',
-          borderRadius: 16,
+          backgroundColor: colors.surface.card,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderColor: colors.border.divider,
           overflow: 'hidden',
         },
         elevated ? shadows.cardElevated : shadows.card,

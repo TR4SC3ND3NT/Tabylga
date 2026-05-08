@@ -161,53 +161,46 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Status pill */}
-        <View className="items-center pt-4 pb-2">
-          <Pill
-            variant={offlineReady ? 'offline' : 'online'}
-            label={
-              offlineReady
-                ? PAYMENT_STRINGS.statusOfflineReady
-                : PAYMENT_STRINGS.statusOnline
-            }
-            showDot
-          />
-        </View>
-
-        {/* Title + balance */}
-        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingVertical: 18 }}>
-          <Text
-            style={{
-              fontFamily: 'Fraunces_600SemiBold',
-              fontSize: 22,
-              color: colors.text.primary,
-              marginBottom: 6,
-            }}
-          >
-            {PAYMENT_STRINGS.walletTitle}
-          </Text>
-          <Text
-            style={{
-              fontFamily: 'Inter_400Regular',
-              fontSize: 12,
-              color: colors.text.tertiary,
-              letterSpacing: 0.12 * 12,
-              textTransform: 'uppercase',
-              marginBottom: 6,
-            }}
-          >
-            {PAYMENT_STRINGS.totalBalance}
-          </Text>
-          <Text
-            style={{
-              fontFamily: 'Inter_700Bold',
-              fontSize: 44,
-              lineHeight: 50,
-              color: colors.text.primary,
-            }}
-          >
-            {formatKgs(wallet.totalBalance)}
-          </Text>
+        {/* Balance hero */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, marginBottom: 18 }}>
+          <Card elevated style={{ padding: 18, backgroundColor: colors.brand.primary, borderColor: 'transparent' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff' }}>
+                {PAYMENT_STRINGS.walletTitle}
+              </Text>
+              <Pill
+                label={offlineReady ? PAYMENT_STRINGS.statusOfflineReady : PAYMENT_STRINGS.statusOnline}
+                showDot
+                backgroundColor="rgba(255,255,255,0.16)"
+                textColor="#fff"
+                height={28}
+              />
+            </View>
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.7)',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}
+            >
+              {PAYMENT_STRINGS.totalBalance}
+            </Text>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.78}
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 42,
+                lineHeight: 48,
+                color: '#fff',
+              }}
+            >
+              {formatKgs(wallet.totalBalance)}
+            </Text>
+          </Card>
         </View>
 
         {/* Balance cards: 2x2 grid */}

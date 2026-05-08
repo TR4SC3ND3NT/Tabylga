@@ -7,6 +7,7 @@ import { useStrings } from '../../lib/i18n';
 import { ESIM_PLANS } from '../../lib/backend/demoBackend';
 import { useTravelPreferencesStore, type EsimChoice } from '../../stores/travelPreferencesStore';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 
 function planToChoice(id: string): EsimChoice {
@@ -25,7 +26,7 @@ export default function EsimScreen() {
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
       <View style={{ flexDirection:'row', alignItems:'center', paddingHorizontal:12, paddingTop:8, paddingBottom:12, borderBottomWidth:1, borderBottomColor:colors.border.divider }}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={strings.common.back} style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
+        <Pressable onPress={() => goBackOrReplace(router, '/(tabs)/profile')} accessibilityRole="button" accessibilityLabel={strings.common.back} style={({ pressed }) => ({ width:44, height:44, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.6 : 1 })}>
           <ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />
         </Pressable>
         <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:17, color:colors.text.primary, flex:1, textAlign:'center', marginRight:44 }}>

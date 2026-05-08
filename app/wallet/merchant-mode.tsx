@@ -3,10 +3,11 @@ import { View, Text, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Store, QrCode, CheckCircle, RefreshCw } from 'lucide-react-native';
+import { Store, CheckCircle, RefreshCw } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { paymentService, OfflineToken, Transaction } from '../../services/paymentService';
 import { PaymentMerchant } from '../../data/paymentMerchants';
 
@@ -95,11 +96,13 @@ export default function MerchantModeScreen() {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
         <StatusBar style="dark" />
+        <ScreenHeader
+          title="Offline request"
+          subtitle={merchants.find(m => m.id === selectedMerchant)?.name ?? 'Merchant verification'}
+          onBack={() => setScannedToken(null)}
+          backTo="/(tabs)/wallet"
+        />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text.primary, marginBottom: 24 }}>
-            Offline payment request
-          </Text>
-
           <Card style={{ padding: 24, marginBottom: 24 }}>
             <View style={{ alignItems: 'center', marginBottom: 24 }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text.primary }}>
@@ -168,12 +171,13 @@ export default function MerchantModeScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
+      <ScreenHeader
+        title="Merchant Mode"
+        subtitle="Accept offline demo payments"
+        backTo="/(tabs)/wallet"
+      />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>
-        <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text.primary, marginBottom: 8 }}>
-          Merchant Mode
-        </Text>
-
-        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12, marginTop: 16 }}>
+        <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
           1. Select Merchant Profile
         </Text>
         <View style={{ gap: 10, marginBottom: 24 }}>

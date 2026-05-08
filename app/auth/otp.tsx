@@ -16,6 +16,7 @@ import { ArrowLeft, Bell } from 'lucide-react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 
 const OTP_RESEND_SECONDS = 58;
@@ -125,7 +126,7 @@ export default function OtpScreen() {
           {/* Back */}
           <View className="px-3 pt-2">
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, '/auth/phone')}
               accessibilityLabel={strings.common.back}
               accessibilityRole="button"
               style={({ pressed }) => ({
@@ -307,7 +308,7 @@ export default function OtpScreen() {
             <Button
               variant="ghost"
               label={strings.auth.otpChangeNumber}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, '/auth/phone')}
               style={{ marginTop: 4, height: 52 }}
             />
 

@@ -7,6 +7,7 @@ import { ArrowLeft, Star, Wifi, WifiOff } from 'lucide-react-native';
 import { STAYS } from '../../lib/data/stays';
 import type { Stay } from '../../lib/data/tripPlaces';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Chip } from '../../components/Chip';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
@@ -105,7 +106,7 @@ export default function HotelsScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surface.primary }}>
       <StatusBar style="dark" />
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Button variant="ghost" label="" icon={<ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />} onPress={() => router.back()} style={{ width: 44, borderRadius: 12 }} height={44} />
+        <Button variant="ghost" label="" icon={<ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />} onPress={() => goBackOrReplace(router, '/(tabs)')} style={{ width: 44, borderRadius: 12 }} height={44} />
         <View style={{ flex: 1, marginRight: 44 }}>
           <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text.primary, textAlign: 'center' }}>
             {fromTrip ? `Best stays for Day ${dayNumber}` : 'Hotels'}

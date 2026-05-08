@@ -15,6 +15,7 @@ import {
 
 import { Button } from '../../components/Button';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { shadows } from '../../constants/shadows';
 import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
 import {
@@ -435,7 +436,7 @@ export default function MerchantAcceptScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
-      <Header title="Offline payment request" onBack={() => router.back()} />
+      <Header title="Offline payment request" onBack={() => goBackOrReplace(router, '/merchant/dashboard')} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

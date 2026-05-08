@@ -6,6 +6,7 @@ import { ArrowLeft, BadgeCheck, Sparkles } from 'lucide-react-native';
 import { READY_TRIPS } from '../../lib/data/readyTrips';
 import type { ReadyTrip } from '../../lib/data/tripPlaces';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { useTripStore } from '../../stores/tripStore';
@@ -31,7 +32,7 @@ export default function ReadyTripsScreen() {
 
       <View style={{ paddingHorizontal: 12, paddingTop: 4 }}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/trip/purpose')}
           accessibilityLabel="Back"
           accessibilityRole="button"
           style={({ pressed }) => ({

@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, Animated, Easing } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { Sparkles, AlertTriangle } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
+import { ScreenHeader } from '../../components/ScreenHeader';
 
 export default function GeneratingScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const strings = useStrings();
   const { generateTrip, isGenerating, error, generatedItinerary, resetTrip } = useTripStore();
   const statusMessages = [
@@ -80,59 +80,62 @@ export default function GeneratingScreen() {
   // ── Error state ──
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-surface-primary items-center justify-center px-8">
+      <SafeAreaView className="flex-1 bg-surface-primary">
         <StatusBar style="dark" />
-        <View
-          style={{
-            width: 80, height: 80, borderRadius: 40,
-            backgroundColor: colors.status.errorLight,
-            alignItems: 'center', justifyContent: 'center',
-            marginBottom: 24,
-          }}
-        >
-          <AlertTriangle size={36} color={colors.status.error} strokeWidth={1.5} />
+        <ScreenHeader title="AI planner" subtitle="Generation stopped" onBack={handleCancel} backTo="/(tabs)" />
+        <View className="flex-1 items-center justify-center px-8">
+          <View
+            style={{
+              width: 80, height: 80, borderRadius: 40,
+              backgroundColor: colors.status.errorLight,
+              alignItems: 'center', justifyContent: 'center',
+              marginBottom: 24,
+            }}
+          >
+            <AlertTriangle size={36} color={colors.status.error} strokeWidth={1.5} />
+          </View>
+          <Text
+            style={{
+              fontFamily: 'Fraunces_600SemiBold', fontSize: 24, lineHeight: 28.8,
+              color: colors.text.primary, textAlign: 'center', marginBottom: 8,
+            }}
+          >
+            {strings.planner.generatingError}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20,
+              color: colors.text.secondary, textAlign: 'center', marginBottom: 32,
+            }}
+          >
+            {error}
+          </Text>
+          <Pressable
+            onPress={handleRetry}
+            accessibilityLabel={strings.planner.generatingRetry}
+            accessibilityRole="button"
+            style={({ pressed }) => ({
+              height: 56, paddingHorizontal: 32, borderRadius: 16,
+              backgroundColor: colors.brand.primary,
+              alignItems: 'center', justifyContent: 'center',
+              opacity: pressed ? 0.85 : 1,
+              marginBottom: 12, alignSelf: 'stretch',
+            })}
+          >
+            <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
+              {strings.planner.generatingRetry}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleCancel}
+            accessibilityRole="button"
+            style={({ pressed }) => ({ padding: 12, opacity: pressed ? 0.6 : 1 })}
+          >
+            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.text.secondary }}>
+              {strings.common.cancel}
+            </Text>
+          </Pressable>
         </View>
-        <Text
-          style={{
-            fontFamily: 'Fraunces_600SemiBold', fontSize: 24, lineHeight: 28.8,
-            color: colors.text.primary, textAlign: 'center', marginBottom: 8,
-          }}
-        >
-          {strings.planner.generatingError}
-        </Text>
-        <Text
-          style={{
-            fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20,
-            color: colors.text.secondary, textAlign: 'center', marginBottom: 32,
-          }}
-        >
-          {error}
-        </Text>
-        <Pressable
-          onPress={handleRetry}
-          accessibilityLabel={strings.planner.generatingRetry}
-          accessibilityRole="button"
-          style={({ pressed }) => ({
-            height: 56, paddingHorizontal: 32, borderRadius: 16,
-            backgroundColor: colors.brand.primary,
-            alignItems: 'center', justifyContent: 'center',
-            opacity: pressed ? 0.85 : 1,
-            marginBottom: 12, alignSelf: 'stretch',
-          })}
-        >
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: '#fff' }}>
-            {strings.planner.generatingRetry}
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={handleCancel}
-          accessibilityRole="button"
-          style={({ pressed }) => ({ padding: 12, opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.text.secondary }}>
-            {strings.common.cancel}
-          </Text>
-        </Pressable>
       </SafeAreaView>
     );
   }
@@ -141,6 +144,7 @@ export default function GeneratingScreen() {
   return (
     <SafeAreaView className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
+      <ScreenHeader title="AI planner" subtitle="Building your trip" onBack={handleCancel} backTo="/(tabs)" />
       <View className="flex-1 items-center justify-center px-8">
         {/* Pulsing circle */}
         <View

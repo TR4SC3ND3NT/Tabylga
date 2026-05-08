@@ -1,82 +1,139 @@
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { Luggage, ChevronRight, Sparkles } from 'lucide-react-native';
+import { Bot, CalendarDays, ChevronRight, Luggage, MapPin, Sparkles, Users, WalletCards } from 'lucide-react-native';
 import { formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
-import { shadows } from '../../constants/shadows';
 import { useTripStore } from '../../stores/tripStore';
 import { formatUSD } from '../../lib/format';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import { Pill } from '../../components/Pill';
 
 export default function TripsScreen() {
   const router = useRouter();
   const strings = useStrings();
   const itinerary = useTripStore(s => s.generatedItinerary);
+  const setEntryMode = useTripStore(s => s.setEntryMode);
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
 
-      <View style={{ paddingHorizontal:20, paddingTop:16, paddingBottom:12, borderBottomWidth:1, borderBottomColor:colors.border.divider }}>
-        <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:28, color:colors.text.primary }}>
-          {strings.trips.title}
-        </Text>
-      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 112 }}
+      >
+        <View style={{ paddingHorizontal: 4, marginBottom: 14 }}>
+          <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:30, color:colors.text.primary }}>
+            {strings.trips.title}
+          </Text>
+          <Text style={{ marginTop: 4, fontFamily:'Inter_500Medium', fontSize:13, lineHeight:19, color:colors.text.secondary }}>
+            Your route, AI edits and offline travel tools in one place.
+          </Text>
+        </View>
 
-      <View className="flex-1 items-center justify-center px-8">
         {itinerary ? (
-          /* Has generated itinerary */
-          <Pressable
-            onPress={() => router.push('/trip/itinerary')}
-            accessibilityRole="button"
-            style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1, width: '100%' })}
-          >
-            <Card elevated style={{ padding: 20, overflow: 'hidden' }}>
-              <View style={{ height:80, borderRadius:12, backgroundColor:'#3d6479', marginBottom:16, alignItems:'center', justifyContent:'center' }}>
-                <Sparkles size={32} color="rgba(255,255,255,0.9)" strokeWidth={1.5} />
-              </View>
-              <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:20, color:colors.text.primary, marginBottom:6 }} numberOfLines={2}>
-                {itinerary.title}
-              </Text>
-              <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, color:colors.text.secondary, marginBottom:14 }}>
-                {formatString(strings.itinerary.daysCount, { count: itinerary.days })} · {itinerary.regions.slice(0,3).join(', ')}
-              </Text>
-              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
-                <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.brand.primary }}>
-                  {formatUSD(itinerary.totalCost)}
-                </Text>
-                <View style={{ flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:14, height:36, borderRadius:10, backgroundColor:colors.brand.primary }}>
-                  <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:'#fff' }}>{strings.common.viewDetails}</Text>
-                  <ChevronRight size={16} color="#fff" strokeWidth={2} />
-                </View>
-              </View>
-            </Card>
-          </Pressable>
-        ) : (
-          /* Empty state */
           <>
-            <View style={{ width:72, height:72, borderRadius:36, backgroundColor:colors.brand.primaryLight, alignItems:'center', justifyContent:'center', marginBottom:20 }}>
-              <Luggage size={36} color={colors.brand.primary} strokeWidth={1.5} />
+            <Pressable
+              onPress={() => router.push('/trip/itinerary')}
+              accessibilityRole="button"
+              style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
+            >
+              <Card elevated style={{ overflow: 'hidden', marginBottom: 14 }}>
+                <View style={{ minHeight: 118, padding: 18, backgroundColor: colors.brand.primary, justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Pill label="Ready route" backgroundColor="rgba(255,255,255,0.16)" textColor="#fff" height={28} />
+                    <Sparkles size={24} color="#fff" strokeWidth={1.8} />
+                  </View>
+                  <Text style={{ marginTop: 18, fontFamily:'Fraunces_600SemiBold', fontSize:25, lineHeight:30, color:'#fff' }} numberOfLines={2}>
+                    {itinerary.title}
+                  </Text>
+                </View>
+                <View style={{ padding: 16 }}>
+                  <Text style={{ fontFamily:'Inter_500Medium', fontSize:13, lineHeight:19, color:colors.text.secondary }}>
+                    {formatString(strings.itinerary.daysCount, { count: itinerary.days })} · {itinerary.regions.slice(0,3).join(', ')}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                    <TripStat icon={<CalendarDays size={16} color={colors.brand.primary} />} label="Days" value={String(itinerary.days)} />
+                    <TripStat icon={<Users size={16} color={colors.brand.primary} />} label="People" value={String(itinerary.travelerCount)} />
+                    <TripStat icon={<WalletCards size={16} color={colors.brand.primary} />} label="Budget" value={formatUSD(itinerary.totalCost)} />
+                  </View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+                    {itinerary.regions.slice(0, 4).map((region) => (
+                      <Pill key={region} label={region} icon={<MapPin size={12} color={colors.brand.primary} />} backgroundColor={colors.brand.primaryLight} textColor={colors.brand.primary} height={28} fontSize={12} />
+                    ))}
+                  </View>
+                </View>
+              </Card>
+            </Pressable>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Button
+                variant="primary"
+                label={strings.common.viewDetails}
+                icon={<ChevronRight size={18} color="#fff" strokeWidth={2} />}
+                onPress={() => router.push('/trip/itinerary')}
+                style={{ flex: 1 }}
+                fontSize={13}
+              />
+              <Button
+                variant="secondary"
+                label="Ask AI"
+                icon={<Bot size={18} color={colors.brand.primary} strokeWidth={2} />}
+                onPress={() => router.push('/trip/voice')}
+                style={{ flex: 1 }}
+                fontSize={13}
+              />
             </View>
-            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.text.primary, textAlign:'center', marginBottom:10 }}>
+          </>
+        ) : (
+          <Card elevated style={{ padding: 18 }}>
+            <View style={{ width:72, height:72, borderRadius:24, backgroundColor:colors.brand.ctaLight, alignItems:'center', justifyContent:'center', marginBottom:18 }}>
+              <Luggage size={34} color={colors.brand.cta} strokeWidth={1.7} />
+            </View>
+            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:25, lineHeight:30, color:colors.text.primary, marginBottom:8 }}>
               {strings.trips.emptyTitle}
             </Text>
-            <Text style={{ fontFamily:'Inter_400Regular', fontSize:15, color:colors.text.secondary, textAlign:'center', marginBottom:28, lineHeight:22 }}>
+            <Text style={{ fontFamily:'Inter_500Medium', fontSize:14, color:colors.text.secondary, marginBottom:18, lineHeight:21 }}>
               {strings.trips.emptySubtitle}
             </Text>
-            <Button
-              variant="cta"
-              label={strings.trips.emptyButton}
-              icon={<Sparkles size={20} color="#fff" strokeWidth={2} />}
-              onPress={() => router.push('/trip/purpose')}
-            />
-          </>
+            <View style={{ gap: 10 }}>
+              <Button
+                variant="cta"
+                label="Plan with AI"
+                icon={<Sparkles size={20} color="#fff" strokeWidth={2} />}
+                onPress={() => {
+                  setEntryMode('ai');
+                  router.push('/trip/voice');
+                }}
+              />
+              <Button
+                variant="secondary"
+                label={strings.trips.emptyButton}
+                icon={<CalendarDays size={18} color={colors.brand.primary} strokeWidth={2} />}
+                onPress={() => router.push('/trip/purpose')}
+              />
+            </View>
+          </Card>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function TripStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <View style={{ flex: 1, minHeight: 76, borderRadius: 16, backgroundColor: colors.brand.primaryLight, padding: 11, justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        {icon}
+        <Text style={{ fontFamily:'Inter_700Bold', fontSize:11, color:colors.brand.primary }}>{label}</Text>
+      </View>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72} style={{ fontFamily:'Fraunces_600SemiBold', fontSize:20, color:colors.text.primary }}>
+        {value}
+      </Text>
+    </View>
   );
 }

@@ -23,6 +23,7 @@ import {
 
 import { Button } from '../../components/Button';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { shadows } from '../../constants/shadows';
 import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
 import {
@@ -206,7 +207,7 @@ export default function BluetoothPayScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
           accessibilityRole="button"
           accessibilityLabel="Back"
           style={({ pressed }) => ({

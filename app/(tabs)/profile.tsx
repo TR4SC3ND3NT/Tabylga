@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { Alert, View, Text, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -20,26 +20,41 @@ export default function ProfileScreen() {
   const strings = useStrings();
   const [showLanguages, setShowLanguages] = useState(false);
   const language = useAuthStore(s => s.language);
+  const user = useAuthStore(s => s.user);
+  const guestSessionId = useAuthStore(s => s.guestSessionId);
   const setLanguage = useAuthStore(s => s.setLanguage);
   const signOut = useAuthStore(s => s.signOut);
   const currentLanguage = LANGUAGE_OPTIONS.find((item) => item.code === language) ?? LANGUAGE_OPTIONS[0];
+  const displayName = user?.name ?? (guestSessionId ? 'Traveler' : 'Guest traveler');
+
+  function showInfo(title: string, message: string) {
+    Alert.alert(title, message);
+  }
+
+  function confirmSignOut() {
+    Alert.alert(strings.profile.signOut, 'Return to the welcome screen?', [
+      { text: strings.common.cancel, style: 'cancel' },
+      { text: strings.profile.signOut, style: 'destructive', onPress: signOut },
+    ]);
+  }
+
   const groups = [
     [
       { key: 'language',   icon: Globe,       label: strings.profileExtra.settingsLanguage,  onPress: () => setShowLanguages((value) => !value) },
       { key: 'esim',       icon: Wifi,        label: strings.profileExtra.settingsEsim, onPress: () => router.push('/tools/esim') },
-      { key: 'payment',    icon: CreditCard,  label: strings.profileExtra.settingsPayment,  onPress: () => {} },
-      { key: 'notif',      icon: Bell,        label: strings.profileExtra.settingsNotifications, onPress: () => {} },
-      { key: 'security',   icon: Shield,      label: strings.profileExtra.settingsSecurity, onPress: () => {} },
+      { key: 'payment',    icon: CreditCard,  label: strings.profileExtra.settingsPayment,  onPress: () => router.push('/(tabs)/wallet') },
+      { key: 'notif',      icon: Bell,        label: strings.profileExtra.settingsNotifications, onPress: () => showInfo(strings.profileExtra.settingsNotifications, 'Trip alerts, payment sync and booking reminders are enabled in demo mode.') },
+      { key: 'security',   icon: Shield,      label: strings.profileExtra.settingsSecurity, onPress: () => showInfo(strings.profileExtra.settingsSecurity, 'Your demo wallet uses local signing, offline receipts and device-only storage for this prototype.') },
     ],
     [
-      { key: 'ratings',    icon: Star,        label: strings.profileExtra.settingsRatings,  onPress: () => {} },
+      { key: 'ratings',    icon: Star,        label: strings.profileExtra.settingsRatings,  onPress: () => router.push({ pathname: '/rating', params: { name: 'Tabylga', region: 'Kyrgyzstan' } } as never) },
       { key: 'collab',     icon: Users,       label: strings.profileExtra.settingsCollaborative, onPress: () => router.push('/trip/group-match') },
-      { key: 'referrals',  icon: Gift,        label: strings.profileExtra.settingsReferrals, onPress: () => {} },
+      { key: 'referrals',  icon: Gift,        label: strings.profileExtra.settingsReferrals, onPress: () => showInfo(strings.profileExtra.settingsReferrals, 'Referral rewards are prepared for the product version. In this demo, invite links are not sent.') },
     ],
     [
-      { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => {} },
-      { key: 'about',      icon: Info,        label: strings.profileExtra.settingsAbout,    onPress: () => {} },
-      { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => {} },
+      { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => showInfo(strings.profileExtra.settingsHelp, 'For the demo, support is available through the app team. Real chat support can be connected to this screen later.') },
+      { key: 'about',      icon: Info,        label: strings.profileExtra.settingsAbout,    onPress: () => showInfo(strings.profileExtra.settingsAbout, 'Tabylga is a Kyrgyzstan travel companion with AI planning, routes, wallet and offline mode.') },
+      { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => showInfo(strings.profileExtra.settingsPrivacy, 'Demo data is stored locally on this device. Production privacy policy can be linked here.') },
     ],
   ];
 
@@ -61,11 +76,11 @@ export default function ProfileScreen() {
             <User size={40} color={colors.brand.primary} strokeWidth={1.5} />
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.text.primary }}>Sarah Müller</Text>
+            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.text.primary }}>{displayName}</Text>
             <CheckCircle size={18} color={colors.status.success} fill={colors.status.success} strokeWidth={0} />
           </View>
           <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, color:colors.text.secondary, marginTop:4 }}>
-            Germany 🇩🇪
+            {currentLanguage.label} {currentLanguage.flag}
           </Text>
         </View>
 
@@ -92,9 +107,10 @@ export default function ProfileScreen() {
 
         {/* Settings groups */}
         {groups.map((group, gi) => (
-          <View key={gi} style={{ marginHorizontal:16, borderRadius:16, backgroundColor:colors.surface.card, borderWidth:1, borderColor:colors.border.divider, overflow:'hidden', marginBottom:12 }}>
+          <View key={gi} style={{ marginHorizontal:16, borderRadius:18, backgroundColor:colors.surface.card, borderWidth:1, borderColor:colors.border.divider, overflow:'hidden', marginBottom:12 }}>
             {group.map((item, i) => {
               const Icon = item.icon;
+              const accent = gi === 0 ? colors.brand.primary : gi === 1 ? colors.brand.cta : colors.status.successText;
               return (
                 <Pressable
                   key={item.key}
@@ -102,14 +118,17 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                   style={({ pressed }) => ({
                     flexDirection:'row', alignItems:'center', gap:14,
-                    paddingHorizontal:16, minHeight:52,
+                    paddingHorizontal:14, minHeight:56,
                     borderBottomWidth: i < group.length - 1 ? 1 : 0,
                     borderBottomColor: colors.border.divider,
-                    opacity: pressed ? 0.7 : 1,
+                    backgroundColor: pressed ? colors.brand.primaryLight : colors.surface.card,
+                    opacity: pressed ? 0.86 : 1,
                   })}
                 >
-                  <Icon size={20} color={colors.text.secondary} strokeWidth={1.5} />
-                  <Text style={{ flex:1, fontFamily:'Inter_400Regular', fontSize:15, color:colors.text.primary }}>{item.label}</Text>
+                  <View style={{ width:36, height:36, borderRadius:13, backgroundColor: gi === 0 ? colors.brand.primaryLight : gi === 1 ? colors.brand.ctaLight : colors.status.successLight, alignItems:'center', justifyContent:'center' }}>
+                    <Icon size={19} color={accent} strokeWidth={1.7} />
+                  </View>
+                  <Text style={{ flex:1, fontFamily:'Inter_500Medium', fontSize:15, color:colors.text.primary }}>{item.label}</Text>
                   <ChevronRight size={16} color={colors.text.tertiary} strokeWidth={1.5} />
                 </Pressable>
               );
@@ -168,11 +187,11 @@ export default function ProfileScreen() {
 
         {/* Sign out */}
         <Pressable
-          onPress={() => signOut()}
+          onPress={confirmSignOut}
           accessibilityRole="button"
-          style={({ pressed }) => ({ marginHorizontal:16, height:52, borderRadius:14, alignItems:'center', justifyContent:'center', opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({ marginHorizontal:16, height:52, borderRadius:16, alignItems:'center', justifyContent:'center', backgroundColor: colors.status.errorLight, opacity: pressed ? 0.78 : 1 })}
         >
-          <Text style={{ fontFamily:'Inter_500Medium', fontSize:15, color:colors.status.error }}>{strings.profile.signOut}</Text>
+          <Text style={{ fontFamily:'Inter_700Bold', fontSize:15, color:colors.status.error }}>{strings.profile.signOut}</Text>
         </Pressable>
         <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.tertiary, textAlign:'center', marginTop:20 }}>
           {strings.profileExtra.version}

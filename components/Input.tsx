@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, ViewStyle, TextInputProps } from 'react-native';
 import { colors } from '../constants/colors';
+import { shadows } from '../constants/shadows';
 
 interface InputProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -28,15 +29,16 @@ export function Input({
       style={[
         {
           height: 56,
-          borderRadius: 12,
+          borderRadius: 16,
           paddingHorizontal: focused ? 14.5 : 16,
           borderWidth: focused ? 1.5 : 1,
           borderColor: focused ? colors.brand.primary : colors.border.input,
-          backgroundColor: '#fff',
+          backgroundColor: colors.surface.card,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
         },
+        shadows.card,
         containerStyle,
       ]}
     >

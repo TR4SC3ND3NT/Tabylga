@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ClipboardList, Map, Sparkles, X } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 import { useTripStore, type EntryMode } from '../../stores/tripStore';
 
@@ -12,14 +13,14 @@ const ENTRY_CARDS: Array<{
   title: string;
   description: string;
   icon: typeof Sparkles;
-  route: '/trip/quiz' | '/trip/ready';
+  route: '/trip/voice' | '/trip/ready';
 }> = [
   {
     mode: 'ai',
-    title: 'Plan with AI',
-    description: 'Answer a short travel quiz and get a route tailored to your budget, pace and comfort level.',
+    title: 'Plan with AI chat',
+    description: 'Write or say what you want, then adjust budget, days and route choices with AI.',
     icon: Sparkles,
-    route: '/trip/quiz',
+    route: '/trip/voice',
   },
   {
     mode: 'ready',
@@ -35,7 +36,7 @@ export default function PurposeScreen() {
   const insets = useSafeAreaInsets();
   const { entryMode, setEntryMode, resetGeneratedTrip } = useTripStore();
 
-  function start(mode: Exclude<EntryMode, null>, route: '/trip/quiz' | '/trip/ready') {
+  function start(mode: Exclude<EntryMode, null>, route: '/trip/voice' | '/trip/ready') {
     setEntryMode(mode);
     resetGeneratedTrip();
     router.push(route);
@@ -47,7 +48,7 @@ export default function PurposeScreen() {
 
       <View style={{ paddingHorizontal: 12, paddingTop: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)')}
           accessibilityLabel="Close"
           accessibilityRole="button"
           style={({ pressed }) => ({
@@ -175,7 +176,7 @@ export default function PurposeScreen() {
       >
         <Button
           label={entryMode === 'ready' ? 'Open ready trips' : 'Plan with AI'}
-          onPress={() => start(entryMode === 'ready' ? 'ready' : 'ai', entryMode === 'ready' ? '/trip/ready' : '/trip/quiz')}
+          onPress={() => start(entryMode === 'ready' ? 'ready' : 'ai', entryMode === 'ready' ? '/trip/ready' : '/trip/voice')}
         />
       </View>
     </SafeAreaView>

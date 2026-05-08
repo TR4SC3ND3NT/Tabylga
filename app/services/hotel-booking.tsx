@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarDays, CheckCircle, ChevronLeft, ChevronRight, Credit
 import { STAYS } from '../../lib/data/stays';
 import { STORAGE_KEYS } from '../../lib/data/tripPlaces';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
 import { Chip } from '../../components/Chip';
 import { PlacePhoto } from '../../components/PlacePhoto';
@@ -132,14 +133,14 @@ export default function HotelBookingScreen() {
     }
 
     Alert.alert('Booking saved', 'Mock booking saved locally.');
-    router.back();
+    goBackOrReplace(router, '/services/hotels');
   }
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.surface.primary }}>
       <StatusBar style="dark" />
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
-        <Button variant="ghost" label="" icon={<ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />} onPress={() => router.back()} style={{ width: 44, borderRadius: 12 }} height={44} />
+        <Button variant="ghost" label="" icon={<ArrowLeft size={22} color={colors.text.primary} strokeWidth={1.5} />} onPress={() => goBackOrReplace(router, '/services/hotels')} style={{ width: 44, borderRadius: 12 }} height={44} />
         <View style={{ flex: 1, marginRight: 44 }}>
           <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text.primary, textAlign: 'center' }}>Book stay</Text>
           <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, textAlign: 'center', marginTop: 2 }}>

@@ -1,9 +1,40 @@
 import { Tabs } from 'expo-router';
+import { View } from 'react-native';
 import { House, Map, Route, CreditCard, User } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { shadows } from '../../constants/shadows';
 import { useStrings } from '../../lib/i18n';
 
 const TAB_ICON_SIZE = 22;
+
+function TabIcon({
+  icon: Icon,
+  color,
+  focused,
+}: {
+  icon: typeof House;
+  color: string;
+  focused: boolean;
+}) {
+  return (
+    <View
+      style={{
+        width: 44,
+        height: 34,
+        borderRadius: 15,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: focused ? colors.brand.primaryLight : 'transparent',
+      }}
+    >
+      <Icon
+        size={TAB_ICON_SIZE}
+        color={focused ? colors.brand.primary : color}
+        strokeWidth={focused ? 2 : 1.5}
+      />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const strings = useStrings();
@@ -15,16 +46,17 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.brand.primary,
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
-          height: 80,
-          paddingBottom: 24,
-          paddingTop: 10,
-          borderTopColor: colors.border.divider,
+          height: 82,
+          paddingBottom: 22,
+          paddingTop: 8,
+          borderTopColor: 'transparent',
           backgroundColor: colors.surface.card,
+          ...shadows.modal,
         },
         tabBarLabelStyle: {
           fontFamily: 'Inter_500Medium',
           fontSize: 11,
-          letterSpacing: 0.2,
+          letterSpacing: 0,
         },
       }}
     >
@@ -32,8 +64,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: strings.tabs.home,
-          tabBarIcon: ({ color }) => (
-            <House size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={House} color={color} focused={focused} />
           ),
         }}
       />
@@ -41,8 +73,8 @@ export default function TabsLayout() {
         name="map"
         options={{
           title: strings.tabs.map,
-          tabBarIcon: ({ color }) => (
-            <Map size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={Map} color={color} focused={focused} />
           ),
         }}
       />
@@ -50,8 +82,8 @@ export default function TabsLayout() {
         name="trips"
         options={{
           title: strings.tabs.trips,
-          tabBarIcon: ({ color }) => (
-            <Route size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={Route} color={color} focused={focused} />
           ),
         }}
       />
@@ -59,8 +91,8 @@ export default function TabsLayout() {
         name="wallet"
         options={{
           title: strings.tabs.wallet,
-          tabBarIcon: ({ color }) => (
-            <CreditCard size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={CreditCard} color={color} focused={focused} />
           ),
         }}
       />
@@ -68,8 +100,8 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: strings.tabs.profile,
-          tabBarIcon: ({ color }) => (
-            <User size={TAB_ICON_SIZE} color={color} strokeWidth={1.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon icon={User} color={color} focused={focused} />
           ),
         }}
       />

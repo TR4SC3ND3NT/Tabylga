@@ -17,6 +17,7 @@ import {
 import { Button } from '../../components/Button';
 import { colors } from '../../constants/colors';
 import { shadows } from '../../constants/shadows';
+import { goBackOrReplace } from '../../lib/navigation';
 import type { PaymentMerchant } from '../../lib/data/paymentMerchants';
 import {
   extractOfflinePayload,
@@ -221,7 +222,7 @@ export default function MerchantDashboard() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
           accessibilityLabel="Back"
           accessibilityRole="button"
           style={({ pressed }) => ({

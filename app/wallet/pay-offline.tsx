@@ -22,6 +22,7 @@ import {
 } from 'lucide-react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -189,7 +190,7 @@ export default function PayOfflineScreen() {
             params: { tokenId: resultToken.id },
           } as never)
         }
-        onBack={() => router.back()}
+        onBack={() => goBackOrReplace(router, '/(tabs)/wallet')}
       />
     );
   }
@@ -211,7 +212,7 @@ export default function PayOfflineScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
           accessibilityLabel="Back"
           accessibilityRole="button"
           style={({ pressed }) => ({

@@ -19,6 +19,7 @@ import {
   Mountain,
 } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -233,7 +234,7 @@ export default function ActivateOfflineScreen() {
             <Button
               variant="primary"
               label={PAYMENT_STRINGS.backToWallet}
-              onPress={() => router.back()}
+              onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
               accessibilityLabel={PAYMENT_STRINGS.backToWallet}
             />
             <Button
@@ -267,7 +268,7 @@ export default function ActivateOfflineScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
           accessibilityLabel="Back"
           accessibilityRole="button"
           style={({ pressed }) => ({

@@ -7,6 +7,7 @@ import { X, Star, Plus } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { useStrings } from '../lib/i18n';
 import { Button } from '../components/Button';
+import { goBackOrReplace } from '../lib/navigation';
 
 export default function RatingScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function RatingScreen() {
     value: 0,
   });
   const [reviewText, setReviewText] = useState('');
+  const close = () => goBackOrReplace(router, '/(tabs)');
 
   const renderStars = (current: number, onSelect?: (r: number) => void, size = 42) => {
     return (
@@ -59,7 +61,7 @@ export default function RatingScreen() {
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
           <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border.divider, marginBottom: 8 }} />
           <View style={{ width: '100%', alignItems: 'flex-end', marginTop: -12 }}>
-            <Pressable onPress={() => router.back()} style={{ padding: 4 }}>
+            <Pressable onPress={close} style={{ padding: 4 }}>
               <X size={22} color={colors.text.tertiary} />
             </Pressable>
           </View>
@@ -120,12 +122,12 @@ export default function RatingScreen() {
           <Button
             variant="primary"
             label={strings.rating.submit}
-            onPress={() => router.back()}
+            onPress={close}
           />
           <Button
             variant="secondary"
             label={strings.rating.maybeLater}
-            onPress={() => router.back()}
+            onPress={close}
             style={{ backgroundColor: 'transparent', borderColor: 'transparent' }}
           />
         </View>

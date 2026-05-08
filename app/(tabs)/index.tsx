@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
+import { shadows } from '../../constants/shadows';
 import { useAuthStore } from '../../stores/authStore';
 import { useTravelPreferencesStore } from '../../stores/travelPreferencesStore';
 import { useTripStore } from '../../stores/tripStore';
@@ -276,6 +277,17 @@ export default function HomeScreen() {
               accessibilityLabel={strings.home.voiceSearch}
               accessibilityRole="button"
               onPress={() => router.push("/trip/voice")}
+              hitSlop={8}
+              style={({ pressed }) => ({
+                width: 36,
+                height: 36,
+                borderRadius: 13,
+                backgroundColor: colors.brand.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: pressed ? 0.76 : 1,
+                transform: [{ scale: pressed ? 0.96 : 1 }],
+              })}
             >
               <Mic size={19} color={colors.brand.primary} strokeWidth={1.8} />
             </Pressable>
@@ -306,6 +318,8 @@ export default function HomeScreen() {
                     padding: 13,
                     justifyContent: "space-between",
                     opacity: pressed ? 0.85 : 1,
+                    transform: [{ scale: pressed ? 0.985 : 1 }],
+                    ...shadows.cardElevated,
                   })}
                 >
                   <Icon size={22} color="#fff" strokeWidth={1.8} />
@@ -349,7 +363,7 @@ export default function HomeScreen() {
               onPress={async () => {
                 await startGuestSession();
                 setEntryMode('ai');
-                router.push('/trip/quiz');
+                router.push('/trip/voice');
               }}
               fontSize={13}
             />

@@ -1,14 +1,15 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, Switch, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, router, useFocusEffect } from 'expo-router';
-import { WifiOff, CheckCircle2, Clock, AlertTriangle, ArrowRight, Wifi, Bed, Car, Utensils, Sparkles, MapPin, Phone, Info, Search, WalletCards, Zap, CreditCard } from 'lucide-react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { WifiOff, CheckCircle2, Clock, AlertTriangle, ArrowRight, Bed, Car, Utensils, Sparkles, MapPin, Phone, Info, Zap, CreditCard } from 'lucide-react-native';
 import { useTripStore } from '../../stores/tripStore';
 import { getOfflinePack, type OfflinePack, getOfflineMode, setOfflineMode, type OfflinePackDay, type OfflinePackItem, type EmergencyContact, type PhrasebookItem, type OfflinePaymentSnapshot, saveOfflinePackFromCurrentTrip } from '../../lib/offline/offlinePackService';
 import { colors } from '../../constants/colors';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { useWalletStore } from '../../stores/walletStore';
 
 export default function OfflinePackScreen() {
@@ -54,7 +55,7 @@ export default function OfflinePackScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <Stack.Screen options={{ title: 'Offline Pack', headerBackTitle: 'Back' }} />
+        <ScreenHeader title="Offline Pack" subtitle="Saved trip essentials" backTo="/(tabs)" />
         <View style={styles.centered}>
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
@@ -65,7 +66,7 @@ export default function OfflinePackScreen() {
   if (!pack) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <Stack.Screen options={{ title: 'Offline Pack', headerBackTitle: 'Back' }} />
+        <ScreenHeader title="Offline Pack" subtitle="Saved trip essentials" backTo="/(tabs)" />
         <ScrollView contentContainerStyle={styles.emptyContainer}>
           <View style={styles.iconCircle}>
             <WifiOff size={32} color={colors.brand.primary} />
@@ -106,15 +107,12 @@ export default function OfflinePackScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <Stack.Screen options={{ 
-        title: getTitle(), 
-        headerBackTitle: 'Back',
-        headerLeft: activeSection !== 'overview' ? () => (
-          <Pressable onPress={() => setActiveSection('overview')} style={{ marginLeft: 8 }}>
-            <Text style={{ color: colors.brand.primary, fontFamily: 'Inter_600SemiBold' }}>Close</Text>
-          </Pressable>
-        ) : undefined
-      }} />
+      <ScreenHeader
+        title={getTitle()}
+        subtitle={activeSection === 'overview' ? 'Saved trip essentials' : 'Offline-ready details'}
+        onBack={activeSection !== 'overview' ? () => setActiveSection('overview') : undefined}
+        backTo="/(tabs)"
+      />
 
       {isOfflineMode && (
         <View style={styles.offlineBanner}>
@@ -281,18 +279,30 @@ export default function OfflinePackScreen() {
 }
 
 function SectionButton({ title, onPress, disabled }: { title: string; onPress?: () => void; disabled?: boolean }) {
+  const [number, ...labelParts] = title.split('. ');
+  const label = labelParts.length > 0 ? labelParts.join('. ') : title;
+
   return (
     <Pressable 
       onPress={onPress} 
       disabled={disabled}
       style={({ pressed }) => [
         styles.sectionRow,
-        pressed && !disabled && { opacity: 0.7, backgroundColor: colors.surface.canvas },
+        pressed && !disabled && { opacity: 0.78, backgroundColor: colors.brand.primaryLight },
         disabled && { opacity: 0.5 }
       ]}
     >
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {!disabled && <ArrowRight size={16} color={colors.text.tertiary} />}
+      <View style={[styles.sectionBadge, disabled && styles.sectionBadgeDisabled]}>
+        <Text style={[styles.sectionBadgeText, disabled && styles.sectionBadgeTextDisabled]}>
+          {labelParts.length > 0 ? number : '*'}
+        </Text>
+      </View>
+      <Text style={styles.sectionTitle}>{label}</Text>
+      {!disabled && (
+        <View style={styles.sectionArrow}>
+          <ArrowRight size={16} color={colors.brand.primary} strokeWidth={2} />
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -706,19 +716,49 @@ const styles = StyleSheet.create({
   },
   sectionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    gap: 12,
+    minHeight: 58,
+    paddingVertical: 12,
+    paddingLeft: 12,
+    paddingRight: 14,
     backgroundColor: colors.surface.card,
-    borderRadius: 12,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: colors.border.divider,
   },
+  sectionBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: colors.brand.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionBadgeDisabled: {
+    backgroundColor: colors.surface.canvas,
+  },
+  sectionBadgeText: {
+    fontFamily: 'Inter_700Bold',
+    fontSize: 12,
+    color: '#fff',
+  },
+  sectionBadgeTextDisabled: {
+    color: colors.text.tertiary,
+  },
   sectionTitle: {
+    flex: 1,
     fontFamily: 'Inter_500Medium',
     fontSize: 15,
     color: colors.text.primary,
+  },
+  sectionArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    backgroundColor: colors.brand.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itineraryContainer: {
     gap: 24,

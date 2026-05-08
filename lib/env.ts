@@ -9,7 +9,7 @@ function fromExpoExtra(key: string): string {
 
 export const env = {
   gemini: {
-    apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || fromExpoExtra('geminiApiKey'),
+    proxyUrl: process.env.EXPO_PUBLIC_GEMINI_PROXY_URL || fromExpoExtra('geminiProxyUrl'),
   },
   googleMaps: {
     apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || fromExpoExtra('googleMapsApiKey'),
@@ -19,7 +19,6 @@ export const env = {
   },
   unsplash: {
     accessKey: process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY || fromExpoExtra('unsplashAccessKey'),
-    secretKey: process.env.EXPO_PUBLIC_UNSPLASH_SECRET_KEY || fromExpoExtra('unsplashSecretKey'),
   },
   overpass: {
     url: process.env.EXPO_PUBLIC_OVERPASS_URL || fromExpoExtra('overpassUrl') || 'https://overpass-api.de/api/interpreter',

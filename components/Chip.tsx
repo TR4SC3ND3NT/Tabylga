@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, ViewStyle } from 'react-native';
 import { colors } from '../constants/colors';
+import { shadows } from '../constants/shadows';
 
 interface ChipProps {
   label: string;
@@ -36,21 +37,24 @@ export function Chip({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          borderWidth: selected ? 0 : 1,
-          borderColor: colors.border.input,
-          backgroundColor: selected ? colors.brand.primary : '#fff',
+          borderWidth: 1,
+          borderColor: selected ? colors.brand.primary : colors.border.divider,
+          backgroundColor: selected ? colors.brand.primary : colors.surface.card,
           opacity: pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
+        !selected && shadows.card,
         style,
       ])}
     >
       {icon}
       <Text
         style={{
-          fontFamily: 'Inter_500Medium',
+          fontFamily: selected ? 'Inter_700Bold' : 'Inter_500Medium',
           fontSize,
           lineHeight: fontSize * 1.1,
-          color: selected ? '#fff' : colors.text.secondary,
+          letterSpacing: 0,
+          color: selected ? '#fff' : colors.text.primary,
         }}
       >
         {label}

@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Bluetooth, Check, QrCode, ShieldCheck, Star, Store } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { goBackOrReplace } from '../../lib/navigation';
 import { shadows } from '../../constants/shadows';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -198,7 +199,7 @@ export default function PayOnlineQRScreen() {
           <Button
             variant="primary"
             label={PAYMENT_STRINGS.backToWallet}
-            onPress={() => router.back()}
+            onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
             accessibilityLabel={PAYMENT_STRINGS.backToWallet}
           />
         </ScrollView>
@@ -223,7 +224,7 @@ export default function PayOnlineQRScreen() {
         }}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace(router, '/(tabs)/wallet')}
           accessibilityLabel="Back"
           accessibilityRole="button"
           style={({ pressed }) => ({

@@ -4,7 +4,7 @@ import { Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, BedDouble, Car, Download, RefreshCw, Route, Sparkles, Undo2, Utensils, WalletCards, WifiOff, Zap } from 'lucide-react-native';
+import { ArrowLeft, BedDouble, Bot, Car, Download, RefreshCw, Route, Sparkles, Undo2, Utensils, WalletCards, WifiOff, Zap } from 'lucide-react-native';
 import { colors } from '../../constants/colors';
 import { formatUSD } from '../../lib/format';
 import { Button } from '../../components/Button';
@@ -164,6 +164,7 @@ export default function ItineraryScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+            <SmallAction label="Ask AI" icon={<Bot size={15} color={colors.brand.primary} strokeWidth={2} />} onPress={() => router.push('/trip/voice')} />
             <SmallAction label="Make cheaper" icon={<WalletCards size={15} color={colors.brand.primary} strokeWidth={2} />} onPress={makeCheaper} />
             <SmallAction label="More active" icon={<Zap size={15} color={colors.brand.primary} strokeWidth={2} />} onPress={makeMoreActive} />
             <SmallAction label="More comfortable" icon={<BedDouble size={15} color={colors.brand.primary} strokeWidth={2} />} onPress={makeMoreComfortable} />

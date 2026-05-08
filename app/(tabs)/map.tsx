@@ -537,14 +537,19 @@ export default function MapScreen() {
           )}
         </View>
         <Pressable
-          onPress={() => setSelectedPlace(places[0] ?? null)}
-          accessibilityLabel={strings.map.filterAll}
+          onPress={() => {
+            setActiveFilter(filters[0].key);
+            setQuery('');
+            setSelectedPlace(places[0] ?? null);
+          }}
+          accessibilityLabel="Reset filters"
           accessibilityRole="button"
           style={({ pressed }) => ({
             width: 52, height: 52, borderRadius: 14,
             backgroundColor: colors.surface.card, alignItems: 'center', justifyContent: 'center',
             shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
             opacity: pressed ? 0.8 : 1,
+            transform: [{ scale: pressed ? 0.96 : 1 }],
           })}
         >
           <SlidersHorizontal size={20} color={colors.text.primary} strokeWidth={1.5} />

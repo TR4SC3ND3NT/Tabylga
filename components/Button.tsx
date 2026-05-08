@@ -23,6 +23,7 @@ const VARIANT_STYLES: Record<ButtonVariant, { container: ViewStyle; text: TextSt
       backgroundColor: colors.brand.primary,
     },
     text: { color: '#fff' },
+    shadow: shadows.cardElevated,
   },
   cta: {
     container: {
@@ -35,9 +36,10 @@ const VARIANT_STYLES: Record<ButtonVariant, { container: ViewStyle; text: TextSt
     container: {
       backgroundColor: '#fff',
       borderWidth: 1.5,
-      borderColor: colors.brand.primary,
+      borderColor: colors.brand.primaryLight,
     },
     text: { color: colors.brand.primary },
+    shadow: shadows.card,
   },
   ghost: {
     container: {
@@ -70,14 +72,16 @@ export function Button({
       accessibilityRole="button"
       style={({ pressed }) => ([
         {
-          width: '100%',
+          alignSelf: 'stretch',
           height: h,
-          borderRadius: 16,
+          borderRadius: 18,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
           gap: 8,
+          paddingHorizontal: label ? 16 : 0,
           opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
+          transform: [{ scale: pressed && !disabled ? 0.985 : 1 }],
         },
         vs.container,
         vs.shadow,
@@ -86,6 +90,9 @@ export function Button({
     >
       {icon}
       <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.82}
         style={[
           {
             fontFamily: 'Inter_600SemiBold',
