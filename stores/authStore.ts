@@ -27,6 +27,7 @@ interface AuthState {
 interface AuthActions {
   setLanguage: (lang: Language) => void;
   startPhoneAuth: (phone: string) => Promise<void>;
+  startDemoSocialAuth: (provider: 'google' | 'apple') => Promise<void>;
   verifyOtp: (code: string) => Promise<void>;
   signOut: () => Promise<void>;
   startGuestSession: () => Promise<string>;
@@ -71,6 +72,44 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
     set({ loading: true, error: null, _pendingPhone: phone });
     await new Promise((resolve) => setTimeout(resolve, 1500));
     set({ loading: false });
+  },
+
+  startDemoSocialAuth: async (provider) => {
+    const { language } = get();
+    set({ loading: true, error: null });
+    try {
+      const db = await getDb();
+      const id = generateId();
+      const providerName = provider === 'google' ? 'Google' : 'Apple';
+      const phone = `${provider}_${Date.now()}@tabylga.local`;
+      const user: AuthUser = {
+        id,
+        phone,
+        name: `${providerName} traveler`,
+        language,
+      };
+
+      await db.runAsync(
+        'INSERT INTO users (id, phone, name, language, created_at) VALUES (?, ?, ?, ?, ?)',
+        id,
+        phone,
+        user.name,
+        language,
+        Date.now(),
+      );
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ userId: user.id, language: user.language })
+      );
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.session,
+        JSON.stringify({ id: user.id, type: 'user', createdAt: Date.now() })
+      );
+
+      set({ user, isAuthenticated: true, guestSessionId: null, language: user.language, loading: false, _pendingPhone: null });
+    } catch {
+      set({ error: getStrings(language).auth.genericError, loading: false });
+    }
   },
 
   verifyOtp: async (code) => {

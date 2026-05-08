@@ -19,6 +19,7 @@ import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
+import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
 
 function formatPhoneDisplay(raw: string): string {
   const d = raw.replace(/\D/g, '').slice(0, 10);
@@ -32,7 +33,7 @@ export default function PhoneScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const strings = useStrings();
-  const { startPhoneAuth, loading, error } = useAuthStore();
+  const { startPhoneAuth, startDemoSocialAuth, loading, error } = useAuthStore();
 
   const [phoneDigits, setPhoneDigits] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -66,16 +67,25 @@ export default function PhoneScreen() {
     router.push('/auth/otp');
   }
 
+  async function handleSocial(provider: 'google' | 'apple') {
+    if (loading) return;
+    await startDemoSocialAuth(provider);
+    const { isAuthenticated } = useAuthStore.getState();
+    if (isAuthenticated) router.replace('/(tabs)');
+  }
+
   function handleChangeText(text: string) {
     const digits = text.replace(/\D/g, '').slice(0, 10);
     setPhoneDigits(digits);
   }
 
   return (
-    <SafeAreaView
-      edges={['top']}
-      className="flex-1 bg-surface-primary"
-    >
+    <View style={{ flex: 1, backgroundColor: colors.surface.primary }}>
+      <KyrgyzBackdrop height={260} />
+      <SafeAreaView
+        edges={['top']}
+        style={{ flex: 1 }}
+      >
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -111,7 +121,7 @@ export default function PhoneScreen() {
                 fontFamily: 'Fraunces_600SemiBold',
                 fontSize: 28,
                 lineHeight: 33.6,
-                letterSpacing: -0.005 * 28,
+                letterSpacing: 0,
                 color: colors.text.primary,
                 marginBottom: 10,
               }}
@@ -205,7 +215,7 @@ export default function PhoneScreen() {
                   style={{
                     fontFamily: 'Inter_500Medium',
                     fontSize: 16,
-                    letterSpacing: 0.02 * 16,
+                    letterSpacing: 0,
                     color: colors.text.primary,
                     paddingTop: phoneDigits.length > 0 ? 8 : 0,
                   }}
@@ -268,7 +278,7 @@ export default function PhoneScreen() {
                   fontFamily: 'Inter_500Medium',
                   fontSize: 12,
                   color: colors.text.tertiary,
-                  letterSpacing: 0.12 * 12,
+                  letterSpacing: 0,
                   textTransform: 'uppercase',
                 }}
               >
@@ -279,6 +289,8 @@ export default function PhoneScreen() {
 
             {/* Google */}
             <Pressable
+              onPress={() => handleSocial('google')}
+              disabled={loading}
               accessibilityLabel={strings.auth.continueGoogle}
               accessibilityRole="button"
               style={({ pressed }) => ({
@@ -292,7 +304,7 @@ export default function PhoneScreen() {
                 justifyContent: 'center',
                 gap: 10,
                 marginBottom: 12,
-                opacity: pressed ? 0.7 : 1,
+                opacity: loading ? 0.45 : pressed ? 0.7 : 1,
               })}
             >
               <View
@@ -324,6 +336,8 @@ export default function PhoneScreen() {
 
             {/* Apple */}
             <Pressable
+              onPress={() => handleSocial('apple')}
+              disabled={loading}
               accessibilityLabel={strings.auth.continueApple}
               accessibilityRole="button"
               style={({ pressed }) => ({
@@ -334,10 +348,11 @@ export default function PhoneScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 10,
-                opacity: pressed ? 0.7 : 1,
+                opacity: loading ? 0.45 : pressed ? 0.7 : 1,
               })}
             >
               <Text style={{ fontSize: 18, color: '#fff' }}>
+                A
               </Text>
               <Text
                 style={{
@@ -379,6 +394,7 @@ export default function PhoneScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

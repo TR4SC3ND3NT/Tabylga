@@ -51,21 +51,21 @@ export const lineHeight = {
 
 export const letterSpacing = {
   /** Editorial display headings */
-  tighter: -0.02,
+  tighter: 0,
   /** Screen h1 (editorial) */
-  tight: -0.005,
+  tight: 0,
   /** Section heading (editorial) */
-  snug: -0.01,
+  snug: 0,
   /** Default — no extra tracking */
   normal: 0,
   /** Badges, pills */
-  wide: 0.02,
+  wide: 0,
   /** Screen idx labels */
-  wider: 0.08,
+  wider: 0,
   /** Eyebrow labels, all-caps */
-  widest: 0.12,
+  widest: 0,
   /** Monospace micro labels */
-  mono: 0.04,
+  mono: 0,
 } as const;
 
 // ── Predefined text style objects ────────────────────────────

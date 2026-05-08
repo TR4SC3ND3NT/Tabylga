@@ -619,7 +619,7 @@ function QrReadyView({
             style={{
               fontFamily: 'Inter_500Medium',
               fontSize: 12,
-              letterSpacing: 0.12 * 12,
+              letterSpacing: 0,
               textTransform: 'uppercase',
               color: colors.text.tertiary,
               marginBottom: 4,
@@ -689,7 +689,7 @@ function QrReadyView({
               style={{
                 fontFamily: 'Inter_700Bold',
                 fontSize: 13,
-                letterSpacing: 0.08 * 13,
+                letterSpacing: 0,
                 color: colors.brand.primary,
                 textTransform: 'uppercase',
               }}
@@ -826,7 +826,7 @@ function QrReadyView({
               fontFamily: 'Inter_600SemiBold',
               fontSize: 11,
               color: colors.text.tertiary,
-              letterSpacing: 0.08 * 11,
+              letterSpacing: 0,
               textTransform: 'uppercase',
               marginBottom: 6,
             }}
@@ -886,7 +886,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontSize: 13,
         color: colors.text.secondary,
         marginBottom: 10,
-        letterSpacing: 0.08 * 13,
+        letterSpacing: 0,
         textTransform: 'uppercase',
       }}
     >
@@ -928,7 +928,7 @@ function BalanceMini({
           fontFamily: 'Inter_500Medium',
           fontSize: 11,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 11,
+          letterSpacing: 0,
           textTransform: 'uppercase',
           marginBottom: 4,
         }}
@@ -980,7 +980,7 @@ function DetailRow({
           fontFamily: 'Inter_500Medium',
           fontSize: 12,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 12,
+          letterSpacing: 0,
           textTransform: 'uppercase',
         }}
       >

@@ -1,69 +1,79 @@
-// Design tokens — extracted from Tabylga Parts 1-2.html :root + Design System Summary
-// Never add values here that aren't in the design file.
+// Design tokens for the mobile-first Tabylga interface.
 
 export const colors = {
   // ── Surfaces ──────────────────────────────────────────────
   surface: {
-    /** App background — warm off-white (--surface-primary) */
-    primary: '#F7F6F2',
+    /** App background */
+    primary: '#F4F7FB',
     /** Cards, inputs, bottom sheets (--surface-card) */
     card: '#FFFFFF',
     /** Dark surfaces — splash, AI screen bg (--surface-inverse) */
-    inverse: '#1A1A1A',
+    inverse: '#111827',
     /** Canvas / page background (design tool only) */
-    canvas: '#EFEFEA',
+    canvas: '#E9F3FF',
+    /** Soft elevated surface */
+    raised: '#FDF7EF',
   },
 
   // ── Brand ─────────────────────────────────────────────────
   brand: {
-    /** Deep teal — primary actions, nav active, links (--primary: #1E4D6B) */
-    primary: '#1E4D6B',
+    /** Electric lake blue — primary actions, nav active, links */
+    primary: '#1368F2',
     /** Pressed state for primary (--primary-hover) */
-    primaryHover: '#163A52',
+    primaryHover: '#0A4FCC',
     /** Tinted background for primary-tinted surfaces (--primary-light) */
-    primaryLight: '#E8EEF2',
+    primaryLight: '#E7F0FF',
 
-    /** Terracotta — CTA buttons, floating actions (--cta) */
-    cta: '#C65D3A',
+    /** Raspberry coral — CTA buttons, floating actions (--cta) */
+    cta: '#FF4F7B',
     /** Pressed state for CTA */
-    ctaHover: '#A84A2B',
+    ctaHover: '#D93661',
     /** Tinted background for CTA-tinted surfaces */
-    ctaLight: '#FBEEE8',
+    ctaLight: '#FFE6EE',
+  },
+
+  // ── Expressive accents ───────────────────────────────────
+  accent: {
+    aqua: '#18C8B8',
+    violet: '#775CFF',
+    lemon: '#FFD166',
+    mint: '#35C982',
+    peach: '#FF9A5A',
   },
 
   // ── Semantic status ───────────────────────────────────────
   status: {
     /** Green — online badges, verified, credit amounts */
-    success: '#7A9B6E',
+    success: '#24B26B',
     /** Forest green — success text color on light backgrounds */
-    successText: '#4a6b40',
-    successLight: '#EDF2EA',
+    successText: '#087846',
+    successLight: '#E0F8EC',
 
     /** Amber — stars, offline, insight bubbles (--warning) */
-    warning: '#D4A574',
+    warning: '#FFB82E',
     /** Warning text color for amber-tinted backgrounds */
-    warningText: '#8a6530',
+    warningText: '#8A5900',
     /** Warning text on dark amber labels */
-    warningDark: '#5a3a00',
-    warningLight: '#FAF4EA',
+    warningDark: '#5A3900',
+    warningLight: '#FFF2CC',
 
     /** Rust — debit, alerts, unavailable, end call (--error) */
-    error: '#B84A3E',
+    error: '#E5485D',
     /** Error text on light error backgrounds */
-    errorText: '#8a3a30',
-    errorLight: '#F8EAE8',
+    errorText: '#9E2334',
+    errorLight: '#FFE2E8',
   },
 
   // ── Text ──────────────────────────────────────────────────
   text: {
     /** Warm black — headings, body copy, default (--text-primary: #2A2922) */
-    primary: '#2A2922',
+    primary: '#142033',
     /** Secondary labels, descriptions (--text-secondary: #7A7A6E) */
-    secondary: '#7A7A6E',
+    secondary: '#607089',
     /** Placeholders, hints, disabled (--text-tertiary: #9B9B95) */
-    tertiary: '#9B9B95',
+    tertiary: '#98A6B8',
     /** Text on dark/inverse surfaces */
-    onDark: '#FAFAF7',
+    onDark: '#F9FBFF',
     /** Text on brand primary fill */
     onPrimary: '#FFFFFF',
   },
@@ -71,11 +81,11 @@ export const colors = {
   // ── Borders & Dividers ───────────────────────────────────
   border: {
     /** Horizontal rules, list separators (--divider) */
-    divider: '#E8E8E3',
+    divider: '#DCE6F2',
     /** Input default border (--input-border) */
-    input: '#D4D4CF',
+    input: '#C8D6E7',
     /** Input focused border matches brand.primary */
-    inputFocused: '#1E4D6B',
+    inputFocused: '#1368F2',
   },
 } as const;
 

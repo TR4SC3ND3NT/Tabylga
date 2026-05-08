@@ -232,7 +232,7 @@ function StayDetails({
               </Text>
             ) : (
               <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 4 }}>
-                Good standalone stay option. You can select it for browsing or book a mock room without creating a full trip.
+                Good standalone stay option. You can select it for browsing or book a room without creating a full trip.
               </Text>
             )}
             <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text.primary, marginTop: 14 }}>Amenities</Text>
@@ -254,11 +254,11 @@ function StayDetails({
             <View style={{ marginTop: 14, padding: 12, borderRadius: 14, backgroundColor: colors.surface.primary }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Cancellation policy</Text>
               <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 4 }}>
-                Mock policy: free cancellation until 24 hours before check-in. Partner rules may differ in production.
+                Free cancellation until 24 hours before check-in. Partner rules may differ by stay.
               </Text>
             </View>
             <View style={{ marginTop: 12, padding: 12, borderRadius: 14, backgroundColor: colors.status.warningLight }}>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Business model demo</Text>
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Partner payout preview</Text>
               <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 4 }}>
                 Gross {formatUSD(gross)} · Commission {(stay.commissionRate * 100).toFixed(0)}%: {formatUSD(commission)} · Partner payout {formatUSD(payout)}
               </Text>

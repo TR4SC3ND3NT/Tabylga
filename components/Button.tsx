@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, Text, View, ViewStyle, TextStyle } from 'react-native';
 import { colors } from '../constants/colors';
 import { shadows } from '../constants/shadows';
 
@@ -21,6 +21,8 @@ const VARIANT_STYLES: Record<ButtonVariant, { container: ViewStyle; text: TextSt
   primary: {
     container: {
       backgroundColor: colors.brand.primary,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.26)',
     },
     text: { color: '#fff' },
     shadow: shadows.cardElevated,
@@ -28,22 +30,26 @@ const VARIANT_STYLES: Record<ButtonVariant, { container: ViewStyle; text: TextSt
   cta: {
     container: {
       backgroundColor: colors.brand.cta,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.28)',
     },
     text: { color: '#fff' },
     shadow: shadows.floating,
   },
   secondary: {
     container: {
-      backgroundColor: '#fff',
+      backgroundColor: colors.surface.card,
       borderWidth: 1.5,
-      borderColor: colors.brand.primaryLight,
+      borderColor: 'rgba(19,104,242,0.18)',
     },
     text: { color: colors.brand.primary },
     shadow: shadows.card,
   },
   ghost: {
     container: {
-      backgroundColor: 'transparent',
+      backgroundColor: colors.brand.primaryLight,
+      borderWidth: 1,
+      borderColor: 'rgba(19,104,242,0.12)',
     },
     text: { color: colors.brand.primary },
   },
@@ -78,10 +84,11 @@ export function Button({
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
-          gap: 8,
-          paddingHorizontal: label ? 16 : 0,
+          gap: 9,
+          paddingHorizontal: label ? 18 : 0,
           opacity: disabled ? 0.4 : pressed ? 0.85 : 1,
-          transform: [{ scale: pressed && !disabled ? 0.985 : 1 }],
+          transform: [{ scale: pressed && !disabled ? 0.965 : 1 }],
+          overflow: 'hidden',
         },
         vs.container,
         vs.shadow,
@@ -89,6 +96,35 @@ export function Button({
       ])}
     >
       {icon}
+      {(variant === 'primary' || variant === 'cta') && label ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            right: -32,
+            top: 4,
+            width: 118,
+            height: 34,
+            borderRadius: 17,
+            backgroundColor: 'rgba(255,255,255,0.17)',
+            transform: [{ rotate: '-18deg' }],
+          }}
+        />
+      ) : null}
+      {(variant === 'primary' || variant === 'cta') && label ? (
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: 10,
+            bottom: 7,
+            width: 34,
+            height: 5,
+            borderRadius: 999,
+            backgroundColor: 'rgba(255,255,255,0.22)',
+          }}
+        />
+      ) : null}
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit

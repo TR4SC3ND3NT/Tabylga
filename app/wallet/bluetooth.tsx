@@ -42,8 +42,8 @@ const PRESET_AMOUNTS = [500, 1000, 2000];
 const FLOW_STEPS = [
   'Searching nearby merchants...',
   'Merchant found',
-  'Preparing KICB Demo signed token...',
-  'Sending token via Bluetooth demo...',
+  'Preparing signed offline token...',
+  'Sending token to nearby device...',
   'Merchant verifies signature...',
   'Merchant accepted payment',
   'Status: Pending sync',
@@ -117,8 +117,8 @@ export default function BluetoothPayScreen() {
           ),
       );
     } catch (err) {
-      console.warn('[bluetooth-demo] failed to load payment state', err);
-      Alert.alert('Bluetooth payment demo', 'Failed to load offline tokens.');
+      console.warn('[bluetooth] failed to load payment state', err);
+      Alert.alert('Nearby device payment', 'Failed to load offline tokens.');
     } finally {
       setLoading(false);
     }
@@ -173,8 +173,8 @@ export default function BluetoothPayScreen() {
       await refresh();
     } catch (err) {
       Alert.alert(
-        'Bluetooth demo failed',
-        err instanceof Error ? err.message : 'Could not complete the demo transfer.',
+        'Nearby device payment failed',
+        err instanceof Error ? err.message : 'Could not complete the transfer.',
       );
     } finally {
       setSending(false);
@@ -230,7 +230,7 @@ export default function BluetoothPayScreen() {
             marginRight: 44,
           }}
         >
-          Bluetooth payment demo
+          Nearby device payment
         </Text>
       </View>
 
@@ -263,7 +263,7 @@ export default function BluetoothPayScreen() {
               marginTop: 12,
             }}
           >
-            Bluetooth payment demo
+            Nearby device payment
           </Text>
           <Text
             style={{
@@ -274,7 +274,7 @@ export default function BluetoothPayScreen() {
               marginTop: 6,
             }}
           >
-            Send the same KICB Demo offline token to a nearby merchant.
+            Send the same signed offline token to a nearby merchant.
           </Text>
           <Text
             style={{
@@ -285,13 +285,13 @@ export default function BluetoothPayScreen() {
               marginTop: 12,
             }}
           >
-            MPay-style demo. No real MBANK integration in prototype.
+            Nearby device handoff for saved offline tokens.
           </Text>
         </View>
 
         <SectionTitle
           title="Nearby merchant"
-          body="Prototype only. No real Bluetooth discovery or device connection is used."
+          body="Choose a merchant nearby and send the saved offline token for acceptance."
         />
         <View style={{ gap: 10 }}>
           {merchants.map((merchant) => (
@@ -308,7 +308,7 @@ export default function BluetoothPayScreen() {
         </View>
 
         <SectionTitle
-          title="KICB Demo token"
+          title="Offline token"
           body="Use the token passed from Offline QR, select a waiting token, or create one from an amount."
         />
         {tokens.length > 0 ? (
@@ -341,7 +341,7 @@ export default function BluetoothPayScreen() {
               }}
             >
               No existing created tokens. Enter an amount to create a new
-              KICB Demo offline token before sending.
+              signed offline token before sending.
             </Text>
           </View>
         )}
@@ -440,7 +440,7 @@ export default function BluetoothPayScreen() {
 
         <SectionTitle
           title="Transfer flow"
-          body="The checklist simulates MPay-style Bluetooth transport for the same signed offline token."
+          body="The checklist shows the nearby-device handoff for the same signed offline token."
         />
         <View
           style={{
@@ -495,7 +495,7 @@ export default function BluetoothPayScreen() {
         </View>
 
         <Button
-          label={sending ? 'Sending token...' : 'Send via Bluetooth demo'}
+          label={sending ? 'Sending token...' : 'Send to nearby device'}
           disabled={!canSend || exceedsReserve}
           onPress={handleSend}
           icon={<Bluetooth size={18} color="#fff" strokeWidth={2} />}
@@ -524,7 +524,7 @@ export default function BluetoothPayScreen() {
                   color: colors.text.primary,
                 }}
               >
-                Bluetooth demo payment accepted offline
+                Nearby payment accepted offline
               </Text>
               <Text
                 style={{

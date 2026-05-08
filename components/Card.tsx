@@ -15,9 +15,9 @@ export function Card({ children, style, elevated = false }: CardProps) {
       style={[
         {
           backgroundColor: colors.surface.card,
-          borderRadius: 18,
+          borderRadius: 20,
           borderWidth: 1,
-          borderColor: colors.border.divider,
+          borderColor: 'rgba(220,230,242,0.86)',
           overflow: 'hidden',
         },
         elevated ? shadows.cardElevated : shadows.card,

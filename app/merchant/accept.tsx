@@ -65,10 +65,10 @@ function decodePayloadParam(value?: string | string[]): string | null {
 function errorCopy(reason: OfflineQrVerificationReason | string | undefined, token?: OfflineToken | null) {
   if (reason === 'invalid_payload') return { title: 'Invalid QR code', text: 'This QR is not a valid Tabylga offline payment token.' };
   if (reason === 'missing_fields') return { title: 'Incomplete offline token', text: 'This QR is missing required payment fields.' };
-  if (reason === 'token_not_found') return { title: 'Demo token not found on this device', text: 'This QR was generated on another device. In production, verification would use partner bank infrastructure. For hackathon demo, use Merchant Mode on the same device or Demo scan latest token.' };
+  if (reason === 'token_not_found') return { title: 'Token not found on this device', text: 'This QR was generated on another device. Use Merchant Mode on the same phone that created the token, or scan the latest saved token.' };
   if (reason === 'signature_or_payload_mismatch') return { title: 'Signature mismatch', text: 'Payment details do not match the signed token.' };
   if (reason === 'expired' || token?.status === 'expired') return { title: 'Token expired', text: 'This offline QR has expired. Ask the customer to generate a new one.' };
-  if (token?.status === 'synced') return { title: 'Token already synced', text: 'This offline payment was already settled in demo mode.' };
+  if (token?.status === 'synced') return { title: 'Token already synced', text: 'This offline payment was already settled.' };
   if (reason === 'already_used' || token?.status === 'accepted_offline') return { title: 'Token already used', text: 'This offline QR was already accepted and cannot be used again.' };
   if (reason === 'merchant_not_supported') return { title: 'Merchant not supported', text: 'This merchant cannot accept offline QR payments.' };
   return { title: 'Verification failed', text: 'The offline payment token could not be verified.' };
@@ -212,7 +212,7 @@ export default function MerchantAcceptScreen() {
       Alert.alert(
         'Payment synced',
         result.syncedCount > 0
-          ? `Settlement completed in demo mode.\n\nSynced amount: ${formatKgs(result.syncedAmount)}`
+          ? `Settlement completed.\n\nSynced amount: ${formatKgs(result.syncedAmount)}`
           : 'No accepted offline payments are waiting for sync.',
       );
       router.replace('/merchant/dashboard');
@@ -326,7 +326,7 @@ export default function MerchantAcceptScreen() {
               marginBottom: 22,
             }}
           >
-            The merchant should ask the tourist to generate a new KICB Demo offline QR.
+            The merchant should ask the tourist to generate a new signed offline QR.
           </Text>
           <Button
             label="Back to Merchant Mode"
@@ -477,7 +477,7 @@ export default function MerchantAcceptScreen() {
                   color: colors.text.primary,
                 }}
               >
-                KICB Demo token verified
+                Signed offline token verified
               </Text>
               <Text
                 style={{
@@ -488,7 +488,7 @@ export default function MerchantAcceptScreen() {
                   marginTop: 2,
                 }}
               >
-                Prototype only. No real bank integration or settlement.
+                Signed token is ready for merchant acceptance.
               </Text>
             </View>
           </View>
@@ -509,7 +509,7 @@ export default function MerchantAcceptScreen() {
           <Detail label="Amount" value={formatKgs(token.amount)} />
           <Detail label="Currency" value="KGS" />
           <Detail label="Merchant name" value={merchant.name} />
-          <Detail label="Issuer" value="KICB Demo" />
+          <Detail label="Issuer" value="Tabylga Wallet" />
           <Detail label="Signature" value="Verified" />
           <Detail label="Reserve-backed token" value="Yes" />
           <Detail label="One-time token" value="Yes" />
@@ -531,7 +531,7 @@ export default function MerchantAcceptScreen() {
             Trust signals
           </Text>
           <View style={{ gap: 8 }}>
-            <TrustSignal label="Issued by KICB Demo" />
+            <TrustSignal label="Issued by Tabylga Wallet" />
             <TrustSignal label="Signature verified" />
             <TrustSignal label="Reserve-backed token" />
             <TrustSignal label="One-time token" />
@@ -558,7 +558,7 @@ export default function MerchantAcceptScreen() {
               marginBottom: 4,
             }}
           >
-            Prototype only
+            Settlement note
           </Text>
           <Text
             style={{
@@ -568,10 +568,9 @@ export default function MerchantAcceptScreen() {
               color: colors.text.secondary,
             }}
           >
-            This is a demo. In production, the token would be issued and
-            settled by a licensed banking partner. External phone camera opens
-            a Tabylga deep link; real cross-device verification would require a
-            backend or bank partner infrastructure.
+            This token is backed by reserved wallet balance. External phone
+            camera opens a Tabylga deep link; the receipt is saved locally and
+            can sync when internet is available.
           </Text>
         </View>
 
@@ -647,7 +646,7 @@ function MerchantSelectorScreen({
             }}
           >
             The phone camera opened a Tabylga payment link. Select a merchant
-            profile to verify the KICB Demo token.
+            profile to verify the signed offline token.
           </Text>
         </View>
 
@@ -713,7 +712,7 @@ function MerchantSelectorScreen({
                 }}
               >
                 Offline QR supported
-                {merchant.bluetoothDemoSupported ? ' - Bluetooth demo supported' : ''}
+                {merchant.bluetoothDemoSupported ? ' - Nearby device supported' : ''}
               </Text>
             </Pressable>
           ))}
@@ -737,7 +736,7 @@ function MerchantSelectorScreen({
               marginBottom: 4,
             }}
           >
-            Prototype note
+            Device handoff
           </Text>
           <Text
             style={{
@@ -747,9 +746,8 @@ function MerchantSelectorScreen({
               color: colors.text.secondary,
             }}
           >
-            External phone camera opens a Tabylga deep link. Real cross-device
-            verification would require a backend or bank partner infrastructure.
-            This demo stores offline tokens locally.
+            External phone camera opens a Tabylga payment link. Offline tokens
+            are verified on this device and saved for settlement sync.
           </Text>
         </View>
       </ScrollView>

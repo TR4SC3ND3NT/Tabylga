@@ -66,7 +66,7 @@ export default function ItineraryScreen() {
   const trip = generatedItinerary;
 
   function startOver() {
-    Alert.alert('Start a new trip?', 'This will clear your current route and preferences, but your demo wallet and app data will stay.', [
+    Alert.alert('Start a new trip?', 'This will clear your current route and preferences, but your wallet and app data will stay.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Start new trip', style: 'destructive', onPress: () => { resetTrip(); router.replace('/(tabs)'); Alert.alert('Trip reset. You can start a new plan.'); } },
     ]);
@@ -237,7 +237,7 @@ function DayPackage({ day, onChangeStay, onChangeTransport, onChangeFood, onRege
         <Text style={stylesTitle}>{day.stay.name}</Text>
         <Text style={stylesSub}>{day.stay.type} - {day.stay.city}, {day.stay.region}</Text>
         <Text style={stylesPrice}>{formatUSD(day.stay.pricePerNight)} / night - {day.stay.rating} rating</Text>
-        <TagRow tags={[...day.stay.tags.slice(0, 3), day.stay.wifi ? 'Wi-Fi' : 'offline pay', day.stay.status === 'booked_mock' ? 'booked mock' : day.stay.status === 'changed' ? 'changed' : 'suggested']} />
+        <TagRow tags={[...day.stay.tags.slice(0, 3), day.stay.wifi ? 'Wi-Fi' : 'offline pay', day.stay.status === 'booked_mock' ? 'booked' : day.stay.status === 'changed' ? 'changed' : 'suggested']} />
       </PackageCard>
 
       <PackageCard title="Transport" action="Change transport" onPress={onChangeTransport}>
@@ -330,9 +330,9 @@ function LockModal({ visible, total, trip, onClose, onContinue, onCreateAccount 
           <Text style={modalTitle}>Lock your itinerary</Text>
           <Text style={modalBody}>Total estimate: {formatUSD(total)}</Text>
           <Text style={modalBody}>{trip.dailyPlans.length} stays, {trip.dailyPlans.length} transport legs, {trip.dailyPlans.length} food picks and {trip.dailyPlans.reduce((sum, day) => sum + day.activities.length, 0)} activities.</Text>
-          <Text style={[modalBody, { marginTop: 8 }]}>This is a demo. Real booking and payments will be connected through licensed partners.</Text>
+          <Text style={[modalBody, { marginTop: 8 }]}>Your route, stays and payment-ready choices will be saved on this device.</Text>
           <View style={{ gap: 8, marginTop: 18 }}>
-            <Button label="Continue demo" onPress={onContinue} height={46} fontSize={14} />
+            <Button label="Save itinerary" onPress={onContinue} height={46} fontSize={14} />
             <Button variant="secondary" label="Create account to save" onPress={onCreateAccount} height={46} fontSize={14} />
             <Button variant="ghost" label="Cancel" onPress={onClose} height={42} fontSize={14} />
           </View>
@@ -350,7 +350,7 @@ function AccountModal({ visible, onClose, onCreate }: { visible: boolean; onClos
           <Text style={modalTitle}>Create an account to save this trip</Text>
           <View style={{ gap: 8, marginTop: 18 }}>
             <Button label="Create account" onPress={onCreate} height={46} fontSize={14} />
-            <Button variant="secondary" label="Continue demo" onPress={onClose} height={46} fontSize={14} />
+            <Button variant="secondary" label="Continue without account" onPress={onClose} height={46} fontSize={14} />
             <Button variant="ghost" label="Not now" onPress={onClose} height={42} fontSize={14} />
           </View>
         </View>
@@ -364,7 +364,7 @@ function SuccessModal({ visible, onClose }: { visible: boolean; onClose: () => v
     <Modal visible={visible} transparent animationType="fade">
       <View style={modalBackdrop}>
         <View style={modalCard}>
-          <Text style={modalTitle}>Your itinerary is locked in demo mode.</Text>
+          <Text style={modalTitle}>Your itinerary is saved.</Text>
           <Button label="Done" onPress={onClose} style={{ marginTop: 18 }} />
         </View>
       </View>

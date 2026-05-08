@@ -64,8 +64,8 @@ const FILTERS = [
 
 const SOURCE_LABELS: Record<ActivitySource, string> = {
   tabylga_partner: 'Tabylga partner',
-  mtravel_partner_mock: 'MTravel partner mock',
-  tour_operator_mock: 'Tour operator mock',
+  mtravel_partner_mock: 'MTravel partner',
+  tour_operator_mock: 'Tour operator',
   public_tour_pattern: 'Public tour pattern',
 };
 
@@ -212,7 +212,7 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
 
 function BulletList({ items }: { items?: string[] }) {
   if (!items || items.length === 0) {
-    return <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Not specified for this mock listing.</Text>;
+    return <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Not specified for this listing.</Text>;
   }
   return (
     <View style={{ gap: 5 }}>
@@ -268,7 +268,7 @@ function ActivityDetailsModal({ activity, booked, onClose, onBook }: { activity:
                   {activity.verified && <Pill label="Verified" kind="success" />}
                   <Pill label={activity.typeLabel} kind="brand" />
                   <Pill label={categoryLabel(activity.category)} />
-                  {booked && <Pill label="booked_mock" kind="success" />}
+                  {booked && <Pill label="Booked" kind="success" />}
                 </View>
                 <View style={{ gap: 4 }}>
                   <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: 'rgba(255,255,255,0.88)' }}>{activity.provider}</Text>
@@ -324,7 +324,7 @@ function ActivityDetailsModal({ activity, booked, onClose, onBook }: { activity:
 
             <Card style={{ padding: 13, gap: 7, backgroundColor: colors.brand.primaryLight }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>Why it fits this trip</Text>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>Standalone marketplace demo: this activity is best for {whyItFits || 'general sightseeing'} and can be inserted into a generated trip day in the replace flow.</Text>
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>This activity is best for {whyItFits || 'general sightseeing'} and can be inserted into a generated trip day in the replace flow.</Text>
             </Card>
 
             {activity.reviews.length > 0 && (
@@ -345,8 +345,8 @@ function ActivityDetailsModal({ activity, booked, onClose, onBook }: { activity:
               <Pressable onPress={() => setBusinessOpen((value) => !value)} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <View>
-                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Business model demo</Text>
-                    <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: colors.text.secondary, marginTop: 2 }}>Secondary mock revenue view</Text>
+                    <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Partner payout preview</Text>
+                    <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: colors.text.secondary, marginTop: 2 }}>Partner payout preview</Text>
                   </View>
                   <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 18, color: colors.brand.primary }}>{businessOpen ? '-' : '+'}</Text>
                 </View>
@@ -363,7 +363,7 @@ function ActivityDetailsModal({ activity, booked, onClose, onBook }: { activity:
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Button label="Close" variant="secondary" height={48} fontSize={14} style={{ flex: 1 }} onPress={onClose} />
-              <Button label={booked ? 'booked_mock' : 'Book mock'} variant={booked ? 'primary' : 'cta'} height={48} fontSize={14} style={{ flex: 1 }} disabled={booked} onPress={handleBook} />
+              <Button label={booked ? 'Booked' : 'Book'} variant={booked ? 'primary' : 'cta'} height={48} fontSize={14} style={{ flex: 1 }} disabled={booked} onPress={handleBook} />
             </View>
           </ScrollView>
         </View>
@@ -385,7 +385,7 @@ function ActivityBookingModal({ activity, alreadyBooked, onClose, onConfirm }: {
         <View style={{ maxHeight: '82%', borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: colors.surface.primary, overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border.divider }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, lineHeight: 28, color: colors.text.primary }}>Mock booking</Text>
+              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, lineHeight: 28, color: colors.text.primary }}>Booking request</Text>
               <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.text.secondary, marginTop: 2 }}>{activity.name}</Text>
             </View>
             <Pressable onPress={onClose} accessibilityRole="button" style={({ pressed }) => ({ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', opacity: pressed ? 0.7 : 1 })}>
@@ -396,15 +396,15 @@ function ActivityBookingModal({ activity, alreadyBooked, onClose, onConfirm }: {
           <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 22 }} showsVerticalScrollIndicator={false}>
             <Card style={{ padding: 14, gap: 8 }}>
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text.primary }}>{activity.provider}</Text>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, lineHeight: 19, color: colors.text.secondary }}>This confirms a demo booking request only. No backend, real payment, provider account or ticket is created.</Text>
+              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, lineHeight: 19, color: colors.text.secondary }}>This saves your booking request locally with provider, route and price details.</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 4 }}>
-                <Pill label="status: booked_mock" kind={alreadyBooked ? 'success' : 'brand'} />
+                <Pill label={alreadyBooked ? 'Booked' : 'Ready'} kind={alreadyBooked ? 'success' : 'brand'} />
                 <Pill label={SOURCE_LABELS[activity.source]} />
               </View>
             </Card>
 
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-              <DetailRow label="Date / day" value="Demo date - standalone marketplace" />
+              <DetailRow label="Date / day" value="Flexible date - standalone marketplace" />
               <DetailRow label="People count" value={String(MOCK_BOOKING_PEOPLE) + ' tourists'} />
               <DetailRow label="Total estimate" value={activity.price === 0 ? 'Free' : money(totalEstimate)} />
               <DetailRow label="Price basis" value={priceTypeLabel(activity)} />
@@ -465,10 +465,10 @@ function ActivityCard({ activity, index, booked, onBook, onDetails }: { activity
         <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, lineHeight: 16, color: transport.requiresVerifiedMountainDriver ? colors.status.errorText : colors.brand.primary }}>{TRANSPORT_LABELS[transport.recommendedTransportType]}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}><Pill label={activity.guideIncluded ? 'Guide: ' + activity.guideLanguages.slice(0, 2).join(', ') : 'Guide optional'} kind={activity.guideIncluded ? 'brand' : 'neutral'} /><Pill label={TRANSPORT_LABELS[transport.recommendedTransportType]} kind={transportKind} /></View>
         <PaymentPills activity={activity} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{topTags.map((tag) => <Pill key={tag} label={tag} />)}{booked && <Pill label="booked_mock" kind="success" />}</View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{topTags.map((tag) => <Pill key={tag} label={tag} />)}{booked && <Pill label="Booked" kind="success" />}</View>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 2 }}>
           <Button label="Details" variant="secondary" height={42} fontSize={13} style={{ flex: 1 }} onPress={onDetails} />
-          <Button label={booked ? 'booked_mock' : 'Book mock'} variant={booked ? 'primary' : 'cta'} height={42} fontSize={13} style={{ flex: 1 }} icon={booked ? <Check size={15} color="#fff" strokeWidth={2} /> : undefined} disabled={booked} onPress={onBook} />
+          <Button label={booked ? 'Booked' : 'Book'} variant={booked ? 'primary' : 'cta'} height={42} fontSize={13} style={{ flex: 1 }} icon={booked ? <Check size={15} color="#fff" strokeWidth={2} /> : undefined} disabled={booked} onPress={onBook} />
         </View>
       </View>
     </Card>
@@ -484,15 +484,15 @@ function ReadyExperienceCard({ experience, booked, onBook }: { experience: Ready
       <View style={{ gap: 5 }}>{activities.map((activity) => <Text key={activity.id} style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 17, color: colors.text.secondary }} numberOfLines={1}>- {activity.name}</Text>)}</View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}><Pill label={totalEstimate > 0 ? money(totalEstimate) + ' estimate' : 'Free estimate'} kind="brand" /><Pill label={readyExperienceDifficulty(experience)} /><Pill label={experience.transportNote} kind={readyExperienceTransportKind(experience)} /></View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>{experience.goodFor.map((tag) => <Pill key={tag} label={tag} />)}</View>
-      <Button label={booked ? 'booked_mock' : 'Book mock'} variant={booked ? 'primary' : 'cta'} height={42} fontSize={13} disabled={booked} onPress={onBook} />
+      <Button label={booked ? 'Booked' : 'Book'} variant={booked ? 'primary' : 'cta'} height={42} fontSize={13} disabled={booked} onPress={onBook} />
     </Card>
   );
 }
 
 function ReadyExperiencesSection({ bookedExperienceIds, onBook }: { bookedExperienceIds: Set<string>; onBook: (experience: ReadyExperience) => void }) {
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ gap: 3 }}><Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 25, lineHeight: 29, color: colors.text.primary }}>Ready tour experiences</Text><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>Packaged mock routes composed from activity options.</Text></View>
+      <View style={{ gap: 10 }}>
+      <View style={{ gap: 3 }}><Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 25, lineHeight: 29, color: colors.text.primary }}>Ready tour experiences</Text><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>Packaged routes composed from activity options.</Text></View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 16 }}>{READY_EXPERIENCES.map((experience) => <ReadyExperienceCard key={experience.id} experience={experience} booked={bookedExperienceIds.has(experience.id)} onBook={() => onBook(experience)} />)}</ScrollView>
     </View>
   );
@@ -526,7 +526,7 @@ export default function ActivitiesScreen() {
       return next;
     });
     setBookingActivity(null);
-    Alert.alert('Booking confirmed', activity.name + ' status: booked_mock. No real booking or payment was made.');
+    Alert.alert('Booking saved', activity.name + ' was added to your activity bookings.');
   }
 
   function bookReadyExperience(experience: ReadyExperience) {
@@ -535,7 +535,7 @@ export default function ActivitiesScreen() {
       next.add(experience.id);
       return next;
     });
-    Alert.alert('Ready experience selected', experience.title + ' status: booked_mock. This is a packaged demo route, not a real booking.');
+    Alert.alert('Experience saved', experience.title + ' was added to your activity bookings.');
   }
 
   function resetFilters() {
@@ -554,7 +554,7 @@ export default function ActivitiesScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
         <Card style={{ padding: 20, gap: 14, backgroundColor: '#f2eadc' }}>
-          <View style={{ gap: 8 }}><Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 31, lineHeight: 35, color: colors.text.primary }}>Activities & Tours</Text><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 21, color: colors.text.secondary }}>Choose cultural stops, nature walks, horse riding, food experiences and guided tours.</Text><Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.brand.primary }}>Curated from local tour patterns and partner experiences. Mock data only.</Text></View>
+          <View style={{ gap: 8 }}><Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 31, lineHeight: 35, color: colors.text.primary }}>Activities & Tours</Text><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 21, color: colors.text.secondary }}>Choose cultural stops, nature walks, horse riding, food experiences and guided tours.</Text><Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.brand.primary }}>Curated from local tour patterns and partner experiences.</Text></View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 48, paddingHorizontal: 14, borderRadius: 16, borderWidth: 1, borderColor: colors.border.input, backgroundColor: '#fff' }}><Search size={18} color={colors.text.secondary} strokeWidth={1.8} /><TextInput value={search} onChangeText={setSearch} placeholder="Search activities, tours or places" placeholderTextColor={colors.text.tertiary} style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 14, color: colors.text.primary, paddingVertical: 0 }} /></View>
         </Card>
 
@@ -563,7 +563,7 @@ export default function ActivitiesScreen() {
 
         <ReadyExperiencesSection bookedExperienceIds={bookedExperienceIds} onBook={bookReadyExperience} />
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text.primary }}>{filteredActivities.length} activities found</Text>{bookedActivityIds.size > 0 && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Check size={14} color={colors.status.successText} strokeWidth={2} /><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.status.successText }}>{bookedActivityIds.size} booked_mock</Text></View>}</View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text.primary }}>{filteredActivities.length} activities found</Text>{bookedActivityIds.size > 0 && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Check size={14} color={colors.status.successText} strokeWidth={2} /><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.status.successText }}>{bookedActivityIds.size} booked</Text></View>}</View>
 
         {filteredActivities.length === 0 ? (
           <Card style={{ padding: 20, gap: 8, alignItems: 'center' }}><Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 23, color: colors.text.primary, textAlign: 'center' }}>No matching activities</Text><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, lineHeight: 19, color: colors.text.secondary, textAlign: 'center' }}>Try another filter or reset to All.</Text><Button label="Reset filters" variant="secondary" height={44} fontSize={13} style={{ marginTop: 8, maxWidth: 180 }} onPress={resetFilters} /></Card>
@@ -571,7 +571,7 @@ export default function ActivitiesScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>{filteredActivities.map((activity, index) => <ActivityCard key={activity.id} activity={activity} index={index} booked={bookedActivityIds.has(activity.id)} onBook={() => openBooking(activity)} onDetails={() => setDetailsActivity(activity)} />)}</View>
         )}
 
-        <Card style={{ padding: 14, gap: 10, backgroundColor: colors.brand.primaryLight }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><QrCode size={16} color={colors.brand.primary} strokeWidth={1.8} /><WalletCards size={16} color={colors.brand.primary} strokeWidth={1.8} /><WifiOff size={16} color={colors.brand.primary} strokeWidth={1.8} /><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>Demo labels</Text></View><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>Source, payment and transport labels are mock/demo metadata. No real booking, payment, tour API or map integration is used here.</Text></Card>
+        <Card style={{ padding: 14, gap: 10, backgroundColor: colors.brand.primaryLight }}><View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><QrCode size={16} color={colors.brand.primary} strokeWidth={1.8} /><WalletCards size={16} color={colors.brand.primary} strokeWidth={1.8} /><WifiOff size={16} color={colors.brand.primary} strokeWidth={1.8} /><Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>Travel-ready labels</Text></View><Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 18, color: colors.text.secondary }}>Payment, source and transport hints help choose options that fit your route.</Text></Card>
       </ScrollView>
 
       <ActivityDetailsModal activity={detailsActivity} booked={detailsActivity ? bookedActivityIds.has(detailsActivity.id) : false} onClose={() => setDetailsActivity(null)} onBook={openBooking} />

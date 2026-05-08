@@ -8,10 +8,10 @@
 
 export const PAYMENT_STRINGS = {
   walletTitle: 'Tabylga Wallet',
-  walletSubtitle: 'Powered by KICB Demo',
+  walletSubtitle: 'KICB-ready offline payments',
   currency: 'KGS',
 
-  statusOnline: 'Online · KICB Demo',
+  statusOnline: 'Online · wallet ready',
   statusOfflineReady: 'Offline Pay ready',
   statusNoOfflineReserve: 'Offline Pay not activated',
 
@@ -33,20 +33,20 @@ export const PAYMENT_STRINGS = {
 
   explanationTitle: 'Offline Mountain Pay',
   explanationBody:
-    'Offline Mountain Pay lets you reserve money before going to remote areas. When there is no internet, you can pay verified merchants with a KICB Demo signed QR or Bluetooth token.',
+    'Offline Mountain Pay lets you reserve money before going to remote areas. When there is no internet, you can pay verified merchants with a signed QR or nearby-device token.',
 
-  prototypeNoteTitle: 'Prototype note',
+  prototypeNoteTitle: 'Offline payment note',
   prototypeNoteBody:
-    'In production, offline tokens would be issued and settled by a licensed banking partner. This prototype uses KICB Demo tokens.',
+    'Offline tokens are stored on this device and sync when internet is available. Keep your phone charged before remote trips.',
 
-  comingNextTitle: 'Coming in next phase',
-  comingNextBody: 'This screen will be enabled in a later integration step.',
+  comingNextTitle: 'Ready soon',
+  comingNextBody: 'This screen is prepared for the next connected payment provider.',
 
   syncNothingTitle: 'Nothing to sync',
   syncNothingBody: 'You have no offline payments waiting to settle.',
   syncDoneTitle: 'Payments synced',
   syncDoneBody: (count: number, amount: string) =>
-    `Settled ${count} offline payment${count === 1 ? '' : 's'} (${amount} KGS) in demo mode.`,
+    `Settled ${count} offline payment${count === 1 ? '' : 's'} (${amount} KGS).`,
   syncFailedTitle: 'Sync failed',
 
   txTypeLabels: {
@@ -64,7 +64,7 @@ export const PAYMENT_STRINGS = {
     accepted_offline: 'Accepted offline',
     synced: 'Synced',
     expired: 'Expired',
-    failed_demo: 'Failed (demo)',
+    failed_demo: 'Failed',
   } as const,
 
   // Top up screen
@@ -73,10 +73,10 @@ export const PAYMENT_STRINGS = {
   topUpCustomChip: 'Custom',
   topUpCustomLabel: 'Custom amount (KGS)',
   topUpMethodLabel: 'Payment method',
-  topUpMethodCard: 'International card demo',
-  topUpMethodCardSub: 'Visa, Mastercard, UnionPay (demo)',
-  topUpMethodLocalQr: 'Local QR demo',
-  topUpMethodLocalQrSub: 'MBank-style QR top-up (demo)',
+  topUpMethodCard: 'International card',
+  topUpMethodCardSub: 'Visa, Mastercard, UnionPay',
+  topUpMethodLocalQr: 'Local QR',
+  topUpMethodLocalQrSub: 'MBank-style QR top-up',
   topUpCardNumber: 'Card number',
   topUpCardExpiry: 'MM / YY',
   topUpCardCvc: 'CVC',
@@ -101,21 +101,21 @@ export const PAYMENT_STRINGS = {
   // Activate Offline Pay screen
   activateTitle: 'Activate Offline Pay',
   activateSubtitle:
-    'Reserve part of your balance before going to remote places. KICB Demo will issue signed offline tokens for this reserve.',
+    'Reserve part of your balance before going to remote places. Tabylga will issue signed offline tokens for this reserve.',
   activateAmountLabel: 'Reserve amount',
   activateCustomLabel: 'Custom amount (KGS)',
   activateHowTitle: 'How Offline Pay works',
   activateHow1: 'Reserve money while you still have internet.',
-  activateHow2: 'KICB Demo issues signed offline tokens.',
+  activateHow2: 'Tabylga issues signed offline tokens.',
   activateHow3:
-    'In remote areas, you can pay verified merchants by QR or Bluetooth demo.',
+    'In remote areas, you can pay verified merchants by QR or nearby-device transfer.',
   activateSafetyNote:
     'Offline payments are backed by reserved balance. After a merchant accepts a token, the customer cannot cancel it.',
   activatePrototypeNote:
-    'This is a demo. In production, offline tokens would be issued and settled by a licensed banking partner.',
+    'Offline tokens are backed by your reserved wallet balance and saved locally until the payment can sync.',
   activateConfirm: (amount: string) => `Activate Offline Pay · ${amount} KGS`,
-  activateProcessing: 'Issuing KICB Demo tokens…',
-  activateSuccessTitle: 'KICB Demo tokens issued',
+  activateProcessing: 'Issuing offline tokens…',
+  activateSuccessTitle: 'Offline tokens issued',
   activateSuccessSub: 'Offline Pay is ready',
   activateReservedAmount: 'Reserved amount',
   activateNewReserve: 'New offline reserve',
@@ -128,7 +128,7 @@ export const PAYMENT_STRINGS = {
   // Pay Offline screen
   payOfflineTitle: 'Pay Offline',
   payOfflineSubtitle:
-    'Use this when you have no internet. Enter the merchant’s amount and generate a KICB Demo signed QR.',
+    'Use this when you have no internet. Enter the merchant’s amount and generate a signed offline QR.',
   payOfflineStatusLabel: 'Offline status',
   payOfflineNoReserveTitle: 'Activate Offline Pay first',
   payOfflineNoReserveBody:
@@ -141,9 +141,9 @@ export const PAYMENT_STRINGS = {
   payOfflineWarningBody:
     'You are creating an offline payment QR. After the merchant accepts it, this payment cannot be cancelled. It will sync when internet is available.',
   payOfflineTrustBody:
-    'This QR is backed by your reserved offline balance and marked as a KICB Demo signed token.',
+    'This QR is backed by your reserved offline balance and marked as a signed Tabylga token.',
   payOfflineGenerate: (amount: string) => `Generate Offline QR · ${amount} KGS`,
-  payOfflineProcessing: 'Generating KICB Demo signed token…',
+  payOfflineProcessing: 'Generating signed offline token…',
 
   qrReadyTitle: 'Offline QR ready',
   qrLabelAmount: 'Amount',
@@ -154,19 +154,19 @@ export const PAYMENT_STRINGS = {
   qrLabelTokenId: 'Token ID',
   qrLabelTransactionId: 'Transaction ID',
   qrLabelExpiresAt: 'Expires at',
-  qrIssuerKicbDemo: 'KICB Demo',
+  qrIssuerKicbDemo: 'Tabylga Wallet',
   qrSignatureReady: 'Ready',
   qrStatusWaiting: 'Waiting for merchant scan',
-  qrPlaceholder: 'KICB DEMO QR',
+  qrPlaceholder: 'TABYLGA OFFLINE QR',
   qrPayloadPreviewLabel: 'Payload preview',
   qrOpenMerchantMode: 'Open Merchant Mode',
-  qrSendBluetooth: 'Send via Bluetooth demo',
+  qrSendBluetooth: 'Send via nearby device',
   qrMerchantPhase6Title: 'Merchant Mode',
   qrMerchantPhase6Body:
-    'Merchant scan + accept will be enabled in the next phase. The QR you just generated is already saved and visible to the merchant.',
-  qrBluetoothPhase8Title: 'Bluetooth demo',
+    'The QR you generated is saved on this device and ready for merchant acceptance.',
+  qrBluetoothPhase8Title: 'Nearby device',
   qrBluetoothPhase8Body:
-    'Bluetooth demo will be connected to this token in a later phase.',
+    'Send this token to a nearby merchant from your saved offline balance.',
 
   // Generic
   backToWallet: 'Back to Wallet',

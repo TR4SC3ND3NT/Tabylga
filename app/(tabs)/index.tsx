@@ -22,6 +22,9 @@ import {
   Sparkles,
   Star,
   MapPin,
+  Map,
+  Route,
+  WalletCards,
 } from 'lucide-react-native';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
@@ -35,7 +38,6 @@ import {
   type DgisSearchResult,
 } from '../../lib/api/dgis';
 import { formatUSD } from '../../lib/format';
-import { Button } from '../../components/Button';
 import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
 import { PlacePhoto } from '../../components/PlacePhoto';
 
@@ -82,7 +84,7 @@ export default function HomeScreen() {
       icon: Bed,
       label: strings.home.serviceHotels,
       sub: formatServiceSubtitle(serviceCounts.hotels, "Live on 2GIS"),
-      bg: "#1E4D6B",
+      bg: colors.brand.primary,
       route: "/services/hotels",
     },
     {
@@ -93,7 +95,7 @@ export default function HomeScreen() {
         serviceCounts.food,
         strings.home.serviceFoodSub,
       ),
-      bg: "#C65D3A",
+      bg: colors.brand.cta,
       route: "/services/food",
     },
     {
@@ -104,7 +106,7 @@ export default function HomeScreen() {
         serviceCounts.transport,
         strings.home.serviceTransportSub,
       ),
-      bg: "#4A6B40",
+      bg: colors.accent.mint,
       route: "/services/transport",
     },
     {
@@ -115,7 +117,7 @@ export default function HomeScreen() {
         serviceCounts.activities,
         strings.home.serviceActivitiesSub,
       ),
-      bg: "#6A5A4B",
+      bg: colors.accent.violet,
       route: "/services/activities",
     },
   ];
@@ -197,16 +199,19 @@ export default function HomeScreen() {
       >
         <View
           className="flex-row items-center px-5"
-          style={{ minHeight: 44 }}
+          style={{ minHeight: 48 }}
         >
             <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.84)",
+                width: 44,
+                height: 44,
+                borderRadius: 18,
+                backgroundColor: colors.surface.card,
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.74)',
+                ...shadows.card,
               }}
             >
               <User size={20} color={colors.brand.primary} strokeWidth={1.8} />
@@ -226,18 +231,73 @@ export default function HomeScreen() {
                 {peopleCount} travelers · age {age}
               </Text>
             </View>
-            <View style={{ width: 40, height: 40 }} />
+            <Pressable
+              onPress={() => router.push('/(tabs)/wallet')}
+              accessibilityRole="button"
+              accessibilityLabel={strings.tabs.wallet}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 18,
+                backgroundColor: colors.surface.card,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.74)',
+                opacity: pressed ? 0.78 : 1,
+                ...shadows.card,
+              })}
+            >
+              <WalletCards size={20} color={colors.brand.cta} strokeWidth={1.9} />
+            </Pressable>
           </View>
 
           <View
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
             style={{
-              height: compact ? 132 : 150,
+              minHeight: compact ? 146 : 170,
               paddingHorizontal: 20,
               paddingTop: compact ? 14 : 20,
+              justifyContent: 'flex-end',
             }}
-          />
+          >
+            <View
+              style={{
+                borderRadius: 30,
+                padding: 18,
+                minHeight: compact ? 138 : 154,
+                backgroundColor: colors.surface.inverse,
+                overflow: 'hidden',
+                justifyContent: 'space-between',
+                ...shadows.cardElevated,
+              }}
+            >
+              <View pointerEvents="none" style={{ position: 'absolute', right: -52, top: 18, width: 168, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,79,123,0.42)', transform: [{ rotate: '-18deg' }] }} />
+              <View pointerEvents="none" style={{ position: 'absolute', left: -56, bottom: 20, width: 200, height: 32, borderRadius: 16, backgroundColor: 'rgba(24,200,184,0.28)', transform: [{ rotate: '18deg' }] }} />
+              <View style={{ alignSelf: 'flex-start', height: 30, paddingHorizontal: 12, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: '#fff', textTransform: 'uppercase', letterSpacing: 0 }}>
+                  AI route studio
+                </Text>
+              </View>
+              <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: compact ? 30 : 34, lineHeight: compact ? 34 : 38, color: '#fff', maxWidth: 292 }}>
+                Build a Kyrgyzstan trip in seconds
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                {[
+                  { label: 'Ask', icon: Sparkles, color: colors.brand.cta },
+                  { label: 'Route', icon: Route, color: colors.accent.aqua },
+                  { label: 'Pay', icon: WalletCards, color: colors.accent.lemon },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <View key={item.label} style={{ height: 30, paddingHorizontal: 10, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.13)', flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <Icon size={13} color={item.color} strokeWidth={2} />
+                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: 'rgba(255,255,255,0.9)' }}>{item.label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
 
           <View
             className="mx-5"
@@ -250,8 +310,9 @@ export default function HomeScreen() {
               paddingHorizontal: 15,
               gap: 11,
               borderWidth: 1,
-              borderColor: colors.border.divider,
+              borderColor: 'rgba(19,104,242,0.12)',
               marginTop: compact ? 14 : 18,
+              ...shadows.card,
             }}
           >
             <Search size={19} color={colors.text.tertiary} strokeWidth={1.7} />
@@ -293,13 +354,74 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
+          <View style={{ flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginTop: compact ? 14 : 18 }}>
+            <Pressable
+              onPress={async () => {
+                await startGuestSession();
+                setEntryMode('ai');
+                router.push('/trip/voice');
+              }}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                flex: 1.25,
+                minHeight: 78,
+                borderRadius: 22,
+                padding: 13,
+                backgroundColor: colors.brand.cta,
+                justifyContent: 'space-between',
+                opacity: pressed ? 0.86 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+                ...shadows.floating,
+              })}
+            >
+              <Sparkles size={20} color="#fff" strokeWidth={2} />
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>Plan with AI</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/trip/ready')}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                flex: 1,
+                minHeight: 78,
+                borderRadius: 22,
+                padding: 13,
+                backgroundColor: colors.accent.violet,
+                justifyContent: 'space-between',
+                opacity: pressed ? 0.86 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+                ...shadows.cardElevated,
+              })}
+            >
+              <Route size={20} color="#fff" strokeWidth={2} />
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>Ready trips</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/(tabs)/map')}
+              accessibilityRole="button"
+              style={({ pressed }) => ({
+                flex: 1,
+                minHeight: 78,
+                borderRadius: 22,
+                padding: 13,
+                backgroundColor: colors.accent.aqua,
+                justifyContent: 'space-between',
+                opacity: pressed ? 0.86 : 1,
+                transform: [{ scale: pressed ? 0.98 : 1 }],
+                ...shadows.cardElevated,
+              })}
+            >
+              <Map size={20} color="#fff" strokeWidth={2} />
+              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>Map live</Text>
+            </Pressable>
+          </View>
+
           <View
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
               gap: 10,
               paddingHorizontal: 20,
-              marginTop: compact ? 14 : 18,
+              marginTop: compact ? 12 : 16,
             }}
           >
             {serviceTiles.map((tile) => {
@@ -313,7 +435,7 @@ export default function HomeScreen() {
                   style={({ pressed }) => ({
                     width: "48.4%",
                     height: compact ? 92 : 106,
-                    borderRadius: 18,
+                    borderRadius: 24,
                     backgroundColor: tile.bg,
                     padding: 13,
                     justifyContent: "space-between",
@@ -350,25 +472,6 @@ export default function HomeScreen() {
             })}
           </View>
 
-          <View
-            style={{
-              paddingHorizontal: 20,
-              marginTop: compact ? 14 : 18,
-            }}
-          >
-            <Button
-              variant="cta"
-              label="Plan my full trip with AI"
-              icon={<Sparkles size={20} color="#fff" strokeWidth={2} />}
-              onPress={async () => {
-                await startGuestSession();
-                setEntryMode('ai');
-                router.push('/trip/voice');
-              }}
-              fontSize={13}
-            />
-          </View>
-
           {currentTrip && (
             <Pressable
               onPress={() => router.push('/trip/itinerary')}
@@ -376,12 +479,13 @@ export default function HomeScreen() {
               style={({ pressed }) => ({
                 marginHorizontal: 20,
                 marginTop: compact ? 12 : 16,
-                borderRadius: 18,
+                borderRadius: 24,
                 padding: 14,
-                backgroundColor: colors.brand.primaryLight,
+                backgroundColor: colors.surface.card,
                 borderWidth: 1,
-                borderColor: colors.border.divider,
+                borderColor: 'rgba(255,255,255,0.82)',
                 opacity: pressed ? 0.85 : 1,
+                ...shadows.cardElevated,
               })}
             >
               <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.brand.primary }}>

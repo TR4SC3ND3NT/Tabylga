@@ -494,7 +494,7 @@ export default function MapScreen() {
   const navigationCoordinates = plannedRoute?.points ?? [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#E8E8E0' }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.canvas }}>
       <StatusBar style="dark" />
 
       <MapCanvas
@@ -516,10 +516,12 @@ export default function MapScreen() {
         zIndex: 40, elevation: 40,
       }}>
         <View style={{
-          flex: 1, height: 52, borderRadius: 14,
-          backgroundColor: colors.surface.card,
+          flex: 1, height: 54, borderRadius: 22,
+          backgroundColor: 'rgba(255,255,255,0.96)',
           flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10,
-          shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.82)',
+          shadowColor: colors.brand.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 6,
         }}>
           <Search size={18} color={colors.text.tertiary} strokeWidth={1.5} />
           <TextInput
@@ -545,9 +547,11 @@ export default function MapScreen() {
           accessibilityLabel="Reset filters"
           accessibilityRole="button"
           style={({ pressed }) => ({
-            width: 52, height: 52, borderRadius: 14,
+            width: 54, height: 54, borderRadius: 22,
             backgroundColor: colors.surface.card, alignItems: 'center', justifyContent: 'center',
-            shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
+            borderWidth: 1,
+            borderColor: 'rgba(255,255,255,0.82)',
+            shadowColor: colors.brand.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.14, shadowRadius: 18, elevation: 6,
             opacity: pressed ? 0.8 : 1,
             transform: [{ scale: pressed ? 0.96 : 1 }],
           })}
@@ -568,10 +572,12 @@ export default function MapScreen() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
                 style={({ pressed }) => ({
-                  height: 34, paddingHorizontal: 14, borderRadius: 999,
-                  backgroundColor: active ? colors.brand.primary : colors.surface.card,
+                  height: 36, paddingHorizontal: 15, borderRadius: 999,
+                  backgroundColor: active ? colors.brand.cta : 'rgba(255,255,255,0.94)',
                   alignItems: 'center', justifyContent: 'center',
-                  shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2,
+                  borderWidth: active ? 0 : 1,
+                  borderColor: colors.border.divider,
+                  shadowColor: colors.brand.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
                   opacity: pressed ? 0.8 : 1,
                 })}
               >
@@ -591,16 +597,16 @@ export default function MapScreen() {
           accessibilityRole="button"
           hitSlop={10}
           style={({ pressed }) => ({
-            width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surface.card,
+            width: 52, height: 52, borderRadius: 22, backgroundColor: colors.brand.primary,
             alignItems: 'center', justifyContent: 'center',
-            shadowColor: '#1A1A1A', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.12, shadowRadius: 10, elevation: 46, zIndex: 46,
+            shadowColor: colors.brand.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.24, shadowRadius: 16, elevation: 46, zIndex: 46,
             opacity: pressed ? 0.8 : 1,
           })}
         >
           {locating ? (
-            <ActivityIndicator color={colors.brand.primary} size="small" />
+            <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <LocateFixed size={20} color={colors.brand.primary} strokeWidth={1.8} />
+            <LocateFixed size={20} color="#fff" strokeWidth={1.8} />
           )}
         </Pressable>
       </View>

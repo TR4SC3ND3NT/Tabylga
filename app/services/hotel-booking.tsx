@@ -79,9 +79,9 @@ export default function HotelBookingScreen() {
   const [roomId, setRoomId] = useState(stay.roomTypes[0]?.id ?? '');
   const paymentMethods = useMemo(() => [
     'Pay later',
-    'Card demo',
-    ...(stay.paymentOptions.includes('qr') || stay.qrPayment ? ['QR demo'] : []),
-    ...(stay.offlinePaymentSupported ? ['Offline Pay demo'] : []),
+    'Card',
+    ...(stay.paymentOptions.includes('qr') || stay.qrPayment ? ['QR'] : []),
+    ...(stay.offlinePaymentSupported ? ['Offline Pay'] : []),
   ], [stay]);
   const [paymentMethod, setPaymentMethod] = useState(paymentMethods[0]);
   const room = stay.roomTypes.find((item) => item.id === roomId) ?? stay.roomTypes[0];
@@ -132,7 +132,7 @@ export default function HotelBookingScreen() {
       return;
     }
 
-    Alert.alert('Booking saved', 'Mock booking saved locally.');
+    Alert.alert('Booking saved', 'Your stay was saved locally and added to your bookings.');
     goBackOrReplace(router, '/services/hotels');
   }
 
@@ -144,7 +144,7 @@ export default function HotelBookingScreen() {
         <View style={{ flex: 1, marginRight: 44 }}>
           <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text.primary, textAlign: 'center' }}>Book stay</Text>
           <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, textAlign: 'center', marginTop: 2 }}>
-            {fromTrip ? `Trip Day ${dayNumber} · ${params.region ?? stay.region}` : 'Mock booking flow'}
+            {fromTrip ? `Trip Day ${dayNumber} · ${params.region ?? stay.region}` : 'Flexible booking'}
           </Text>
         </View>
       </View>
@@ -201,13 +201,13 @@ export default function HotelBookingScreen() {
         </View>
 
         <View style={{ borderRadius: 18, backgroundColor: colors.status.warningLight, padding: 16 }}>
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>Business model demo</Text>
+          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text.primary }}>Partner payout preview</Text>
           <Line label="Gross booking value" value={formatUSD(roomTotal)} />
           <Line label={`Commission ${(stay.commissionRate * 100).toFixed(0)}%`} value={formatUSD(commission)} />
           <Line label="Tabylga commission" value={formatUSD(commission)} />
           <Line label="Partner payout" value={formatUSD(partnerPayout)} />
           <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 17, color: colors.text.secondary, marginTop: 8 }}>
-            This is a mock booking. Real booking and payouts will connect through licensed partners.
+            Booking details and payout estimates are saved with this stay for quick review.
           </Text>
         </View>
 

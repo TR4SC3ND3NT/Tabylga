@@ -161,9 +161,10 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
-        {/* Balance hero */}
         <View style={{ paddingHorizontal: 16, paddingTop: 16, marginBottom: 18 }}>
-          <Card elevated style={{ padding: 18, backgroundColor: colors.brand.primary, borderColor: 'transparent' }}>
+          <Card elevated style={{ padding: 20, backgroundColor: colors.brand.primary, borderColor: 'transparent', borderRadius: 32 }}>
+            <View pointerEvents="none" style={{ position: 'absolute', right: -48, top: 16, width: 180, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.13)', transform: [{ rotate: '-18deg' }] }} />
+            <View pointerEvents="none" style={{ position: 'absolute', left: -54, bottom: 18, width: 188, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,209,102,0.24)', transform: [{ rotate: '18deg' }] }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
               <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 24, color: '#fff' }}>
                 {PAYMENT_STRINGS.walletTitle}
@@ -193,8 +194,8 @@ export default function WalletScreen() {
               minimumFontScale={0.78}
               style={{
                 fontFamily: 'Inter_700Bold',
-                fontSize: 42,
-                lineHeight: 48,
+                fontSize: 46,
+                lineHeight: 52,
                 color: '#fff',
               }}
             >
@@ -203,7 +204,6 @@ export default function WalletScreen() {
           </Card>
         </View>
 
-        {/* Balance cards: 2x2 grid */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <BalanceCard
@@ -231,7 +231,6 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Action buttons grid 2x3 */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <Button
@@ -285,6 +284,38 @@ export default function WalletScreen() {
               accessibilityLabel={PAYMENT_STRINGS.actionPayOffline}
             />
           </View>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+            <Button
+              variant="secondary"
+              label="Receive"
+              onPress={() => router.push('/wallet/receive')}
+              icon={
+                <ArrowDownLeft
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={13}
+              accessibilityLabel="Receive payment"
+            />
+            <Button
+              variant="secondary"
+              label="Bluetooth"
+              onPress={() => router.push('/wallet/bluetooth')}
+              icon={
+                <Bluetooth
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={13}
+              accessibilityLabel="Bluetooth payment"
+            />
+          </View>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Button
               variant="secondary"
@@ -302,6 +333,23 @@ export default function WalletScreen() {
               accessibilityLabel={PAYMENT_STRINGS.actionMerchantMode}
             />
             <Button
+              variant="secondary"
+              label="Offline scan"
+              onPress={() => router.push('/wallet/merchant-mode')}
+              icon={
+                <Store
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={13}
+              accessibilityLabel="Offline merchant scan"
+            />
+          </View>
+          <View style={{ marginTop: 10 }}>
+            <Button
               variant="ghost"
               label={syncing ? '…' : PAYMENT_STRINGS.actionSync}
               onPress={handleSync}
@@ -314,7 +362,6 @@ export default function WalletScreen() {
                 />
               }
               style={{
-                flex: 1,
                 borderWidth: 1.5,
                 borderColor: colors.brand.primary,
               }}
@@ -324,12 +371,11 @@ export default function WalletScreen() {
           </View>
         </View>
 
-        {/* Explanation card */}
         <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
           <Card
             style={{
               padding: 16,
-              backgroundColor: colors.status.warningLight,
+              backgroundColor: colors.brand.primaryLight,
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -357,15 +403,14 @@ export default function WalletScreen() {
           </Card>
         </View>
 
-        {/* Prototype note */}
         <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
           <View
             style={{
               padding: 12,
-              borderRadius: 12,
-              backgroundColor: '#F4F1EA',
+              borderRadius: 18,
+              backgroundColor: colors.status.warningLight,
               borderWidth: 1,
-              borderColor: colors.border.divider,
+              borderColor: 'rgba(255,255,255,0.72)',
             }}
           >
             <Text
@@ -373,7 +418,7 @@ export default function WalletScreen() {
                 fontFamily: 'Inter_600SemiBold',
                 fontSize: 11,
                 color: colors.text.tertiary,
-                letterSpacing: 0.08 * 11,
+                letterSpacing: 0,
                 textTransform: 'uppercase',
                 marginBottom: 4,
               }}
@@ -473,7 +518,7 @@ function BalanceCard({
           fontFamily: 'Inter_500Medium',
           fontSize: 10,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 11,
+          letterSpacing: 0,
           textTransform: 'uppercase',
           marginBottom: 4,
         }}

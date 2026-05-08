@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Map, Route, Sparkles, WifiOff } from 'lucide-react-native';
 import { colors } from '../constants/colors';
 import { Button } from '../components/Button';
+import { KyrgyzBackdrop } from '../components/KyrgyzBackdrop';
 import { useAuthStore } from '../stores/authStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
 import { useTripStore } from '../stores/tripStore';
@@ -42,7 +43,9 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+    <View style={{ flex: 1, backgroundColor: colors.surface.primary }}>
+      <KyrgyzBackdrop height={360} />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -54,30 +57,33 @@ export default function WelcomeScreen() {
       >
         <View
           style={{
-            borderRadius: 28,
+            borderRadius: 30,
             padding: 22,
-            backgroundColor: colors.brand.primaryLight,
+            backgroundColor: colors.surface.inverse,
             minHeight: 240,
             justifyContent: 'flex-end',
+            overflow: 'hidden',
           }}
         >
+          <View pointerEvents="none" style={{ position: 'absolute', right: -58, top: 22, width: 180, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,79,123,0.36)', transform: [{ rotate: '-18deg' }] }} />
+          <View pointerEvents="none" style={{ position: 'absolute', left: -52, bottom: 28, width: 196, height: 34, borderRadius: 17, backgroundColor: 'rgba(24,200,184,0.28)', transform: [{ rotate: '18deg' }] }} />
           <View
             style={{
               width: 58,
               height: 58,
               borderRadius: 20,
-              backgroundColor: colors.surface.card,
+              backgroundColor: 'rgba(255,255,255,0.14)',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 22,
             }}
           >
-            <Sparkles size={28} color={colors.brand.primary} strokeWidth={1.7} />
+            <Sparkles size={28} color={colors.accent.lemon} strokeWidth={1.7} />
           </View>
-          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 36, lineHeight: 42, color: colors.text.primary }}>
+          <Text style={{ fontFamily: 'Fraunces_600SemiBold', fontSize: 36, lineHeight: 42, color: '#fff' }}>
             Welcome to Tabylga
           </Text>
-          <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 16, lineHeight: 24, color: colors.text.secondary, marginTop: 10 }}>
+          <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 16, lineHeight: 24, color: 'rgba(255,255,255,0.78)', marginTop: 10 }}>
             Build a Kyrgyzstan route that actually works — with stays, food, transport and activities connected into one plan.
           </Text>
         </View>
@@ -141,6 +147,7 @@ export default function WelcomeScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }

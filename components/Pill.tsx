@@ -21,7 +21,7 @@ const VARIANT_STYLES: Record<string, { bg: string; color: string }> = {
   offline:     { bg: colors.status.warning,  color: '#1A1A1A' },
   error:       { bg: colors.status.error,    color: '#fff' },
   discount:    { bg: colors.status.warning,  color: '#1A1A1A' },
-  countryside: { bg: 'rgba(255,255,255,0.92)', color: colors.brand.primary },
+  countryside: { bg: colors.surface.raised, color: colors.brand.primary },
 };
 
 export function Pill({
@@ -35,7 +35,7 @@ export function Pill({
   height = 24,
   fontSize = 12,
 }: PillProps) {
-  const vs = VARIANT_STYLES[variant] ?? { bg: '#E8EEF2', color: colors.brand.primary };
+  const vs = VARIANT_STYLES[variant] ?? { bg: colors.brand.primaryLight, color: colors.brand.primary };
   const bg = backgroundColor ?? vs.bg;
   const color = textColor ?? vs.color;
 
@@ -50,6 +50,8 @@ export function Pill({
           alignItems: 'center',
           gap: 6,
           backgroundColor: bg,
+          borderWidth: variant === 'custom' ? 1 : 0,
+          borderColor: 'rgba(255,255,255,0.62)',
         },
         style,
       ]}

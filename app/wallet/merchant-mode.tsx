@@ -83,7 +83,7 @@ export default function MerchantModeScreen() {
     setLoading(true);
     try {
       await paymentService.syncOfflinePayments();
-      Alert.alert('Payment synced', 'Settlement completed in demo mode.\nMerchant will receive the amount through KICB Demo settlement.');
+      Alert.alert('Payment synced', 'Settlement completed.\nMerchant will receive the amount through partner settlement.');
       loadData();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Sync failed');
@@ -173,7 +173,7 @@ export default function MerchantModeScreen() {
       <StatusBar style="dark" />
       <ScreenHeader
         title="Merchant Mode"
-        subtitle="Accept offline demo payments"
+        subtitle="Accept offline payments"
         backTo="/(tabs)/wallet"
       />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 100 }}>

@@ -27,7 +27,7 @@ export function ScreenHeader({
   const router = useRouter();
   const foreground = inverse ? colors.text.onDark : colors.text.primary;
   const secondary = inverse ? 'rgba(250,250,247,0.68)' : colors.text.secondary;
-  const buttonBg = inverse ? 'rgba(255,255,255,0.12)' : colors.surface.card;
+  const buttonBg = inverse ? 'rgba(255,255,255,0.12)' : colors.brand.primaryLight;
 
   function goBack() {
     if (onBack) {
@@ -50,7 +50,7 @@ export function ScreenHeader({
           alignItems: 'center',
           gap: 8,
           borderBottomWidth: inverse ? 0 : 1,
-          borderBottomColor: colors.border.divider,
+          borderBottomColor: inverse ? 'transparent' : 'rgba(220,230,242,0.74)',
           backgroundColor: inverse ? colors.surface.inverse : colors.surface.primary,
         },
         style,
@@ -68,8 +68,8 @@ export function ScreenHeader({
           justifyContent: 'center',
           backgroundColor: buttonBg,
           opacity: pressed ? 0.72 : 1,
-          borderWidth: inverse ? 1 : 0,
-          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          borderColor: inverse ? 'rgba(255,255,255,0.1)' : 'rgba(19,104,242,0.14)',
         })}
       >
         <ArrowLeft size={22} color={foreground} strokeWidth={1.7} />

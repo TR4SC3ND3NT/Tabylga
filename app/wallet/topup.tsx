@@ -441,7 +441,7 @@ export default function TopUpScreen() {
                 paddingHorizontal: 16,
                 fontFamily: 'Inter_400Regular',
                 fontSize: 16,
-                letterSpacing: 2,
+                letterSpacing: 0,
                 color: colors.text.primary,
               }}
             />
@@ -550,7 +550,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontSize: 13,
         color: colors.text.secondary,
         marginBottom: 10,
-        letterSpacing: 0.08 * 13,
+        letterSpacing: 0,
         textTransform: 'uppercase',
       }}
     >
@@ -587,7 +587,7 @@ function BalanceMini({
           fontFamily: 'Inter_500Medium',
           fontSize: 11,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 11,
+          letterSpacing: 0,
           textTransform: 'uppercase',
           marginBottom: 4,
         }}
@@ -718,7 +718,7 @@ function ReceiptRow({
           fontFamily: 'Inter_500Medium',
           fontSize: 12,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 12,
+          letterSpacing: 0,
           textTransform: 'uppercase',
         }}
       >

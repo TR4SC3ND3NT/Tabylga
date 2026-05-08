@@ -37,13 +37,13 @@ export function Chip({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          borderWidth: 1,
-          borderColor: selected ? colors.brand.primary : colors.border.divider,
-          backgroundColor: selected ? colors.brand.primary : colors.surface.card,
+          borderWidth: selected ? 1 : 1,
+          borderColor: selected ? 'rgba(255,255,255,0.38)' : colors.border.divider,
+          backgroundColor: selected ? colors.brand.primary : 'rgba(255,255,255,0.96)',
           opacity: pressed ? 0.85 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          transform: [{ scale: pressed ? 0.96 : 1 }],
         },
-        !selected && shadows.card,
+        selected ? shadows.cardElevated : shadows.card,
         style,
       ])}
     >
@@ -56,6 +56,9 @@ export function Chip({
           letterSpacing: 0,
           color: selected ? '#fff' : colors.text.primary,
         }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.82}
       >
         {label}
       </Text>

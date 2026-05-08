@@ -287,7 +287,7 @@ export const STAYS: Stay[] = [
     businessFriendly: false,
     remote: false,
     availability: 'available',
-    description: 'Small guesthouse for Osh demo routes and southern cultural extensions.',
+    description: 'Small guesthouse for Osh routes and southern cultural extensions.',
     reviews: [{ id: 'r_osh_1', author: 'Chen', rating: 4.6, text: 'Helpful host and easy taxi pickup.', date: 'Apr 2026' }],
     roomTypes: [
       { id: 'osh_double', title: 'Double room', pricePerNight: 42, sleeps: 2 },

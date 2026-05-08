@@ -174,7 +174,7 @@ export default function GeneratingScreen() {
         <Text
           style={{
             fontFamily: 'Fraunces_600SemiBold', fontSize: 28, lineHeight: 33.6,
-            letterSpacing: -0.005 * 28,
+            letterSpacing: 0,
             color: colors.text.primary, textAlign: 'center', marginBottom: 16,
           }}
         >

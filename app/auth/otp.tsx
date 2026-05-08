@@ -18,6 +18,7 @@ import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { goBackOrReplace } from '../../lib/navigation';
 import { Button } from '../../components/Button';
+import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
 
 const OTP_RESEND_SECONDS = 58;
 
@@ -112,7 +113,9 @@ export default function OtpScreen() {
     `${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`;
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+    <View style={{ flex: 1, backgroundColor: colors.surface.primary }}>
+      <KyrgyzBackdrop height={260} />
+      <SafeAreaView edges={['top']} style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -148,7 +151,7 @@ export default function OtpScreen() {
                 fontFamily: 'Fraunces_600SemiBold',
                 fontSize: 28,
                 lineHeight: 33.6,
-                letterSpacing: -0.005 * 28,
+                letterSpacing: 0,
                 color: colors.text.primary,
                 marginBottom: 10,
               }}
@@ -378,7 +381,8 @@ export default function OtpScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 

@@ -179,7 +179,7 @@ export default function PayOnlineQRScreen() {
             />
             <ReceiptRow
               label={PAYMENT_STRINGS.receiptMethod}
-              value="Online QR (demo)"
+              value="Online QR"
             />
             <ReceiptRow
               label="Provider"
@@ -276,7 +276,7 @@ export default function PayOnlineQRScreen() {
                 fontFamily: 'Inter_500Medium',
                 fontSize: 11,
                 color: colors.text.tertiary,
-                letterSpacing: 0.08 * 11,
+                letterSpacing: 0,
                 textTransform: 'uppercase',
                 marginBottom: 4,
               }}
@@ -323,16 +323,15 @@ export default function PayOnlineQRScreen() {
               marginBottom: 12,
             }}
           >
-            Tabylga uses a provider-agnostic payment layer. In the prototype,
-            payments are simulated. In production, services can be connected
-            through licensed partners such as KICB, MBANK/MTravel or other local
-            payment providers.
+            Tabylga uses a provider-agnostic payment layer, so wallet flows can
+            work with KICB, MBANK/MTravel or other local payment providers while
+            keeping the same QR experience for travelers.
           </Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-            <ProviderChip label="KICB Demo" />
-            <ProviderChip label="MBANK / MTravel Demo" />
-            <ProviderChip label="Online QR Demo" />
-            <ProviderChip label="MPay-style Bluetooth Demo" icon="bluetooth" />
+            <ProviderChip label="KICB-ready" />
+            <ProviderChip label="MBANK / MTravel" />
+            <ProviderChip label="Online QR" />
+            <ProviderChip label="Nearby device" icon="bluetooth" />
           </View>
         </Card>
 
@@ -474,7 +473,7 @@ export default function PayOnlineQRScreen() {
                     <ProviderChip label={m.providerLabel} />
                     {m.onlineQrSupported ? <CapabilityChip label="Online QR" icon="qr" /> : null}
                     {m.offlineQrSupported ? <CapabilityChip label="Offline QR" icon="shield" /> : null}
-                    {m.bluetoothDemoSupported ? <CapabilityChip label="Bluetooth demo" icon="bluetooth" /> : null}
+                    {m.bluetoothDemoSupported ? <CapabilityChip label="Nearby device" icon="bluetooth" /> : null}
                   </View>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -593,7 +592,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontSize: 13,
         color: colors.text.secondary,
         marginBottom: 10,
-        letterSpacing: 0.08 * 13,
+        letterSpacing: 0,
         textTransform: 'uppercase',
       }}
     >
@@ -692,7 +691,7 @@ function ReceiptRow({
           fontFamily: 'Inter_500Medium',
           fontSize: 12,
           color: colors.text.tertiary,
-          letterSpacing: 0.08 * 12,
+          letterSpacing: 0,
           textTransform: 'uppercase',
         }}
       >

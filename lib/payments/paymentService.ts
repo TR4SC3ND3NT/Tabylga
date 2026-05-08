@@ -843,7 +843,7 @@ export async function sendViaBluetoothDemo(
   const merchant = getPaymentMerchantById(input.merchantId);
   if (!merchant) throw new Error('Merchant not found.');
   if (!merchant.bluetoothDemoSupported) {
-    throw new Error('Merchant does not support Bluetooth demo.');
+    throw new Error('Merchant does not support nearby-device payment.');
   }
 
   let token: OfflineToken | null = null;
@@ -908,7 +908,7 @@ export async function sendViaBluetoothDemo(
     (await getOfflineTokens()).find((t) => t.id === token!.id) ?? token!;
   const finalTx =
     (await getTransactions()).find((t) => t.id === transactionId) ?? null;
-  if (!finalTx) throw new Error('Failed to persist Bluetooth demo transaction.');
+  if (!finalTx) throw new Error('Failed to save nearby-device transaction.');
 
   const wallet = await getWallet();
 

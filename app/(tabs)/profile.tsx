@@ -43,18 +43,18 @@ export default function ProfileScreen() {
       { key: 'language',   icon: Globe,       label: strings.profileExtra.settingsLanguage,  onPress: () => setShowLanguages((value) => !value) },
       { key: 'esim',       icon: Wifi,        label: strings.profileExtra.settingsEsim, onPress: () => router.push('/tools/esim') },
       { key: 'payment',    icon: CreditCard,  label: strings.profileExtra.settingsPayment,  onPress: () => router.push('/(tabs)/wallet') },
-      { key: 'notif',      icon: Bell,        label: strings.profileExtra.settingsNotifications, onPress: () => showInfo(strings.profileExtra.settingsNotifications, 'Trip alerts, payment sync and booking reminders are enabled in demo mode.') },
-      { key: 'security',   icon: Shield,      label: strings.profileExtra.settingsSecurity, onPress: () => showInfo(strings.profileExtra.settingsSecurity, 'Your demo wallet uses local signing, offline receipts and device-only storage for this prototype.') },
+      { key: 'notif',      icon: Bell,        label: strings.profileExtra.settingsNotifications, onPress: () => showInfo(strings.profileExtra.settingsNotifications, 'Trip alerts, payment sync and booking reminders are enabled.') },
+      { key: 'security',   icon: Shield,      label: strings.profileExtra.settingsSecurity, onPress: () => showInfo(strings.profileExtra.settingsSecurity, 'Your wallet uses local signing, offline receipts and device-only storage.') },
     ],
     [
       { key: 'ratings',    icon: Star,        label: strings.profileExtra.settingsRatings,  onPress: () => router.push({ pathname: '/rating', params: { name: 'Tabylga', region: 'Kyrgyzstan' } } as never) },
       { key: 'collab',     icon: Users,       label: strings.profileExtra.settingsCollaborative, onPress: () => router.push('/trip/group-match') },
-      { key: 'referrals',  icon: Gift,        label: strings.profileExtra.settingsReferrals, onPress: () => showInfo(strings.profileExtra.settingsReferrals, 'Referral rewards are prepared for the product version. In this demo, invite links are not sent.') },
+      { key: 'referrals',  icon: Gift,        label: strings.profileExtra.settingsReferrals, onPress: () => showInfo(strings.profileExtra.settingsReferrals, 'Referral rewards are ready for connected accounts. Invite links can be shared after sign-in.') },
     ],
     [
-      { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => showInfo(strings.profileExtra.settingsHelp, 'For the demo, support is available through the app team. Real chat support can be connected to this screen later.') },
+      { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => showInfo(strings.profileExtra.settingsHelp, 'Support is available through the app team. Chat support can be connected to this screen.') },
       { key: 'about',      icon: Info,        label: strings.profileExtra.settingsAbout,    onPress: () => showInfo(strings.profileExtra.settingsAbout, 'Tabylga is a Kyrgyzstan travel companion with AI planning, routes, wallet and offline mode.') },
-      { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => showInfo(strings.profileExtra.settingsPrivacy, 'Demo data is stored locally on this device. Production privacy policy can be linked here.') },
+      { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => showInfo(strings.profileExtra.settingsPrivacy, 'Travel, wallet and booking data is stored locally on this device. A full privacy policy can be linked here.') },
     ],
   ];
 
@@ -71,15 +71,17 @@ export default function ProfileScreen() {
       >
 
         {/* Avatar + name */}
-        <View style={{ alignItems:'center', marginHorizontal:16, paddingTop:22, paddingBottom:20, paddingHorizontal:18, borderRadius:24, backgroundColor:'rgba(255,255,255,0.88)', borderWidth:1, borderColor:'rgba(255,255,255,0.72)', marginBottom:16 }}>
-          <View style={{ width:84, height:84, borderRadius:42, backgroundColor: colors.brand.primaryLight, alignItems:'center', justifyContent:'center', marginBottom:12, borderWidth:3, borderColor:colors.surface.card }}>
-            <User size={40} color={colors.brand.primary} strokeWidth={1.5} />
+        <View style={{ alignItems:'center', marginHorizontal:16, paddingTop:22, paddingBottom:20, paddingHorizontal:18, borderRadius:30, backgroundColor:colors.surface.inverse, borderWidth:1, borderColor:'rgba(255,255,255,0.12)', marginBottom:16, overflow:'hidden' }}>
+          <View pointerEvents="none" style={{ position:'absolute', right:-54, top:20, width:178, height:34, borderRadius:17, backgroundColor:'rgba(255,79,123,0.36)', transform:[{ rotate:'-18deg' }] }} />
+          <View pointerEvents="none" style={{ position:'absolute', left:-56, bottom:24, width:196, height:32, borderRadius:16, backgroundColor:'rgba(24,200,184,0.24)', transform:[{ rotate:'18deg' }] }} />
+          <View style={{ width:84, height:84, borderRadius:30, backgroundColor: 'rgba(255,255,255,0.14)', alignItems:'center', justifyContent:'center', marginBottom:12, borderWidth:3, borderColor:'rgba(255,255,255,0.22)' }}>
+            <User size={40} color={colors.accent.lemon} strokeWidth={1.5} />
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
-            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.text.primary }}>{displayName}</Text>
+            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:'#fff' }}>{displayName}</Text>
             <CheckCircle size={18} color={colors.status.success} fill={colors.status.success} strokeWidth={0} />
           </View>
-          <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, color:colors.text.secondary, marginTop:4 }}>
+          <Text style={{ fontFamily:'Inter_500Medium', fontSize:14, color:'rgba(255,255,255,0.72)', marginTop:4 }}>
             {currentLanguage.label} {currentLanguage.flag}
           </Text>
         </View>
@@ -89,25 +91,25 @@ export default function ProfileScreen() {
           onPress={() => router.push('/(tabs)/trips')}
           accessibilityRole="button"
           style={({ pressed }) => ({
-            marginHorizontal:16, borderRadius:16, backgroundColor:colors.surface.card,
-            borderWidth:1, borderColor:colors.border.divider,
+            marginHorizontal:16, borderRadius:22, backgroundColor:colors.brand.primary,
+            borderWidth:1, borderColor:'rgba(255,255,255,0.24)',
             flexDirection:'row', alignItems:'center', gap:14, padding:16, marginBottom:20,
             opacity: pressed ? 0.85 : 1,
           })}
         >
-          <View style={{ width:44, height:44, borderRadius:12, backgroundColor:colors.brand.primaryLight, alignItems:'center', justifyContent:'center' }}>
-            <Briefcase size={22} color={colors.brand.primary} strokeWidth={1.5} />
+          <View style={{ width:44, height:44, borderRadius:16, backgroundColor:'rgba(255,255,255,0.16)', alignItems:'center', justifyContent:'center' }}>
+            <Briefcase size={22} color="#fff" strokeWidth={1.5} />
           </View>
           <View style={{ flex:1 }}>
-            <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:15, color:colors.text.primary }}>{strings.profileExtra.tripsShortcut}</Text>
-            <Text style={{ fontFamily:'Inter_400Regular', fontSize:13, color:colors.text.secondary, marginTop:2 }}>{formatString(strings.profileExtra.tripsCount, { upcoming: 3, past: 12 })}</Text>
+            <Text style={{ fontFamily:'Inter_700Bold', fontSize:15, color:'#fff' }}>{strings.profileExtra.tripsShortcut}</Text>
+            <Text style={{ fontFamily:'Inter_500Medium', fontSize:13, color:'rgba(255,255,255,0.74)', marginTop:2 }}>{formatString(strings.profileExtra.tripsCount, { upcoming: 3, past: 12 })}</Text>
           </View>
-          <ChevronRight size={18} color={colors.text.tertiary} strokeWidth={1.5} />
+          <ChevronRight size={18} color="rgba(255,255,255,0.74)" strokeWidth={1.5} />
         </Pressable>
 
         {/* Settings groups */}
         {groups.map((group, gi) => (
-          <View key={gi} style={{ marginHorizontal:16, borderRadius:18, backgroundColor:colors.surface.card, borderWidth:1, borderColor:colors.border.divider, overflow:'hidden', marginBottom:12 }}>
+          <View key={gi} style={{ marginHorizontal:16, borderRadius:22, backgroundColor:colors.surface.card, borderWidth:1, borderColor:'rgba(220,230,242,0.9)', overflow:'hidden', marginBottom:12 }}>
             {group.map((item, i) => {
               const Icon = item.icon;
               const accent = gi === 0 ? colors.brand.primary : gi === 1 ? colors.brand.cta : colors.status.successText;
@@ -173,7 +175,7 @@ export default function ProfileScreen() {
         )}
 
         {/* Merchant mode */}
-        <View style={{ marginHorizontal:16, borderRadius:16, backgroundColor:colors.surface.card, borderWidth:1, borderColor:colors.border.divider, overflow:'hidden', marginBottom:20 }}>
+        <View style={{ marginHorizontal:16, borderRadius:20, backgroundColor:colors.brand.ctaLight, borderWidth:1, borderColor:'rgba(255,79,123,0.18)', overflow:'hidden', marginBottom:20 }}>
           <Pressable
             onPress={() => router.push('/merchant/dashboard')}
             accessibilityRole="button"

@@ -38,8 +38,8 @@ const FILTERS: Record<SelectionType, string[]> = {
 
 const SOURCE_LABELS = {
   tabylga_partner: 'Tabylga partner',
-  mtravel_partner_mock: 'MTravel partner mock',
-  tour_operator_mock: 'Tour operator mock',
+  mtravel_partner_mock: 'MTravel partner',
+  tour_operator_mock: 'Tour operator',
   public_tour_pattern: 'Public tour pattern',
 } as const;
 
@@ -458,8 +458,8 @@ function DetailsModal({ visible, item, itemType, dayNumber, dayRegion, preferenc
                 <Pressable onPress={() => setBusinessOpen((value) => !value)} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <View>
-                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Business model demo</Text>
-                      <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: colors.text.secondary, marginTop: 2 }}>Secondary mock commission view</Text>
+                      <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text.primary }}>Partner payout preview</Text>
+                      <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 11, color: colors.text.secondary, marginTop: 2 }}>Partner payout preview</Text>
                     </View>
                     <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 18, color: colors.brand.primary }}>{businessOpen ? '-' : '+'}</Text>
                   </View>

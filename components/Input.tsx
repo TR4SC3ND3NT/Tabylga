@@ -29,11 +29,11 @@ export function Input({
       style={[
         {
           height: 56,
-          borderRadius: 16,
+          borderRadius: 20,
           paddingHorizontal: focused ? 14.5 : 16,
           borderWidth: focused ? 1.5 : 1,
           borderColor: focused ? colors.brand.primary : colors.border.input,
-          backgroundColor: colors.surface.card,
+          backgroundColor: 'rgba(255,255,255,0.96)',
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
@@ -54,7 +54,7 @@ export function Input({
               fontFamily: 'Inter_500Medium',
               fontSize: 11.2,
               color: focused ? colors.brand.primary : colors.text.tertiary,
-              backgroundColor: '#fff',
+              backgroundColor: colors.surface.card,
               paddingHorizontal: 4,
             }}
           >

@@ -1,9 +1,9 @@
 /**
- * Mock payment merchants used ONLY by the Wallet / Offline Pay demo flows.
+ * Payment merchants used by the Wallet / Offline Pay flows.
  *
  * Intentionally isolated from the Hotels, Food, Transport and Activities
  * modules — names may overlap, but these records exist purely so the wallet
- * can target a "merchant" when running QR / offline / Bluetooth demos.
+ * can target a merchant when running QR, offline and nearby-device payments.
  */
 
 export type PaymentMerchantType =
@@ -15,10 +15,10 @@ export type PaymentMerchantType =
   | 'guide';
 
 export type PaymentProviderLabel =
-  | 'KICB Demo'
-  | 'MBANK / MTravel Demo'
-  | 'Online QR Demo'
-  | 'MPay-style Bluetooth Demo';
+  | 'KICB-ready'
+  | 'MBANK / MTravel'
+  | 'Online QR'
+  | 'Nearby device';
 
 export interface PaymentMerchant {
   id: string;
@@ -42,7 +42,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: false,
     offlineQrSupported: true,
     bluetoothDemoSupported: true,
-    providerLabel: 'KICB Demo',
+    providerLabel: 'KICB-ready',
     rating: 4.9,
     description: 'Remote yurt camp with offline payment support.',
   },
@@ -54,7 +54,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: false,
     offlineQrSupported: true,
     bluetoothDemoSupported: true,
-    providerLabel: 'KICB Demo',
+    providerLabel: 'KICB-ready',
     rating: 4.8,
     description: 'Nomad camp supporting offline vouchers.',
   },
@@ -66,7 +66,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: true,
     bluetoothDemoSupported: true,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.7,
     description: 'Yurt camp with online and offline payment support.',
   },
@@ -78,7 +78,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: false,
     offlineQrSupported: true,
     bluetoothDemoSupported: true,
-    providerLabel: 'KICB Demo',
+    providerLabel: 'KICB-ready',
     rating: 4.8,
     description: 'Verified mountain driver for remote routes.',
   },
@@ -90,9 +90,9 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.7,
-    description: 'City and Chuy driver with online QR demo support.',
+    description: 'City and Chuy driver with online QR support.',
   },
   {
     id: 'karakol_guesthouse',
@@ -102,7 +102,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: true,
     bluetoothDemoSupported: false,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.7,
     description: 'Guesthouse with online QR and offline voucher support.',
   },
@@ -114,7 +114,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'Online QR Demo',
+    providerLabel: 'Online QR',
     rating: 4.7,
     description: 'National restaurant in Bishkek with QR payment.',
   },
@@ -126,7 +126,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'Online QR Demo',
+    providerLabel: 'Online QR',
     rating: 4.6,
     description: 'Popular restaurant with local food and online QR support.',
   },
@@ -138,7 +138,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.8,
     description: 'Premium hotel with online payment support.',
   },
@@ -150,7 +150,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.6,
     description: 'Comfort hotel with online QR support.',
   },
@@ -162,7 +162,7 @@ export const PAYMENT_MERCHANTS: PaymentMerchant[] = [
     onlineQrSupported: true,
     offlineQrSupported: false,
     bluetoothDemoSupported: false,
-    providerLabel: 'MBANK / MTravel Demo',
+    providerLabel: 'MBANK / MTravel',
     rating: 4.6,
     description: 'Local guide with online QR payment.',
   },

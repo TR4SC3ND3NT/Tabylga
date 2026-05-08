@@ -183,7 +183,7 @@ export default function MerchantDashboard() {
 
       Alert.alert(
         'Payment synced',
-        `Settlement completed in demo mode.\n\nSynced: ${result.syncedCount}\nAmount: ${formatKgs(result.syncedAmount)}\n\nMerchant will receive the amount through partner settlement.\n\nIn production, settlement would happen through KICB, MBANK / MTravel or another licensed payment partner.`,
+        `Settlement completed.\n\nSynced: ${result.syncedCount}\nAmount: ${formatKgs(result.syncedAmount)}\n\nMerchant will receive the amount through partner settlement.`,
       );
     } catch (err) {
       Alert.alert(
@@ -254,7 +254,7 @@ export default function MerchantDashboard() {
               marginTop: 2,
             }}
           >
-            Accept KICB Demo offline payments from tourists.
+            Accept signed offline payments from tourists.
           </Text>
         </View>
         <Pressable
@@ -297,7 +297,7 @@ export default function MerchantDashboard() {
 
         <SectionTitle
           title="Scan customer offline QR"
-          body="Camera scan is not wired in this prototype. The demo scan reads the latest saved tourist QR token."
+          body="Use the latest tourist QR token saved on this device."
         />
         <View
           style={[
@@ -311,20 +311,8 @@ export default function MerchantDashboard() {
           ]}
         >
           <Button
-            variant="secondary"
-            label="Scan QR with camera"
-            icon={<QrCode size={18} color={colors.brand.primary} strokeWidth={2} />}
-            onPress={() =>
-              Alert.alert(
-                'Camera scanner not enabled',
-                'Use Demo scan latest token for this prototype.',
-              )
-            }
-            style={{ marginBottom: 10 }}
-          />
-          <Button
             variant="cta"
-            label="Demo scan latest token"
+            label="Scan latest token"
             icon={<ShieldCheck size={18} color="#fff" strokeWidth={2} />}
             disabled={!latestToken || !!scanningTokenId}
             onPress={() => latestToken && scanToken(latestToken)}
@@ -347,7 +335,7 @@ export default function MerchantDashboard() {
                 marginBottom: 4,
               }}
             >
-              Prototype note
+              Device handoff
             </Text>
             <Text
               style={{
@@ -357,9 +345,8 @@ export default function MerchantDashboard() {
                 color: colors.text.secondary,
               }}
             >
-              External phone camera opens a Tabylga deep link. Real cross-device
-              verification would require a backend or bank partner infrastructure.
-              This demo stores offline tokens locally.
+              External phone camera opens a Tabylga deep link. Saved offline
+              tokens are verified locally and kept ready for later settlement.
             </Text>
           </View>
           <Text
@@ -414,7 +401,7 @@ export default function MerchantDashboard() {
 
         <SectionTitle
           title="Sync payments"
-          body="Settle accepted offline payments in demo mode when internet is available."
+          body="Settle accepted offline payments when internet is available."
         />
         <View
           style={{
@@ -448,8 +435,8 @@ export default function MerchantDashboard() {
               marginBottom: 12,
             }}
           >
-            Prototype only. In production, settlement would happen through KICB,
-            MBANK / MTravel or another licensed payment partner.
+            Accepted payments are saved locally and settle when internet is
+            available through the selected payment partner.
           </Text>
           <Button
             variant="secondary"
@@ -572,7 +559,7 @@ function MerchantCard({
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
         <Badge label="Offline QR supported" />
         {merchant.bluetoothDemoSupported ? (
-          <Badge label="Bluetooth demo supported" icon="bluetooth" />
+          <Badge label="Nearby device supported" icon="bluetooth" />
         ) : null}
       </View>
     </Pressable>
@@ -633,7 +620,7 @@ function TokenRow({
               marginTop: 2,
             }}
           >
-            KICB Demo token - expires {formatTime(token.expiresAt)}
+            Signed offline token - expires {formatTime(token.expiresAt)}
           </Text>
           <Text
             style={{

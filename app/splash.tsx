@@ -42,7 +42,7 @@ export default function SplashScreen() {
     <View className="flex-1 bg-surface-inverse">
       <StatusBar style="light" />
 
-      {/* ── Dark background with subtle warm tint at bottom ── */}
+      {/* ── Dark background with bright travel tint at bottom ── */}
       <View
         style={{
           position: 'absolute',
@@ -50,8 +50,34 @@ export default function SplashScreen() {
           left: 0,
           right: 0,
           height: '45%',
-          backgroundColor: '#2A3A4A',
-          opacity: 0.6,
+          backgroundColor: colors.brand.primary,
+          opacity: 0.58,
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          right: -72,
+          top: 122,
+          width: 230,
+          height: 54,
+          borderRadius: 27,
+          backgroundColor: 'rgba(255,79,123,0.32)',
+          transform: [{ rotate: '-18deg' }],
+        }}
+      />
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: -86,
+          bottom: 286,
+          width: 250,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: 'rgba(24,200,184,0.22)',
+          transform: [{ rotate: '20deg' }],
         }}
       />
 
@@ -65,7 +91,7 @@ export default function SplashScreen() {
             fontFamily: 'Fraunces_600SemiBold',
             fontSize: 40,
             lineHeight: 44,
-            letterSpacing: -0.02 * 40,
+            letterSpacing: 0,
             color: '#fff',
           }}
         >
@@ -89,7 +115,7 @@ export default function SplashScreen() {
             style={{
               fontFamily: 'Inter_500Medium',
               fontSize: 11,
-              letterSpacing: 0.14 * 11,
+              letterSpacing: 0,
               color: 'rgba(255,255,255,0.7)',
               textTransform: 'uppercase',
             }}

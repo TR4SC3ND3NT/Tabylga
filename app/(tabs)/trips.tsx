@@ -27,7 +27,7 @@ export default function TripsScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 112 }}
       >
         <View style={{ paddingHorizontal: 4, marginBottom: 14 }}>
-          <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:30, color:colors.text.primary }}>
+          <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:34, lineHeight:38, color:colors.text.primary }}>
             {strings.trips.title}
           </Text>
           <Text style={{ marginTop: 4, fontFamily:'Inter_500Medium', fontSize:13, lineHeight:19, color:colors.text.secondary }}>
@@ -42,13 +42,15 @@ export default function TripsScreen() {
               accessibilityRole="button"
               style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.99 : 1 }] })}
             >
-              <Card elevated style={{ overflow: 'hidden', marginBottom: 14 }}>
-                <View style={{ minHeight: 118, padding: 18, backgroundColor: colors.brand.primary, justifyContent: 'space-between' }}>
+              <Card elevated style={{ overflow: 'hidden', marginBottom: 14, borderRadius: 30 }}>
+                <View style={{ minHeight: 142, padding: 20, backgroundColor: colors.brand.primary, justifyContent: 'space-between' }}>
+                  <View pointerEvents="none" style={{ position: 'absolute', right: -42, top: 14, width: 164, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '-18deg' }] }} />
+                  <View pointerEvents="none" style={{ position: 'absolute', left: -48, bottom: 18, width: 174, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,209,102,0.2)', transform: [{ rotate: '18deg' }] }} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Pill label="Ready route" backgroundColor="rgba(255,255,255,0.16)" textColor="#fff" height={28} />
                     <Sparkles size={24} color="#fff" strokeWidth={1.8} />
                   </View>
-                  <Text style={{ marginTop: 18, fontFamily:'Fraunces_600SemiBold', fontSize:25, lineHeight:30, color:'#fff' }} numberOfLines={2}>
+                  <Text style={{ marginTop: 18, fontFamily:'Fraunces_600SemiBold', fontSize:29, lineHeight:34, color:'#fff' }} numberOfLines={2}>
                     {itinerary.title}
                   </Text>
                 </View>
@@ -90,14 +92,15 @@ export default function TripsScreen() {
             </View>
           </>
         ) : (
-          <Card elevated style={{ padding: 18 }}>
-            <View style={{ width:72, height:72, borderRadius:24, backgroundColor:colors.brand.ctaLight, alignItems:'center', justifyContent:'center', marginBottom:18 }}>
+          <Card elevated style={{ padding: 20, borderRadius: 30, backgroundColor: colors.brand.primary }}>
+            <View pointerEvents="none" style={{ position: 'absolute', right: -42, top: 18, width: 166, height: 34, borderRadius: 17, backgroundColor: 'rgba(255,255,255,0.12)', transform: [{ rotate: '-18deg' }] }} />
+            <View style={{ width:76, height:76, borderRadius:26, backgroundColor:'rgba(255,255,255,0.16)', alignItems:'center', justifyContent:'center', marginBottom:18 }}>
               <Luggage size={34} color={colors.brand.cta} strokeWidth={1.7} />
             </View>
-            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:25, lineHeight:30, color:colors.text.primary, marginBottom:8 }}>
+            <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:29, lineHeight:34, color:'#fff', marginBottom:8 }}>
               {strings.trips.emptyTitle}
             </Text>
-            <Text style={{ fontFamily:'Inter_500Medium', fontSize:14, color:colors.text.secondary, marginBottom:18, lineHeight:21 }}>
+            <Text style={{ fontFamily:'Inter_500Medium', fontSize:14, color:'rgba(255,255,255,0.78)', marginBottom:18, lineHeight:21 }}>
               {strings.trips.emptySubtitle}
             </Text>
             <View style={{ gap: 10 }}>
