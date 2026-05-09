@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import {
   useFonts,
   Inter_400Regular,
@@ -20,6 +21,8 @@ import { seedDevData } from '../lib/db/seed';
 import { useAuthStore } from '../stores/authStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
 import { useTravelPreferencesStore } from '../stores/travelPreferencesStore';
+import { useTripStore } from '../stores/tripStore';
+import { colors } from '../constants/colors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +31,7 @@ export default function RootLayout() {
   const hydrateAuth = useAuthStore((s) => s.hydrate);
   const hydrateOnboarding = useOnboardingStore((s) => s.hydrate);
   const hydrateTravelPreferences = useTravelPreferencesStore((s) => s.hydrate);
+  const hydrateTrip = useTripStore((s) => s.hydrate);
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -46,6 +50,7 @@ export default function RootLayout() {
         await hydrateAuth();
         await hydrateOnboarding();
         await hydrateTravelPreferences();
+        await hydrateTrip();
       } catch (e) {
         console.error('[init] Bootstrap error:', e);
       } finally {
@@ -66,9 +71,10 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView className="flex-1">
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.surface.primary }}>
       <SafeAreaProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.surface.primary } }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="splash" />
           <Stack.Screen name="welcome" />

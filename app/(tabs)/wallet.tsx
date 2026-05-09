@@ -1,167 +1,603 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { Plus, QrCode, WifiOff, Store, RefreshCw, SmartphoneNfc } from 'lucide-react-native';
+import {
+  Plus,
+  QrCode,
+  ShieldCheck,
+  Send,
+  Store,
+  RefreshCw,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Bluetooth,
+  Clock,
+  CheckCircle2,
+} from 'lucide-react-native';
 import { colors } from '../../constants/colors';
+import { shadows } from '../../constants/shadows';
+import { Pill } from '../../components/Pill';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { paymentService, Wallet, Transaction } from '../../services/paymentService';
-import { TransactionHistory } from '../../components/wallet/TransactionHistory';
+import {
+  getWallet,
+  getTransactions,
+  syncOfflinePayments,
+  type Wallet,
+  type Transaction,
+} from '../../lib/payments/paymentService';
+import { PAYMENT_STRINGS, formatKgs } from '../../lib/payments/paymentStrings';
+
+const RECENT_LIMIT = 5;
+
+const TRANSACTION_ICONS: Record<Transaction['type'], React.ReactNode> = {
+  top_up: <ArrowDownLeft size={18} color="#fff" strokeWidth={2} />,
+  online_qr_payment: <QrCode size={18} color="#fff" strokeWidth={2} />,
+  offline_reserve: <ShieldCheck size={18} color="#fff" strokeWidth={2} />,
+  offline_qr_payment: <Send size={18} color="#fff" strokeWidth={2} />,
+  offline_bluetooth_payment: <Bluetooth size={18} color="#fff" strokeWidth={2} />,
+  sync: <RefreshCw size={18} color="#fff" strokeWidth={2} />,
+};
+
+const TRANSACTION_AVATAR_COLORS: Record<Transaction['type'], string> = {
+  top_up: colors.status.success,
+  online_qr_payment: colors.brand.primary,
+  offline_reserve: '#7A9B6E',
+  offline_qr_payment: '#C65D3A',
+  offline_bluetooth_payment: '#1E4D6B',
+  sync: '#6a5a4b',
+};
+
+const STATUS_PILL: Record<Transaction['status'], { variant: 'online' | 'offline' | 'error' | 'custom'; bg?: string; color?: string }> = {
+  completed_online: { variant: 'online' },
+  waiting_merchant_acceptance: { variant: 'offline' },
+  accepted_offline: { variant: 'custom', bg: '#E5DECD', color: '#6a5a4b' },
+  synced: { variant: 'online' },
+  expired: { variant: 'error' },
+  failed_demo: { variant: 'error' },
+};
+
+function isCredit(tx: Transaction): boolean {
+  return tx.type === 'top_up';
+}
+
+function isMovement(tx: Transaction): boolean {
+  // offline_reserve does not change totalBalance, just shifts buckets — render
+  // it as neutral.
+  return (
+    tx.type === 'top_up' ||
+    tx.type === 'online_qr_payment' ||
+    tx.type === 'offline_qr_payment' ||
+    tx.type === 'offline_bluetooth_payment' ||
+    tx.type === 'sync'
+  );
+}
 
 export default function WalletScreen() {
   const router = useRouter();
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
 
-  const loadData = async () => {
-    const w = await paymentService.getWallet();
-    const t = await paymentService.getTransactions();
-    setWallet(w);
-    setTransactions(t);
-  };
+  const refresh = useCallback(async () => {
+    try {
+      const [w, txs] = await Promise.all([getWallet(), getTransactions()]);
+      setWallet(w);
+      setTransactions(txs);
+    } catch (err) {
+      console.warn('[wallet] failed to load', err);
+      Alert.alert('Wallet error', 'Failed to load wallet data.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
-    }, [])
+      let active = true;
+      (async () => {
+        if (active) await refresh();
+      })();
+      return () => {
+        active = false;
+      };
+    }, [refresh]),
   );
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  };
+  const handleSync = useCallback(async () => {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await syncOfflinePayments();
+      if (result.syncedCount === 0) {
+        Alert.alert(
+          PAYMENT_STRINGS.syncNothingTitle,
+          PAYMENT_STRINGS.syncNothingBody,
+        );
+      } else {
+        Alert.alert(
+          PAYMENT_STRINGS.syncDoneTitle,
+          PAYMENT_STRINGS.syncDoneBody(
+            result.syncedCount,
+            formatKgs(result.syncedAmount).replace(' KGS', ''),
+          ),
+        );
+        await refresh();
+      }
+    } catch (err) {
+      console.warn('[wallet] sync failed', err);
+      Alert.alert(
+        PAYMENT_STRINGS.syncFailedTitle,
+        err instanceof Error ? err.message : 'Unknown error',
+      );
+    } finally {
+      setSyncing(false);
+    }
+  }, [refresh, syncing]);
 
-  if (!wallet) return null;
+  if (loading || !wallet) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.brand.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const offlineReady = wallet.offlineReserve > 0;
+
+  const recentTransactions = transactions.slice(0, RECENT_LIMIT);
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
       <StatusBar style="dark" />
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View className="px-5 py-4">
-          <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text.primary, marginBottom: 16 }}>
-            Tabylga Wallet
+        {/* Status pill */}
+        <View className="items-center pt-4 pb-2">
+          <Pill
+            variant={offlineReady ? 'offline' : 'online'}
+            label={
+              offlineReady
+                ? PAYMENT_STRINGS.statusOfflineReady
+                : PAYMENT_STRINGS.statusOnline
+            }
+            showDot
+          />
+        </View>
+
+        {/* Title + balance */}
+        <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingVertical: 18 }}>
+          <Text
+            style={{
+              fontFamily: 'Fraunces_600SemiBold',
+              fontSize: 22,
+              color: colors.text.primary,
+              marginBottom: 6,
+            }}
+          >
+            {PAYMENT_STRINGS.walletTitle}
           </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 12,
+              color: colors.text.tertiary,
+              letterSpacing: 0.12 * 12,
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
+            {PAYMENT_STRINGS.totalBalance}
+          </Text>
+          <Text
+            style={{
+              fontFamily: 'Inter_700Bold',
+              fontSize: 44,
+              lineHeight: 50,
+              color: colors.text.primary,
+            }}
+          >
+            {formatKgs(wallet.totalBalance)}
+          </Text>
+        </View>
 
-          {/* ── Explanation Card ── */}
-          <Card style={{ padding: 16, backgroundColor: colors.brand.primaryLight, marginBottom: 16 }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 13, color: colors.brand.primary, lineHeight: 18 }}>
-              Offline Mountain Pay lets you reserve money before going to remote areas. When there is no internet, you can pay verified merchants with a KICB Demo signed QR or Bluetooth token.
-            </Text>
-          </Card>
-
-          {/* ── Balances ── */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
-            <Card style={{ padding: 16, flexBasis: '47%', flexGrow: 1 }}>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Total balance</Text>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text.primary, marginTop: 4 }}>{wallet.totalBalance} KGS</Text>
-            </Card>
-            
-            <Card style={{ padding: 16, flexBasis: '47%', flexGrow: 1 }}>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Available online</Text>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.status.success, marginTop: 4 }}>{wallet.availableOnline} KGS</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 10, color: colors.text.tertiary, marginTop: 4 }}>Can be used for online QR payments.</Text>
-            </Card>
-
-            <Card style={{ padding: 16, flexBasis: '47%', flexGrow: 1, backgroundColor: colors.status.warningLight }}>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: '#8a6530' }}>Offline reserve</Text>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: '#5a3a00', marginTop: 4 }}>{wallet.offlineReserve} KGS</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 10, color: '#8a6530', marginTop: 4 }}>Reserved for offline payments before going to remote areas.</Text>
-            </Card>
-
-            <Card style={{ padding: 16, flexBasis: '47%', flexGrow: 1 }}>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Locked offline</Text>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text.primary, marginTop: 4 }}>{wallet.lockedOffline} KGS</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 10, color: colors.text.tertiary, marginTop: 4 }}>Payments already created and waiting for merchant/sync.</Text>
-            </Card>
-
-            <Card style={{ padding: 16, flexBasis: '100%', flexGrow: 1 }}>
-              <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary }}>Pending sync</Text>
-              <Text style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.brand.primary, marginTop: 4 }}>{wallet.pendingSync} KGS</Text>
-              <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 10, color: colors.text.tertiary, marginTop: 4 }}>Accepted offline payments waiting for internet.</Text>
-            </Card>
+        {/* Balance cards: 2x2 grid */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+            <BalanceCard
+              label={PAYMENT_STRINGS.availableOnline}
+              value={wallet.availableOnline}
+              accent={colors.status.success}
+            />
+            <BalanceCard
+              label={PAYMENT_STRINGS.offlineReserve}
+              value={wallet.offlineReserve}
+              accent={colors.brand.primary}
+            />
           </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <BalanceCard
+              label={PAYMENT_STRINGS.lockedOffline}
+              value={wallet.lockedOffline}
+              accent="#C65D3A"
+            />
+            <BalanceCard
+              label={PAYMENT_STRINGS.pendingSync}
+              value={wallet.pendingSync}
+              accent={colors.status.warning}
+            />
+          </View>
+        </View>
 
-          {/* ── Action buttons ── */}
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 16, color: colors.text.primary, marginBottom: 12 }}>
-            Actions
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+        {/* Action buttons grid 2x3 */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <Button
               variant="primary"
-              label="Top up"
+              label={PAYMENT_STRINGS.actionTopUp}
               onPress={() => router.push('/wallet/topup')}
-              icon={<Plus size={16} color="#fff" strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
+              icon={<Plus size={18} color="#fff" strokeWidth={2} />}
+              style={{ flex: 1 }}
               fontSize={13}
-            />
-            <Button
-              variant="secondary"
-              label="Pay Online QR"
-              onPress={() => router.push('/wallet/pay')}
-              icon={<QrCode size={16} color={colors.brand.primary} strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
-              fontSize={13}
+              accessibilityLabel={PAYMENT_STRINGS.actionTopUp}
             />
             <Button
               variant="cta"
-              label="Activate Offline Pay"
-              onPress={() => router.push('/wallet/activate-offline')}
-              icon={<WifiOff size={16} color="#fff" strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
+              label={PAYMENT_STRINGS.actionPayOnlineQr}
+              onPress={() => router.push('/wallet/pay')}
+              icon={<QrCode size={18} color="#fff" strokeWidth={2} />}
+              style={{ flex: 1 }}
               fontSize={13}
-            />
-            <Button
-              variant="secondary"
-              label="Pay Offline"
-              onPress={() => router.push('/wallet/pay-offline')}
-              icon={<SmartphoneNfc size={16} color={colors.brand.primary} strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
-              fontSize={13}
-            />
-            <Button
-              variant="secondary"
-              label="Merchant Mode"
-              onPress={() => router.push('/wallet/merchant-mode')}
-              icon={<Store size={16} color={colors.text.secondary} strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
-              fontSize={13}
-            />
-            <Button
-              variant="secondary"
-              label="Sync Payments"
-              onPress={() => router.push('/wallet/merchant-mode')}
-              icon={<RefreshCw size={16} color={colors.brand.primary} strokeWidth={2} />}
-              style={{ flexBasis: '48%', flexGrow: 1 }}
-              fontSize={13}
+              accessibilityLabel={PAYMENT_STRINGS.actionPayOnlineQr}
             />
           </View>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+            <Button
+              variant="secondary"
+              label={PAYMENT_STRINGS.actionActivateOffline}
+              onPress={() => router.push('/wallet/activate-offline')}
+              icon={
+                <ShieldCheck
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={12}
+              accessibilityLabel={PAYMENT_STRINGS.actionActivateOffline}
+            />
+            <Button
+              variant="secondary"
+              label={PAYMENT_STRINGS.actionPayOffline}
+              onPress={() => router.push('/wallet/pay-offline')}
+              icon={
+                <Send
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={13}
+              accessibilityLabel={PAYMENT_STRINGS.actionPayOffline}
+            />
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button
+              variant="secondary"
+              label={PAYMENT_STRINGS.actionMerchantMode}
+              onPress={() => router.push('/merchant/dashboard')}
+              icon={
+                <Store
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{ flex: 1 }}
+              fontSize={13}
+              accessibilityLabel={PAYMENT_STRINGS.actionMerchantMode}
+            />
+            <Button
+              variant="ghost"
+              label={syncing ? '…' : PAYMENT_STRINGS.actionSync}
+              onPress={handleSync}
+              disabled={syncing}
+              icon={
+                <RefreshCw
+                  size={18}
+                  color={colors.brand.primary}
+                  strokeWidth={2}
+                />
+              }
+              style={{
+                flex: 1,
+                borderWidth: 1.5,
+                borderColor: colors.brand.primary,
+              }}
+              fontSize={13}
+              accessibilityLabel={PAYMENT_STRINGS.actionSync}
+            />
+          </View>
+        </View>
 
-          {/* ── Safety Explanation ── */}
-          <Card style={{ padding: 16, backgroundColor: '#f9f9f9', marginBottom: 24 }}>
-            <Text style={{ fontFamily: 'Inter_500Medium', fontSize: 12, color: colors.text.secondary, marginBottom: 8, lineHeight: 18 }}>
-              Offline payments are backed by reserved balance. After a merchant accepts a token, the customer cannot cancel it.
-            </Text>
-            <Text style={{ fontFamily: 'Inter_400Regular', fontSize: 11, color: colors.text.tertiary, lineHeight: 16 }}>
-              In production, offline tokens would be issued and settled by a licensed banking partner. This prototype uses KICB Demo tokens.
+        {/* Explanation card */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 16 }}>
+          <Card
+            style={{
+              padding: 16,
+              backgroundColor: colors.status.warningLight,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <ShieldCheck size={20} color={colors.brand.cta} strokeWidth={2} />
+              <Text
+                style={{
+                  fontFamily: 'Inter_700Bold',
+                  fontSize: 15,
+                  color: colors.text.primary,
+                }}
+              >
+                {PAYMENT_STRINGS.explanationTitle}
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 13,
+                lineHeight: 18,
+                color: colors.text.secondary,
+              }}
+            >
+              {PAYMENT_STRINGS.explanationBody}
             </Text>
           </Card>
+        </View>
 
-          {/* ── Transactions ── */}
-          <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 18, color: colors.text.primary, marginBottom: 14 }}>
-            Recent Transactions
+        {/* Prototype note */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+          <View
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: '#F4F1EA',
+              borderWidth: 1,
+              borderColor: colors.border.divider,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: 'Inter_600SemiBold',
+                fontSize: 11,
+                color: colors.text.tertiary,
+                letterSpacing: 0.08 * 11,
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}
+            >
+              {PAYMENT_STRINGS.prototypeNoteTitle}
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 12,
+                lineHeight: 17,
+                color: colors.text.secondary,
+              }}
+            >
+              {PAYMENT_STRINGS.prototypeNoteBody}
+            </Text>
+          </View>
+        </View>
+
+        {/* Recent transactions */}
+        <View style={{ paddingHorizontal: 20 }}>
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 18,
+              color: colors.text.primary,
+              marginBottom: 12,
+            }}
+          >
+            {PAYMENT_STRINGS.recentTitle}
           </Text>
 
-          <TransactionHistory transactions={transactions} />
+          {recentTransactions.length === 0 ? (
+            <View
+              style={[
+                {
+                  padding: 16,
+                  borderRadius: 14,
+                  backgroundColor: colors.surface.card,
+                },
+                shadows.card,
+              ]}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Inter_400Regular',
+                  fontSize: 13,
+                  color: colors.text.secondary,
+                  textAlign: 'center',
+                }}
+              >
+                {PAYMENT_STRINGS.emptyRecent}
+              </Text>
+            </View>
+          ) : (
+            <Card>
+              {recentTransactions.map((tx, i) => (
+                <TransactionRow
+                  key={tx.id}
+                  tx={tx}
+                  isLast={i === recentTransactions.length - 1}
+                />
+              ))}
+            </Card>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function BalanceCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent: string;
+}) {
+  return (
+    <View
+      style={[
+        {
+          flex: 1,
+          padding: 14,
+          borderRadius: 16,
+          backgroundColor: colors.surface.card,
+          borderLeftWidth: 3,
+          borderLeftColor: accent,
+        },
+        shadows.card,
+      ]}
+    >
+      <Text
+        style={{
+          fontFamily: 'Inter_500Medium',
+          fontSize: 10,
+          color: colors.text.tertiary,
+          letterSpacing: 0.08 * 11,
+          textTransform: 'uppercase',
+          marginBottom: 4,
+        }}
+        numberOfLines={2}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontFamily: 'Inter_700Bold',
+          fontSize: 18,
+          color: colors.text.primary,
+        }}
+        numberOfLines={1}
+      >
+        {formatKgs(value)}
+      </Text>
+    </View>
+  );
+}
+
+function TransactionRow({ tx, isLast }: { tx: Transaction; isLast: boolean }) {
+  const credit = isCredit(tx);
+  const movement = isMovement(tx);
+  const sign = credit ? '+' : movement && tx.type !== 'sync' ? '-' : '';
+  const amountColor =
+    credit
+      ? colors.status.success
+      : tx.type === 'sync'
+        ? colors.brand.primary
+        : colors.text.primary;
+  const pillCfg = STATUS_PILL[tx.status];
+  const title =
+    tx.merchantName ?? PAYMENT_STRINGS.txTypeLabels[tx.type] ?? 'Transaction';
+  const sub = PAYMENT_STRINGS.txTypeLabels[tx.type] ?? '';
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomColor: colors.border.divider,
+        minHeight: 64,
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: TRANSACTION_AVATAR_COLORS[tx.type],
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {TRANSACTION_ICONS[tx.type]}
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            fontFamily: 'Inter_500Medium',
+            fontSize: 14,
+            color: colors.text.primary,
+          }}
+          numberOfLines={1}
+        >
+          {title}
+        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            marginTop: 2,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: 'Inter_400Regular',
+              fontSize: 11,
+              color: colors.text.tertiary,
+            }}
+            numberOfLines={1}
+          >
+            {sub}
+          </Text>
+          <Pill
+            label={PAYMENT_STRINGS.statusLabels[tx.status]}
+            variant={pillCfg.variant}
+            backgroundColor={pillCfg.bg}
+            textColor={pillCfg.color}
+            height={18}
+            fontSize={10}
+            icon={
+              tx.status === 'waiting_merchant_acceptance' ? (
+                <Clock size={10} color="#1A1A1A" strokeWidth={2} />
+              ) : tx.status === 'synced' ? (
+                <CheckCircle2 size={10} color="#fff" strokeWidth={2} />
+              ) : null
+            }
+          />
+        </View>
+      </View>
+      <Text
+        style={{
+          fontFamily: 'Inter_600SemiBold',
+          fontSize: 14,
+          color: amountColor,
+        }}
+      >
+        {sign}
+        {formatKgs(tx.amount)}
+      </Text>
+    </View>
   );
 }

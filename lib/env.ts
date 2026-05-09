@@ -1,28 +1,33 @@
-function optional(key: string, fallback = ''): string {
-  return process.env[key] || fallback;
+import Constants from 'expo-constants';
+
+const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>;
+
+function fromExpoExtra(key: string): string {
+  const value = extra[key];
+  return typeof value === 'string' ? value : '';
 }
 
 export const env = {
   gemini: {
-    apiKey: optional('EXPO_PUBLIC_GEMINI_API_KEY'),
+    apiKey: process.env.EXPO_PUBLIC_GEMINI_API_KEY || fromExpoExtra('geminiApiKey'),
   },
   googleMaps: {
-    apiKey: optional('EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'),
+    apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || fromExpoExtra('googleMapsApiKey'),
   },
   dgis: {
-    apiKey: optional('EXPO_PUBLIC_2GIS_API_KEY'),
+    apiKey: process.env.EXPO_PUBLIC_2GIS_API_KEY || fromExpoExtra('dgisApiKey'),
   },
   unsplash: {
-    accessKey: optional('EXPO_PUBLIC_UNSPLASH_ACCESS_KEY'),
-    secretKey: optional('EXPO_PUBLIC_UNSPLASH_SECRET_KEY'),
+    accessKey: process.env.EXPO_PUBLIC_UNSPLASH_ACCESS_KEY || fromExpoExtra('unsplashAccessKey'),
+    secretKey: process.env.EXPO_PUBLIC_UNSPLASH_SECRET_KEY || fromExpoExtra('unsplashSecretKey'),
   },
   overpass: {
-    url: optional('EXPO_PUBLIC_OVERPASS_URL', 'https://overpass-api.de/api/interpreter'),
+    url: process.env.EXPO_PUBLIC_OVERPASS_URL || fromExpoExtra('overpassUrl') || 'https://overpass-api.de/api/interpreter',
   },
   nominatim: {
-    url: optional('EXPO_PUBLIC_NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+    url: process.env.EXPO_PUBLIC_NOMINATIM_URL || fromExpoExtra('nominatimUrl') || 'https://nominatim.openstreetmap.org',
   },
   wikipedia: {
-    url: optional('EXPO_PUBLIC_WIKIPEDIA_URL', 'https://en.wikipedia.org/api/rest_v1'),
+    url: process.env.EXPO_PUBLIC_WIKIPEDIA_URL || fromExpoExtra('wikipediaUrl') || 'https://en.wikipedia.org/api/rest_v1',
   },
 } as const;

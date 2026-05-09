@@ -238,32 +238,65 @@ export const getOfflinePaymentSnapshot = (wallet?: WalletState): OfflinePaymentS
 };
 
 export const buildOfflinePackSnapshot = ({ currentTrip, wallet }: { currentTrip: Itinerary; wallet?: WalletState }): OfflinePack => {
-  const days: OfflinePackDay[] = currentTrip.days?.map(day => {
+  const trip = currentTrip as any;
+  const sourceDays = Array.isArray(trip.dailyPlans) ? trip.dailyPlans : Array.isArray(trip.days) ? trip.days : [];
+  const regions = Array.isArray(trip.regions) ? trip.regions : Array.isArray(trip.regionsCovered) ? trip.regionsCovered : [];
+  const days: OfflinePackDay[] = sourceDays.map((day: any) => {
+    const activities = Array.isArray(day.activities) ? day.activities : [];
     return {
-      dayNumber: day.day,
+      dayNumber: day.day ?? day.dayNumber ?? 1,
       title: `Day ${day.day}`,
-      region: currentTrip.regionsCovered[0] || 'Kyrgyzstan',
-      city: currentTrip.regionsCovered[0] || 'Kyrgyzstan',
-      stay: null, 
-      transport: null,
-      food: null,
-      activities: day.activities ? day.activities.map(act => ({
-        id: act.placeId,
-        name: act.placeName,
+      region: day.region || regions[0] || 'Kyrgyzstan',
+      city: day.city || day.region || regions[0] || 'Kyrgyzstan',
+      stay: day.stay ? {
+        id: day.stay.id,
+        name: day.stay.name,
+        type: 'stay',
+        region: day.stay.region,
+        city: day.stay.city,
+        price: day.stay.pricePerNight,
+        currency: 'USD',
+        offlineAvailable: !!day.stay.offlinePaymentSupported,
+        paymentLabels: [day.stay.qrPayment ? 'QR payment' : null, day.stay.offlinePaymentSupported ? 'Offline Pay' : null].filter(Boolean),
+        status: day.stay.status || 'suggested',
+      } : null,
+      transport: day.transport ? {
+        id: day.transport.id,
+        name: day.transport.name,
+        type: 'transport',
+        price: day.transport.price,
+        currency: 'USD',
+        offlineAvailable: !!day.transport.offlineContactAvailable,
+        paymentLabels: [day.transport.qrPayment ? 'QR payment' : null, day.transport.offlineContactAvailable ? 'Offline contact' : null].filter(Boolean),
+        notes: day.transport.description,
+      } : null,
+      food: day.food ? {
+        id: day.food.id,
+        name: day.food.name,
+        type: 'food',
+        price: day.food.priceEstimate,
+        currency: 'USD',
+        offlineAvailable: !!day.food.offlinePaymentSupported,
+        paymentLabels: [day.food.qrPayment ? 'QR payment' : null, day.food.offlinePaymentSupported ? 'Offline Pay' : null].filter(Boolean),
+        notes: day.food.description,
+      } : null,
+      activities: activities.map((act: any) => ({
+        id: act.id || act.placeId,
+        name: act.name || act.placeName,
         type: 'activity',
-        price: act.costUsd,
+        price: act.price ?? act.costUsd,
         currency: 'USD',
         offlineAvailable: true,
         notes: act.description
-      })) : [],
+      })),
       notes: [],
     };
-  }) || [];
+  });
 
   return {
     id: `offline_${Date.now()}`,
-    tripId: (currentTrip as any).id || null,
-    title: currentTrip.title || 'Offline Trip',
+    tripId: trip.id || null,
+    title: trip.title || 'Offline Trip',
     savedAt: new Date().toISOString(),
     lastUpdatedAt: new Date().toISOString(),
     status: 'saved_offline',
@@ -271,7 +304,7 @@ export const buildOfflinePackSnapshot = ({ currentTrip, wallet }: { currentTrip:
     emergencyContacts: getEmergencyContacts(),
     phrasebook: getPhrasebook(),
     offlinePaymentSnapshot: getOfflinePaymentSnapshot(wallet),
-    notes: currentTrip.tips || [],
+    notes: Array.isArray(trip.tips) ? trip.tips : trip.summary ? [trip.summary] : [],
     syncStatus: {
       lastSyncedAt: new Date().toISOString(),
       hasLocalChanges: false,

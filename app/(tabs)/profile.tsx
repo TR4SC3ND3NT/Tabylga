@@ -6,12 +6,13 @@ import { useRouter } from 'expo-router';
 import {
   User, ChevronRight, Globe, CreditCard, Bell, Shield,
   Star, Users, Gift, Headphones, Info, Lock, Store, CheckCircle,
-  Briefcase, Wifi, Languages,
+  Briefcase, Wifi,
 } from 'lucide-react-native';
 import { LANGUAGE_OPTIONS, formatString } from '../../lib/strings';
 import { useStrings } from '../../lib/i18n';
 import { colors } from '../../constants/colors';
 import { useAuthStore } from '../../stores/authStore';
+import { KyrgyzBackdrop } from '../../components/KyrgyzBackdrop';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -37,20 +38,26 @@ export default function ProfileScreen() {
     ],
     [
       { key: 'help',       icon: Headphones,  label: strings.profileExtra.settingsHelp,     onPress: () => {} },
-      { key: 'translator', icon: Languages,   label: strings.profileExtra.settingsTranslator, onPress: () => router.push('/tools/translator') },
       { key: 'about',      icon: Info,        label: strings.profileExtra.settingsAbout,    onPress: () => {} },
       { key: 'privacy',    icon: Lock,        label: strings.profileExtra.settingsPrivacy,  onPress: () => {} },
     ],
   ];
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+    <View style={{ flex: 1, backgroundColor: colors.surface.primary }}>
+      <KyrgyzBackdrop height={220} />
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) + 80 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: Math.max(insets.top, 12) + 6,
+          paddingBottom: Math.max(insets.bottom, 16) + 88,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* Avatar + name */}
-        <View className="items-center pt-6 pb-6 px-5">
-          <View style={{ width:80, height:80, borderRadius:40, backgroundColor: colors.brand.primaryLight, alignItems:'center', justifyContent:'center', marginBottom:12 }}>
+        <View style={{ alignItems:'center', marginHorizontal:16, paddingTop:22, paddingBottom:20, paddingHorizontal:18, borderRadius:24, backgroundColor:'rgba(255,255,255,0.88)', borderWidth:1, borderColor:'rgba(255,255,255,0.72)', marginBottom:16 }}>
+          <View style={{ width:84, height:84, borderRadius:42, backgroundColor: colors.brand.primaryLight, alignItems:'center', justifyContent:'center', marginBottom:12, borderWidth:3, borderColor:colors.surface.card }}>
             <User size={40} color={colors.brand.primary} strokeWidth={1.5} />
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:8 }}>
@@ -167,11 +174,10 @@ export default function ProfileScreen() {
         >
           <Text style={{ fontFamily:'Inter_500Medium', fontSize:15, color:colors.status.error }}>{strings.profile.signOut}</Text>
         </Pressable>
-
         <Text style={{ fontFamily:'Inter_400Regular', fontSize:12, color:colors.text.tertiary, textAlign:'center', marginTop:20 }}>
           {strings.profileExtra.version}
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

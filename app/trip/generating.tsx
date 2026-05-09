@@ -14,11 +14,12 @@ export default function GeneratingScreen() {
   const strings = useStrings();
   const { generateTrip, isGenerating, error, generatedItinerary, resetTrip } = useTripStore();
   const statusMessages = [
-    strings.planner.genStep1,
-    strings.planner.genStep2,
-    strings.planner.genStep3,
-    strings.planner.genStep4,
-    strings.planner.genStep5,
+    'Matching your travel style',
+    'Checking your budget',
+    'Choosing stays near your route',
+    'Planning transport between regions',
+    'Adding food and activities',
+    'Preparing offline-ready details',
   ];
 
   const [statusIndex, setStatusIndex] = useState(0);
@@ -40,7 +41,7 @@ export default function GeneratingScreen() {
     return () => loop.stop();
   }, []);
 
-  // Trigger Gemini once
+  // Trigger local deterministic planner once
   useEffect(() => {
     generateTrip();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,8 +51,8 @@ export default function GeneratingScreen() {
   useEffect(() => {
     if (!isGenerating) return;
     const t = setInterval(() => {
-      setStatusIndex((i) => Math.min(i + 1, statusMessages.length - 2));
-    }, 2000);
+              setStatusIndex((i) => Math.min(i + 1, statusMessages.length - 1));
+    }, 300);
     return () => clearInterval(t);
   }, [isGenerating, statusMessages.length]);
 
@@ -59,7 +60,7 @@ export default function GeneratingScreen() {
   useEffect(() => {
     if (!generatedItinerary) return;
     setStatusIndex(statusMessages.length - 1);
-    const t = setTimeout(() => router.replace('/trip/itinerary'), 1000);
+    const t = setTimeout(() => router.replace('/(tabs)'), 1000);
     return () => clearTimeout(t);
   }, [generatedItinerary]);
 
@@ -173,7 +174,7 @@ export default function GeneratingScreen() {
             color: colors.text.primary, textAlign: 'center', marginBottom: 16,
           }}
         >
-          {strings.planner.generatingTitle}
+          Building your trip
         </Text>
 
         <View style={{ minHeight: 24 }}>

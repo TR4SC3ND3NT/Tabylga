@@ -417,7 +417,6 @@ export const enStrings = {
     tripsCount: '{upcoming} upcoming, {past} past',
     settingsLanguage: 'Language',
     settingsEsim: 'Travel eSIM',
-    settingsTranslator: 'Translator',
     settingsPayment: 'Payment methods',
     settingsNotifications: 'Notifications',
     settingsSecurity: 'Security',
@@ -515,17 +514,6 @@ export const enStrings = {
     createChat: 'Create group chat',
     chatTitle: 'Shared trip chat',
     transportSplit: 'Split transport for one person first',
-  },
-
-  translator: {
-    title: 'Travel translator',
-    subtitle: 'Text-to-text demo with voice playback placeholder.',
-    inputPlaceholder: 'Type or paste a phrase',
-    targetLanguage: 'Target language',
-    translate: 'Translate',
-    readAloud: 'Read translation aloud',
-    listening: 'Voice input demo',
-    output: 'Translation',
   },
 
   // ── Shared / Global ──────────────────────────────────────
@@ -936,7 +924,6 @@ const ruStrings = {
     tripsCount: '{upcoming} будущих, {past} прошлых',
     settingsLanguage: 'Язык',
     settingsEsim: 'Туристическая eSIM',
-    settingsTranslator: 'Переводчик',
     settingsPayment: 'Способы оплаты',
     settingsNotifications: 'Уведомления',
     settingsSecurity: 'Безопасность',
@@ -1032,16 +1019,6 @@ const ruStrings = {
     transportSplit: 'Сначала разделить транспорт за 1 человека',
   },
 
-  translator: {
-    title: 'Туристический переводчик',
-    subtitle: 'Демо текстового перевода с имитацией голосового чтения.',
-    inputPlaceholder: 'Введите или вставьте фразу',
-    targetLanguage: 'Язык перевода',
-    translate: 'Перевести',
-    readAloud: 'Прочитать перевод',
-    listening: 'Демо голосового ввода',
-    output: 'Перевод',
-  },
   common: {
     back: 'Назад',
     close: 'Закрыть',

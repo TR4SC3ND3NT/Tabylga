@@ -43,11 +43,11 @@ export default function TripsScreen() {
                 {itinerary.title}
               </Text>
               <Text style={{ fontFamily:'Inter_400Regular', fontSize:14, color:colors.text.secondary, marginBottom:14 }}>
-                {formatString(strings.itinerary.daysCount, { count: itinerary.days.length })} · {itinerary.regionsCovered.slice(0,3).join(', ')}
+                {formatString(strings.itinerary.daysCount, { count: itinerary.days })} · {itinerary.regions.slice(0,3).join(', ')}
               </Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
                 <Text style={{ fontFamily:'Fraunces_600SemiBold', fontSize:24, color:colors.brand.primary }}>
-                  {formatUSD(itinerary.totalCostUsd)}
+                  {formatUSD(itinerary.totalCost)}
                 </Text>
                 <View style={{ flexDirection:'row', alignItems:'center', gap:6, paddingHorizontal:14, height:36, borderRadius:10, backgroundColor:colors.brand.primary }}>
                   <Text style={{ fontFamily:'Inter_600SemiBold', fontSize:14, color:'#fff' }}>{strings.common.viewDetails}</Text>
