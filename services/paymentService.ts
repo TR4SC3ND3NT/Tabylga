@@ -53,8 +53,8 @@ export interface OfflineToken {
 }
 
 const DEFAULT_WALLET: Wallet = {
-  totalBalance: 10000,
-  availableOnline: 10000,
+  totalBalance: 0,
+  availableOnline: 0,
   offlineReserve: 0,
   lockedOffline: 0,
   pendingSync: 0,
@@ -70,16 +70,33 @@ function generateReceiptCode() {
   return 'REC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function normalizeWallet(wallet: Wallet): Wallet {
+  const availableOnline = Math.max(0, Math.round(wallet.availableOnline));
+  const offlineReserve = Math.max(0, Math.round(wallet.offlineReserve));
+  const lockedOffline = Math.max(0, Math.round(wallet.lockedOffline));
+  const pendingSync = Math.max(0, Math.round(wallet.pendingSync));
+  return {
+    ...wallet,
+    availableOnline,
+    offlineReserve,
+    lockedOffline,
+    pendingSync,
+    totalBalance: availableOnline + offlineReserve,
+  };
+}
+
 export const paymentService = {
   async getWallet(): Promise<Wallet> {
     const data = await AsyncStorage.getItem(KEYS.WALLET);
-    if (!data) return DEFAULT_WALLET;
-    return JSON.parse(data);
+    if (!data) {
+      return normalizeWallet({ ...DEFAULT_WALLET, updatedAt: new Date().toISOString() });
+    }
+    return normalizeWallet(JSON.parse(data));
   },
 
   async saveWallet(wallet: Wallet): Promise<void> {
-    wallet.updatedAt = new Date().toISOString();
-    await AsyncStorage.setItem(KEYS.WALLET, JSON.stringify(wallet));
+    const next = normalizeWallet({ ...wallet, updatedAt: new Date().toISOString() });
+    await AsyncStorage.setItem(KEYS.WALLET, JSON.stringify(next));
   },
 
   async resetWalletDemo(): Promise<void> {
@@ -148,7 +165,6 @@ export const paymentService = {
 
   async topUpWallet(amount: number, method: 'card_demo' | 'online_qr_demo'): Promise<void> {
     const wallet = await this.getWallet();
-    wallet.totalBalance += amount;
     wallet.availableOnline += amount;
     await this.saveWallet(wallet);
 
@@ -178,7 +194,6 @@ export const paymentService = {
     if (amount > wallet.availableOnline) throw new Error('Insufficient online balance');
 
     wallet.availableOnline -= amount;
-    wallet.totalBalance -= amount;
     await this.saveWallet(wallet);
 
     const transaction: Transaction = {
@@ -228,11 +243,6 @@ export const paymentService = {
   async createOfflineCustomerQRPayment(amount: number): Promise<OfflineToken> {
     const wallet = await this.getWallet();
     if (amount > wallet.offlineReserve) throw new Error('Insufficient offline reserve');
-
-    wallet.offlineReserve -= amount;
-    wallet.lockedOffline += amount;
-    wallet.pendingSync += amount;
-    await this.saveWallet(wallet);
 
     const transactionId = generateId();
     const tokenId = generateId();
@@ -313,6 +323,10 @@ export const paymentService = {
     const tokens = await this.getOfflineTokens();
     const token = tokens.find(t => t.id === tokenId);
     if (!token) throw new Error('Token not found');
+    if (token.status !== 'created' && token.status !== 'shown_to_merchant') throw new Error('Token already used');
+
+    const wallet = await this.getWallet();
+    if (token.amount > wallet.offlineReserve) throw new Error('Amount exceeds reserved offline balance');
 
     token.status = 'accepted_offline';
     token.canCancel = false;
@@ -328,6 +342,11 @@ export const paymentService = {
       merchantName: merchant.name,
       acceptedAt: now
     });
+
+    wallet.offlineReserve -= token.amount;
+    wallet.lockedOffline += token.amount;
+    wallet.pendingSync += token.amount;
+    await this.saveWallet(wallet);
   },
 
   async syncOfflinePayments(): Promise<void> {
@@ -357,7 +376,6 @@ export const paymentService = {
     const wallet = await this.getWallet();
     wallet.lockedOffline -= totalSyncedAmount;
     wallet.pendingSync -= totalSyncedAmount;
-    wallet.totalBalance -= totalSyncedAmount;
     await this.saveWallet(wallet);
 
     const syncTransaction: Transaction = {

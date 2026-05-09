@@ -63,15 +63,12 @@ function isCredit(tx: Transaction): boolean {
   return tx.type === 'top_up';
 }
 
-function isMovement(tx: Transaction): boolean {
-  // offline_reserve does not change totalBalance, just shifts buckets — render
-  // it as neutral.
+function isDebit(tx: Transaction): boolean {
   return (
-    tx.type === 'top_up' ||
     tx.type === 'online_qr_payment' ||
-    tx.type === 'offline_qr_payment' ||
-    tx.type === 'offline_bluetooth_payment' ||
-    tx.type === 'sync'
+    ((tx.type === 'offline_qr_payment' ||
+      tx.type === 'offline_bluetooth_payment') &&
+      (tx.status === 'accepted_offline' || tx.status === 'synced'))
   );
 }
 
@@ -497,14 +494,14 @@ function BalanceCard({
 
 function TransactionRow({ tx, isLast }: { tx: Transaction; isLast: boolean }) {
   const credit = isCredit(tx);
-  const movement = isMovement(tx);
-  const sign = credit ? '+' : movement && tx.type !== 'sync' ? '-' : '';
+  const debit = isDebit(tx);
+  const sign = credit ? '+' : debit ? '-' : '';
   const amountColor =
     credit
       ? colors.status.success
-      : tx.type === 'sync'
-        ? colors.brand.primary
-        : colors.text.primary;
+      : debit
+        ? colors.text.primary
+        : colors.brand.primary;
   const pillCfg = STATUS_PILL[tx.status];
   const title =
     tx.merchantName ?? PAYMENT_STRINGS.txTypeLabels[tx.type] ?? 'Transaction';

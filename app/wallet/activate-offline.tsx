@@ -32,7 +32,7 @@ import {
 } from '../../lib/payments/paymentService';
 import { PAYMENT_STRINGS, formatKgs } from '../../lib/payments/paymentStrings';
 
-const PRESET_AMOUNTS = [500, 1000, 3000, 5000];
+const PRESET_AMOUNTS = [500, 1000, 2000];
 
 type Stage = 'form' | 'loading' | 'success';
 
@@ -97,6 +97,13 @@ export default function ActivateOfflineScreen() {
 
   const noBalance = wallet ? wallet.availableOnline <= 0 : false;
   const canConfirm = isValidAmount && !exceedsAvailable && !noBalance;
+  const disabledReason = noBalance
+    ? PAYMENT_STRINGS.activateNeedTopUp
+    : !isValidAmount
+      ? PAYMENT_STRINGS.topUpInvalidAmount
+      : exceedsAvailable
+        ? PAYMENT_STRINGS.activateExceeds
+        : null;
 
   function handlePickPreset(amount: number) {
     setError(null);
@@ -611,6 +618,19 @@ export default function ActivateOfflineScreen() {
           borderTopColor: colors.border.divider,
         }}
       >
+        {!canConfirm && disabledReason ? (
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 13,
+              color: colors.status.error,
+              marginBottom: 10,
+              textAlign: 'center',
+            }}
+          >
+            {disabledReason}
+          </Text>
+        ) : null}
         <Button
           variant="cta"
           label={PAYMENT_STRINGS.activateConfirm(

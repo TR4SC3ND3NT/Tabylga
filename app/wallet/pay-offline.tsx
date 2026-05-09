@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Send,
   Bluetooth,
+  CheckCircle2,
   Store,
   AlertTriangle,
   Clock,
@@ -29,6 +30,8 @@ import { Card } from '../../components/Card';
 import { Pill } from '../../components/Pill';
 import {
   createOfflineCustomerQRPayment,
+  getOfflineTokens,
+  getTransactions,
   getWallet,
   type OfflineToken,
   type Transaction,
@@ -121,6 +124,13 @@ export default function PayOfflineScreen() {
   }, [wallet, isValidAmount, effectiveAmount]);
 
   const canGenerate = !noReserve && isValidAmount && !exceedsReserve;
+  const disabledReason = noReserve
+    ? PAYMENT_STRINGS.payOfflineNoReserveTitle + '.'
+    : !isValidAmount
+      ? PAYMENT_STRINGS.payOfflineAmountInvalid
+      : exceedsReserve
+        ? PAYMENT_STRINGS.payOfflineExceeds
+        : null;
 
   function handlePickPreset(amount: number) {
     setError(null);
@@ -527,6 +537,19 @@ export default function PayOfflineScreen() {
           borderTopColor: colors.border.divider,
         }}
       >
+        {!canGenerate && disabledReason ? (
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 13,
+              color: colors.status.error,
+              marginBottom: 10,
+              textAlign: 'center',
+            }}
+          >
+            {disabledReason}
+          </Text>
+        ) : null}
         <Button
           variant="cta"
           label={PAYMENT_STRINGS.payOfflineGenerate(
@@ -562,6 +585,160 @@ function QrReadyView({
   onBack: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const [liveToken, setLiveToken] = useState(token);
+  const [liveTransaction, setLiveTransaction] = useState(transaction);
+
+  useEffect(() => {
+    setLiveToken(token);
+    setLiveTransaction(transaction);
+  }, [token, transaction]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function pollStatus() {
+      try {
+        const [tokens, transactions] = await Promise.all([
+          getOfflineTokens(),
+          getTransactions(),
+        ]);
+        if (!active) return;
+        setLiveToken(tokens.find((item) => item.id === token.id) ?? token);
+        setLiveTransaction(
+          transactions.find((item) => item.id === transaction.id) ?? transaction,
+        );
+      } catch (err) {
+        console.warn('[pay-offline] status poll failed', err);
+      }
+    }
+
+    pollStatus();
+    const timer = setInterval(pollStatus, 2000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [token, transaction]);
+
+  const isAccepted =
+    liveToken.status === 'accepted_offline' ||
+    liveToken.status === 'synced' ||
+    liveTransaction.status === 'accepted_offline' ||
+    liveTransaction.status === 'synced';
+
+  if (isAccepted) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
+        <StatusBar style="dark" />
+        <ScrollView
+          contentContainerStyle={{
+            padding: 24,
+            paddingBottom: Math.max(insets.bottom, 24) + 24,
+            flexGrow: 1,
+            justifyContent: 'center',
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ alignItems: 'center', marginBottom: 22 }}>
+            <View
+              style={{
+                width: 92,
+                height: 92,
+                borderRadius: 46,
+                backgroundColor: colors.status.successLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 18,
+              }}
+            >
+              <CheckCircle2
+                size={52}
+                color={colors.status.successText}
+                strokeWidth={1.8}
+              />
+            </View>
+            <Text
+              style={{
+                fontFamily: 'Fraunces_600SemiBold',
+                fontSize: 29,
+                lineHeight: 34,
+                color: colors.text.primary,
+                textAlign: 'center',
+              }}
+            >
+              Paid
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_700Bold',
+                fontSize: 34,
+                lineHeight: 40,
+                color: colors.brand.primary,
+                marginTop: 8,
+              }}
+            >
+              {formatKgs(liveToken.amount)}
+            </Text>
+            <Text
+              style={{
+                fontFamily: 'Inter_400Regular',
+                fontSize: 14,
+                lineHeight: 20,
+                color: colors.text.secondary,
+                textAlign: 'center',
+                marginTop: 10,
+              }}
+            >
+              Merchant accepted the QR. This screen updated automatically from
+              the local demo payment queue.
+            </Text>
+          </View>
+
+          <Card style={{ padding: 16, marginBottom: 18 }}>
+            <DetailRow
+              label={PAYMENT_STRINGS.qrLabelAmount}
+              value={formatKgs(liveToken.amount)}
+            />
+            <DetailRow
+              label={PAYMENT_STRINGS.receiptMerchant}
+              value={liveTransaction.merchantName ?? liveToken.merchantName ?? 'Merchant'}
+            />
+            <DetailRow
+              label={PAYMENT_STRINGS.qrLabelStatus}
+              value={
+                liveTransaction.status === 'synced'
+                  ? PAYMENT_STRINGS.statusLabels.synced
+                  : PAYMENT_STRINGS.statusLabels.accepted_offline
+              }
+              valueColor={colors.status.success}
+            />
+            <DetailRow
+              label={PAYMENT_STRINGS.receiptCode}
+              value={liveTransaction.receiptCode}
+              mono
+              isLast
+            />
+          </Card>
+
+          <View style={{ gap: 10 }}>
+            <Button
+              variant="primary"
+              label={PAYMENT_STRINGS.backToWallet}
+              onPress={onBack}
+              accessibilityLabel={PAYMENT_STRINGS.backToWallet}
+            />
+            <Button
+              variant="secondary"
+              label={PAYMENT_STRINGS.qrOpenMerchantMode}
+              onPress={onOpenMerchantMode}
+              icon={<Store size={18} color={colors.brand.primary} strokeWidth={2} />}
+              accessibilityLabel={PAYMENT_STRINGS.qrOpenMerchantMode}
+            />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-surface-primary">
@@ -634,7 +811,7 @@ function QrReadyView({
               color: colors.text.primary,
             }}
           >
-            {formatKgs(token.amount)}
+            {formatKgs(liveToken.amount)}
           </Text>
           <View style={{ marginTop: 10 }}>
             <Pill
@@ -669,7 +846,7 @@ function QrReadyView({
             }}
           >
             <QRCode
-              value={token.qrDeepLink ?? token.qrPayload}
+              value={liveToken.qrDeepLink ?? liveToken.qrPayload}
               size={210}
               color="#1A1A1A"
               backgroundColor="#fff"
@@ -750,7 +927,7 @@ function QrReadyView({
               marginBottom: 6,
             }}
           >
-            Amount deducted from your offline reserve
+            Reserve-backed QR waiting for merchant scan
           </Text>
           <Text
             style={{
@@ -760,8 +937,8 @@ function QrReadyView({
               color: colors.text.secondary,
             }}
           >
-            Waiting for merchant scan. After merchant accepts, this payment
-            cannot be cancelled.
+            Generating this QR does not deduct money yet. After the merchant
+            accepts it, the reserved amount moves to pending sync.
           </Text>
         </View>
 
@@ -769,11 +946,11 @@ function QrReadyView({
         <Card style={{ padding: 16, marginBottom: 16 }}>
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelAmount}
-            value={formatKgs(token.amount)}
+            value={formatKgs(liveToken.amount)}
           />
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelCurrency}
-            value={token.currency}
+            value={liveToken.currency}
           />
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelIssuer}
@@ -790,21 +967,21 @@ function QrReadyView({
           />
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelTokenId}
-            value={shortenId(token.id)}
+            value={shortenId(liveToken.id)}
             mono
           />
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelTransactionId}
-            value={shortenId(transaction.id)}
+            value={shortenId(liveTransaction.id)}
             mono
           />
           <DetailRow
             label={PAYMENT_STRINGS.qrLabelExpiresAt}
-            value={formatExpiresAt(token.expiresAt)}
+            value={formatExpiresAt(liveToken.expiresAt)}
           />
           <DetailRow
             label={PAYMENT_STRINGS.receiptCode}
-            value={transaction.receiptCode}
+            value={liveTransaction.receiptCode}
             mono
             isLast
           />
@@ -841,9 +1018,10 @@ function QrReadyView({
               color: colors.text.secondary,
             }}
           >
-            tokenId: {shortenId(token.id)}{'\n'}
-            amount: {token.amount} {token.currency}{'\n'}
-            issuer: {token.issuer}
+            tokenId: {shortenId(liveToken.id)}{'\n'}
+            receiptCode: {liveToken.receiptCode}{'\n'}
+            amount: {liveToken.amount} {liveToken.currency}{'\n'}
+            issuer: {liveToken.issuer}
           </Text>
         </View>
 

@@ -13,6 +13,7 @@ import {
   getPaymentMerchantById,
   type PaymentMerchant,
 } from '../data/paymentMerchants';
+import { FALLBACK_USD_TO_KGS_RATE } from '../../services/exchangeRateService';
 
 // ── Storage keys (isolated; do not reuse planner/auth/hotels keys) ──────────
 export const PAYMENT_STORAGE_KEYS = {
@@ -22,6 +23,8 @@ export const PAYMENT_STORAGE_KEYS = {
   paymentMerchants: 'tabylga_payment_merchants',
   demoSession: 'tabylga_payment_demo_session',
 } as const;
+
+export const WALLET_DEMO_STATE_VERSION = 2;
 
 // ── Domain types ────────────────────────────────────────────────────────────
 export type Currency = 'KGS';
@@ -62,6 +65,10 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   amount: number;
+  sourceAmountUsd?: number;
+  exchangeRate?: number;
+  cardBrand?: string;
+  cardLast4?: string;
   currency: Currency;
   merchantId: string | null;
   merchantName: string | null;
@@ -86,6 +93,7 @@ export type OfflineTokenTransfer = 'offline_customer_qr' | 'bluetooth_demo';
 export interface OfflineToken {
   id: string;
   transactionId: string;
+  receiptCode: string;
   amount: number;
   currency: Currency;
   issuer: 'KICB_DEMO';
@@ -105,6 +113,7 @@ export interface OfflineQrPayload {
   version: 'tabylga_offline_v1';
   tokenId: string;
   transactionId: string;
+  receiptCode: string;
   amount: number;
   currency: Currency;
   issuer: 'KICB_DEMO';
@@ -121,6 +130,7 @@ export type OfflineQrVerificationReason =
   | 'signature_or_payload_mismatch'
   | 'expired'
   | 'already_used'
+  | 'insufficient_reserved_balance'
   | 'merchant_not_supported'
   | 'unknown';
 
@@ -149,10 +159,16 @@ export interface SyncResult {
   syncTransactionId: string | null;
 }
 
+interface DemoSessionState {
+  walletDemoStateVersion?: number;
+  version?: number;
+  resetAt?: string;
+}
+
 // ── Defaults ────────────────────────────────────────────────────────────────
 const DEFAULT_WALLET: Wallet = {
-  totalBalance: 10000,
-  availableOnline: 10000,
+  totalBalance: 0,
+  availableOnline: 0,
   offlineReserve: 0,
   lockedOffline: 0,
   pendingSync: 0,
@@ -179,12 +195,44 @@ function makeReceiptCode(): string {
     .toUpperCase()}`;
 }
 
+function roundKgs(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.round(value ?? 0)) : 0;
+}
+
+function normalizeWallet(wallet: Wallet): Wallet {
+  const availableOnline = roundKgs(wallet.availableOnline);
+  const offlineReserve = roundKgs(wallet.offlineReserve);
+  const lockedOffline = roundKgs(wallet.lockedOffline);
+  const pendingSync = roundKgs(wallet.pendingSync);
+
+  return {
+    ...wallet,
+    availableOnline,
+    offlineReserve,
+    lockedOffline,
+    pendingSync,
+    totalBalance: availableOnline + offlineReserve,
+    currency: 'KGS',
+    updatedAt: wallet.updatedAt ?? nowIso(),
+  };
+}
+
 function makeNonce(): string {
   return Math.random().toString(36).slice(2, 12);
 }
 
 function makeOfflineQrDeepLink(qrPayload: string): string {
   return `${OFFLINE_DEEP_LINK_PREFIX}${encodeURIComponent(qrPayload)}`;
+}
+
+export function quoteUsdToKgs(amountUsd: number, rate = FALLBACK_USD_TO_KGS_RATE) {
+  const safeAmount = Number.isFinite(amountUsd) && amountUsd > 0 ? amountUsd : 0;
+  return {
+    rate,
+    amountUsd: safeAmount,
+    amountKgs: Math.round(safeAmount * rate),
+    validUntil: new Date(Date.now() + 30_000).toISOString(),
+  };
 }
 
 export function extractOfflinePayload(scannedValue: string): string | null {
@@ -245,33 +293,83 @@ async function writeJson<T>(key: string, value: T): Promise<void> {
   }
 }
 
+let demoStateVersionChecked = false;
+let demoStateVersionPromise: Promise<void> | null = null;
+
+async function resetPersistedDemoState(): Promise<Wallet> {
+  const seed = normalizeWallet({ ...DEFAULT_WALLET, updatedAt: nowIso() });
+  await writeJson(PAYMENT_STORAGE_KEYS.wallet, seed);
+  await writeJson<Transaction[]>(PAYMENT_STORAGE_KEYS.transactions, []);
+  await writeJson<OfflineToken[]>(PAYMENT_STORAGE_KEYS.offlineTokens, []);
+  await writeJson<DemoSessionState>(PAYMENT_STORAGE_KEYS.demoSession, {
+    walletDemoStateVersion: WALLET_DEMO_STATE_VERSION,
+    version: WALLET_DEMO_STATE_VERSION,
+    resetAt: nowIso(),
+  });
+  return seed;
+}
+
+async function ensureDemoStateVersion(): Promise<void> {
+  if (demoStateVersionChecked) return;
+
+  if (!demoStateVersionPromise) {
+    demoStateVersionPromise = (async () => {
+      const session = await readJson<DemoSessionState | null>(
+        PAYMENT_STORAGE_KEYS.demoSession,
+        null,
+      );
+      const storedVersion =
+        session?.walletDemoStateVersion ?? session?.version ?? 0;
+
+      if (storedVersion !== WALLET_DEMO_STATE_VERSION) {
+        await resetPersistedDemoState();
+      }
+
+      demoStateVersionChecked = true;
+    })();
+  }
+
+  await demoStateVersionPromise;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 // ── Wallet ──────────────────────────────────────────────────────────────────
 export async function getWallet(): Promise<Wallet> {
+  await ensureDemoStateVersion();
   const wallet = await readJson<Wallet | null>(PAYMENT_STORAGE_KEYS.wallet, null);
   if (!wallet) {
-    const seed: Wallet = { ...DEFAULT_WALLET, updatedAt: nowIso() };
+    const seed = normalizeWallet({ ...DEFAULT_WALLET, updatedAt: nowIso() });
     await writeJson(PAYMENT_STORAGE_KEYS.wallet, seed);
     return seed;
   }
-  return wallet;
+  const normalized = normalizeWallet(wallet);
+  if (normalized.totalBalance !== wallet.totalBalance) {
+    await writeJson(PAYMENT_STORAGE_KEYS.wallet, normalized);
+  }
+  return normalized;
 }
 
 export async function saveWallet(wallet: Wallet): Promise<Wallet> {
-  const next: Wallet = { ...wallet, updatedAt: nowIso() };
+  const next: Wallet = normalizeWallet({ ...wallet, updatedAt: nowIso() });
   await writeJson(PAYMENT_STORAGE_KEYS.wallet, next);
   return next;
 }
 
 export async function resetWalletDemo(): Promise<Wallet> {
-  const seed: Wallet = { ...DEFAULT_WALLET, updatedAt: nowIso() };
-  await writeJson(PAYMENT_STORAGE_KEYS.wallet, seed);
-  await writeJson<Transaction[]>(PAYMENT_STORAGE_KEYS.transactions, []);
-  await writeJson<OfflineToken[]>(PAYMENT_STORAGE_KEYS.offlineTokens, []);
+  const seed = await resetPersistedDemoState();
+  demoStateVersionChecked = true;
+  demoStateVersionPromise = Promise.resolve();
   return seed;
 }
 
 // ── Transactions ────────────────────────────────────────────────────────────
 export async function getTransactions(): Promise<Transaction[]> {
+  await ensureDemoStateVersion();
   return readJson<Transaction[]>(PAYMENT_STORAGE_KEYS.transactions, []);
 }
 
@@ -297,6 +395,7 @@ export async function updateTransaction(
 
 // ── Offline tokens ──────────────────────────────────────────────────────────
 export async function getOfflineTokens(): Promise<OfflineToken[]> {
+  await ensureDemoStateVersion();
   return readJson<OfflineToken[]>(PAYMENT_STORAGE_KEYS.offlineTokens, []);
 }
 
@@ -346,21 +445,36 @@ export interface TopUpResult {
 export async function topUpWallet(
   amount: number,
   method: 'card_demo' | 'online_qr_demo' = 'card_demo',
+  options: {
+    inputCurrency?: 'KGS' | 'USD';
+    exchangeRate?: number;
+    convertedAmountKgs?: number;
+    receiptCode?: string;
+    cardBrand?: string;
+    cardLast4?: string;
+  } = {},
 ): Promise<TopUpResult> {
   if (!Number.isFinite(amount) || amount <= 0) {
     throw new Error('Top up amount must be a positive number.');
   }
+  const inputCurrency = options.inputCurrency ?? 'KGS';
+  const exchangeRate = options.exchangeRate ?? FALLBACK_USD_TO_KGS_RATE;
+  const converted = inputCurrency === 'USD' ? quoteUsdToKgs(amount, exchangeRate) : null;
+  const amountKgs = options.convertedAmountKgs ?? (converted ? converted.amountKgs : amount);
   const wallet = await getWallet();
   const next: Wallet = {
     ...wallet,
-    totalBalance: wallet.totalBalance + amount,
-    availableOnline: wallet.availableOnline + amount,
+    availableOnline: wallet.availableOnline + amountKgs,
   };
   const saved = await saveWallet(next);
   const tx: Transaction = {
     id: makeId('tx'),
     type: 'top_up',
-    amount,
+    amount: amountKgs,
+    sourceAmountUsd: inputCurrency === 'USD' ? amount : undefined,
+    exchangeRate: inputCurrency === 'USD' ? exchangeRate : undefined,
+    cardBrand: options.cardBrand,
+    cardLast4: options.cardLast4,
     currency: 'KGS',
     merchantId: null,
     merchantName: null,
@@ -370,7 +484,7 @@ export async function topUpWallet(
     createdAt: nowIso(),
     acceptedAt: nowIso(),
     syncedAt: nowIso(),
-    receiptCode: makeReceiptCode(),
+    receiptCode: options.receiptCode ?? makeReceiptCode(),
   };
   await saveTransaction(tx);
   return { wallet: saved, transaction: tx };
@@ -407,7 +521,6 @@ export async function payOnlineQR(
 
   const next: Wallet = {
     ...wallet,
-    totalBalance: wallet.totalBalance - input.amount,
     availableOnline: wallet.availableOnline - input.amount,
   };
   const saved = await saveWallet(next);
@@ -494,28 +607,21 @@ export async function createOfflineCustomerQRPayment(
     );
   }
 
-  const next: Wallet = {
-    ...wallet,
-    totalBalance: wallet.totalBalance - amount,
-    offlineReserve: wallet.offlineReserve - amount,
-    lockedOffline: wallet.lockedOffline + amount,
-    pendingSync: wallet.pendingSync + amount,
-  };
-  const saved = await saveWallet(next);
-
   const txId = makeId('tx');
   const tokenId = makeId('tok');
+  const receiptCode = makeReceiptCode();
   const createdAt = nowIso();
   const expiresAt = new Date(Date.now() + OFFLINE_TOKEN_TTL_MS).toISOString();
   const nonce = makeNonce();
   const mockSignature = makeMockSignature(
-    `${tokenId}|${txId}|${amount}|${createdAt}|${nonce}`,
+    `${tokenId}|${txId}|${receiptCode}|${amount}|${createdAt}|${nonce}`,
   );
 
   const qrPayloadObj: OfflineQrPayload = {
     version: 'tabylga_offline_v1',
     tokenId,
     transactionId: txId,
+    receiptCode,
     amount,
     currency: 'KGS',
     issuer: 'KICB_DEMO',
@@ -540,13 +646,14 @@ export async function createOfflineCustomerQRPayment(
     createdAt,
     acceptedAt: null,
     syncedAt: null,
-    receiptCode: makeReceiptCode(),
+    receiptCode,
   };
   await saveTransaction(tx);
 
   const token: OfflineToken = {
     id: tokenId,
     transactionId: txId,
+    receiptCode,
     amount,
     currency: 'KGS',
     issuer: 'KICB_DEMO',
@@ -563,7 +670,7 @@ export async function createOfflineCustomerQRPayment(
   };
   await saveOfflineToken(token);
 
-  return { wallet: saved, transaction: tx, token };
+  return { wallet, transaction: tx, token };
 }
 
 // ── Merchant: scan + accept ─────────────────────────────────────────────────
@@ -574,6 +681,7 @@ function parseQrPayload(raw: string): OfflineQrPayload | null | 'missing_fields'
       typeof parsed?.version === 'string' &&
       typeof parsed?.tokenId === 'string' &&
       typeof parsed?.transactionId === 'string' &&
+      typeof parsed?.receiptCode === 'string' &&
       typeof parsed?.amount === 'number' &&
       typeof parsed?.currency === 'string' &&
       typeof parsed?.issuer === 'string' &&
@@ -604,15 +712,6 @@ async function expireCreatedOfflineToken(token: OfflineToken): Promise<void> {
   await updateTransaction(token.transactionId, {
     status: 'expired',
     canCancel: false,
-  });
-
-  const wallet = await getWallet();
-  await saveWallet({
-    ...wallet,
-    totalBalance: wallet.totalBalance + token.amount,
-    offlineReserve: wallet.offlineReserve + token.amount,
-    lockedOffline: Math.max(0, wallet.lockedOffline - token.amount),
-    pendingSync: Math.max(0, wallet.pendingSync - token.amount),
   });
 }
 
@@ -664,6 +763,7 @@ export async function merchantScanOfflineQR(
   const consistent =
     payload.tokenId === token.id &&
     payload.transactionId === token.transactionId &&
+    payload.receiptCode === token.receiptCode &&
     payload.amount === token.amount &&
     payload.currency === token.currency &&
     payload.issuer === token.issuer &&
@@ -682,6 +782,18 @@ export async function merchantScanOfflineQR(
     await expireCreatedOfflineToken(token);
     const refreshed = (await getOfflineTokens()).find((t) => t.id === token.id) ?? token;
     return { ...baseFail('expired', refreshed), notExpired: false };
+  }
+
+  const wallet = await getWallet();
+  if (token.amount > wallet.offlineReserve) {
+    return {
+      ...baseFail('insufficient_reserved_balance', token),
+      signatureVerified: true,
+      reserveBacked: false,
+      oneTimeToken: true,
+      notExpired: true,
+      risk: 'high',
+    };
   }
 
   return {
@@ -707,6 +819,7 @@ export interface MerchantAcceptResult {
   token: OfflineToken;
   transaction: Transaction;
   merchant: PaymentMerchant;
+  wallet: Wallet;
 }
 
 export async function merchantAcceptOfflinePayment(
@@ -732,6 +845,11 @@ export async function merchantAcceptOfflinePayment(
     throw new Error('Token expired');
   }
 
+  const wallet = await getWallet();
+  if (token.amount > wallet.offlineReserve) {
+    throw new Error('Amount exceeds reserved offline balance.');
+  }
+
   const acceptedAt = nowIso();
 
   const updatedToken = await updateOfflineToken(tokenId, {
@@ -752,7 +870,19 @@ export async function merchantAcceptOfflinePayment(
     throw new Error('Failed to persist acceptance.');
   }
 
-  return { token: updatedToken, transaction: updatedTx, merchant };
+  const updatedWallet = await saveWallet({
+    ...wallet,
+    offlineReserve: wallet.offlineReserve - token.amount,
+    lockedOffline: wallet.lockedOffline + token.amount,
+    pendingSync: wallet.pendingSync + token.amount,
+  });
+
+  return {
+    token: updatedToken,
+    transaction: updatedTx,
+    merchant,
+    wallet: updatedWallet,
+  };
 }
 
 // ── Sync offline payments ───────────────────────────────────────────────────
@@ -769,8 +899,11 @@ export async function syncOfflinePayments(): Promise<SyncResult> {
     return { syncedCount: 0, syncedAmount: 0, syncTransactionId: null };
   }
 
+  await delay(750);
+
   const now = nowIso();
   let syncedAmount = 0;
+  const acceptedTransactionIds = new Set(accepted.map((tx) => tx.id));
   for (const tx of accepted) {
     syncedAmount += tx.amount;
     await updateTransaction(tx.id, { status: 'synced', syncedAt: now });
@@ -778,7 +911,10 @@ export async function syncOfflinePayments(): Promise<SyncResult> {
 
   const tokens = await getOfflineTokens();
   for (const token of tokens) {
-    if (token.status === 'accepted_offline') {
+    if (
+      token.status === 'accepted_offline' &&
+      acceptedTransactionIds.has(token.transactionId)
+    ) {
       await updateOfflineToken(token.id, { status: 'synced' });
     }
   }
@@ -846,8 +982,7 @@ export async function sendViaBluetoothDemo(
     throw new Error('Merchant does not support Bluetooth demo.');
   }
 
-  let token: OfflineToken | null = null;
-  let transactionId: string;
+  let tokenId: string;
 
   if (input.tokenId) {
     const existing = (await getOfflineTokens()).find((t) => t.id === input.tokenId);
@@ -859,63 +994,37 @@ export async function sendViaBluetoothDemo(
       await expireCreatedOfflineToken(existing);
       throw new Error('Token expired');
     }
-    token = existing;
-    transactionId = existing.transactionId;
+    tokenId = existing.id;
 
     await updateOfflineToken(existing.id, {
       transferMethod: 'bluetooth_demo',
-      status: 'accepted_offline',
-      canCancel: false,
-      merchantId: merchant.id,
-      merchantName: merchant.name,
     });
-    await updateTransaction(transactionId, {
+    await updateTransaction(existing.transactionId, {
       type: 'offline_bluetooth_payment',
       method: 'bluetooth_demo',
-      status: 'accepted_offline',
-      canCancel: false,
-      merchantId: merchant.id,
-      merchantName: merchant.name,
-      acceptedAt: nowIso(),
     });
   } else {
     if (!Number.isFinite(input.amount ?? NaN) || (input.amount ?? 0) <= 0) {
       throw new Error('Amount must be a positive number.');
     }
     const created = await createOfflineCustomerQRPayment(input.amount as number);
-    token = created.token;
-    transactionId = created.transaction.id;
+    tokenId = created.token.id;
 
-    await updateOfflineToken(token.id, {
+    await updateOfflineToken(created.token.id, {
       transferMethod: 'bluetooth_demo',
-      status: 'accepted_offline',
-      canCancel: false,
-      merchantId: merchant.id,
-      merchantName: merchant.name,
     });
-    await updateTransaction(transactionId, {
+    await updateTransaction(created.transaction.id, {
       type: 'offline_bluetooth_payment',
       method: 'bluetooth_demo',
-      status: 'accepted_offline',
-      canCancel: false,
-      merchantId: merchant.id,
-      merchantName: merchant.name,
-      acceptedAt: nowIso(),
     });
   }
 
-  const finalToken =
-    (await getOfflineTokens()).find((t) => t.id === token!.id) ?? token!;
-  const finalTx =
-    (await getTransactions()).find((t) => t.id === transactionId) ?? null;
-  if (!finalTx) throw new Error('Failed to persist Bluetooth demo transaction.');
-
-  const wallet = await getWallet();
+  const accepted = await merchantAcceptOfflinePayment(tokenId, merchant.id);
 
   return {
-    wallet,
-    transaction: finalTx,
-    token: finalToken,
-    merchant,
+    wallet: accepted.wallet,
+    transaction: accepted.transaction,
+    token: accepted.token,
+    merchant: accepted.merchant,
   };
 }

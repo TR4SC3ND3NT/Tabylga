@@ -67,6 +67,12 @@ export default function MerchantDashboard() {
       ]);
       setTokens(
         offlineTokens
+          .filter(
+            (token) =>
+              (token.status === 'created' ||
+                token.status === 'shown_to_merchant') &&
+              Date.now() < new Date(token.expiresAt).getTime(),
+          )
           .sort(
             (a, b) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -464,6 +470,19 @@ export default function MerchantDashboard() {
             }
             onPress={handleSyncPayments}
           />
+          {pendingPayments.length === 0 ? (
+            <Text
+              style={{
+                fontFamily: 'Inter_500Medium',
+                fontSize: 12,
+                color: colors.text.secondary,
+                marginTop: 8,
+                textAlign: 'center',
+              }}
+            >
+              No pending offline payments to sync.
+            </Text>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>

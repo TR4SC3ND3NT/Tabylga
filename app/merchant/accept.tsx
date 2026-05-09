@@ -70,6 +70,7 @@ function errorCopy(reason: OfflineQrVerificationReason | string | undefined, tok
   if (reason === 'expired' || token?.status === 'expired') return { title: 'Token expired', text: 'This offline QR has expired. Ask the customer to generate a new one.' };
   if (token?.status === 'synced') return { title: 'Token already synced', text: 'This offline payment was already settled in demo mode.' };
   if (reason === 'already_used' || token?.status === 'accepted_offline') return { title: 'Token already used', text: 'This offline QR was already accepted and cannot be used again.' };
+  if (reason === 'insufficient_reserved_balance') return { title: 'Reserve no longer available', text: 'This token amount exceeds the customer reserved offline balance.' };
   if (reason === 'merchant_not_supported') return { title: 'Merchant not supported', text: 'This merchant cannot accept offline QR payments.' };
   return { title: 'Verification failed', text: 'The offline payment token could not be verified.' };
 }
@@ -419,7 +420,8 @@ export default function MerchantAcceptScreen() {
   }
 
   const notExpired = Date.now() < new Date(token.expiresAt).getTime();
-  const canAccept = notExpired && token.status === 'created';
+  const acceptDisabledReason = !notExpired ? 'Token expired.' : null;
+  const canAccept = !acceptDisabledReason && token.status === 'created';
 
   if (token.status !== 'created') {
     return (
@@ -574,6 +576,19 @@ export default function MerchantAcceptScreen() {
             backend or bank partner infrastructure.
           </Text>
         </View>
+
+        {acceptDisabledReason ? (
+          <Text
+            style={{
+              fontFamily: 'Inter_600SemiBold',
+              fontSize: 13,
+              color: colors.status.error,
+              marginBottom: 10,
+            }}
+          >
+            {acceptDisabledReason}
+          </Text>
+        ) : null}
 
         <View style={{ gap: 10 }}>
           <Button
